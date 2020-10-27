@@ -10,6 +10,7 @@ import {
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
+import { UnaryOpNode } from "../node/unary_op_node.ts";
 import { Token } from "../token.ts";
 import { ParseResult } from "./parse_result.ts";
 
@@ -41,9 +42,25 @@ export class Parser {
   public factor(): ParseResult {
     const res = new ParseResult();
     const token = this.currentToken;
-    if ([INT, FLOAT].includes(token.type)) {
+
+    if([PLUS, MINUS].includes(token.type)) {
+      res.register(this.advance());
+      const fac = res.register(this.factor());
+      if(res.error) return res;
+      return res.success(new UnaryOpNode(token, fac!))
+    } else if ([INT, FLOAT].includes(token.type)) {
       res.register(this.advance());
       return res.success(new NumberNode(token));
+    } else if(token.type === "LEFT_PARENTHESIS") {
+      res.register(this.advance());
+      const expr = res.register(this.expr());
+      if(res.error) return res;
+      if(this.currentToken.type === "RIGHT_PARENTHESIS") {
+        res.register(this.advance());
+        return res.success(expr as BinOpNode)
+      } else {
+        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected ')' but found none!"))
+      }
     }
     
     return res.failure(new InvalidSyntaxError(token.positionStart!, token.positionEnd!, "A Int or Float was Expected"))
@@ -51,7 +68,7 @@ export class Parser {
 
   public term(): ParseResult {
     const res = new ParseResult();
-    let left: ParseResult | BinOpNode | NumberNode = res.register(this.factor()!)!;
+    let left: UnaryOpNode | ParseResult | BinOpNode | NumberNode = res.register(this.factor()!)!;
     if(res.error) return res;
 
     while ([MULTIPLY, DIVIDE].includes(this.currentToken.type)) {
@@ -67,7 +84,7 @@ export class Parser {
 
   public expr(): ParseResult {
     const res = new ParseResult();
-    let left: ParseResult | BinOpNode | NumberNode = res.register(this.term()!)!;
+    let left: UnaryOpNode | ParseResult | BinOpNode | NumberNode = res.register(this.term()!)!;
     if(res.error) return res;
 
     while ([PLUS, MINUS].includes(this.currentToken.type)) {

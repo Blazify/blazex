@@ -1,10 +1,11 @@
 import { Err } from "../../error/err.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
+import { UnaryOpNode } from "../node/unary_op_node.ts";
 
 export class ParseResult {
     public error: Err | null = null;
-    public node: NumberNode | BinOpNode | null = null;
+    public node: NumberNode | BinOpNode | UnaryOpNode | null = null;
 
     public register<T = ParseResult | NumberNode | BinOpNode>(res: T) {
         if(res instanceof ParseResult) {
@@ -15,7 +16,7 @@ export class ParseResult {
         return res;
     }
 
-    public success(node: NumberNode | BinOpNode) {
+    public success(node: NumberNode | BinOpNode | UnaryOpNode) {
         this.node = node;
         return this;
     }

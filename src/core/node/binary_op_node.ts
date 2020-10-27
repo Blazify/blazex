@@ -1,12 +1,13 @@
 import { ParseResult } from "../parser/parse_result.ts";
 import { Token } from "../token.ts";
 import { NumberNode } from "./number_nodes.ts";
+import { UnaryOpNode } from "./unary_op_node.ts";
 
 export class BinOpNode {
   constructor(
-    public leftNode: ParseResult | NumberNode | BinOpNode | null,
+    public leftNode: UnaryOpNode | ParseResult | NumberNode | BinOpNode | null,
     public opToken: Token,
-    public rightNode: ParseResult | NumberNode | BinOpNode | null,
+    public rightNode: UnaryOpNode | ParseResult | NumberNode | BinOpNode | null,
   ) {
   }
 

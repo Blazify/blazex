@@ -26,10 +26,10 @@ export function run(
     return { tokens, errors };
   }
   // no errors in lexing so now parsing
-   const parsed = new Parser(tokens).parse();
+   const parsed = new Parser(tokens!).parse();
    if(parsed.error) console.error(parsed.error.formatted())
-   if(parsed) console.log(parsed.node?.represent());
-   else tokens.forEach(token => console.log(token.represent()));
+   else if(parsed.node) console.log(parsed.node?.represent());
+   else if(tokens) tokens.forEach(token => console.log(token.represent()));
   // return tokens and parsed binary op nodes
   return { tokens };
 }

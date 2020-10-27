@@ -31,7 +31,7 @@ export class Lexer {
       : null;
   }
 
-  public makeTokens(): { tokens: Token[]; errors?: Err[] } {
+  public makeTokens(): { tokens?: Token[]; errors?: Err[] } {
     const tokens: Token[] = [];
     const errors: Err[] = [];
 
@@ -59,23 +59,17 @@ export class Lexer {
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
       } else {
-        const positionStart = this.position.clone();
-        errors.push(
-          new IllegalCharecterError(
-            positionStart,
-            this.position,
-            `Position ${this.position.index +
-              1} at charecter ${this.currentCharecter}`,
-          ),
-        );
-        this.advance();
+        const start = this.position.clone()
+        const char = this.currentCharecter
+        this.advance()
+        errors.push(new IllegalCharecterError(start, this.position, "'" + char + "'"))
+        return { errors };
       }
     }
 
     tokens.push(new Token(EOF, null, this.position))
 
-    if (errors.length === 0) return { tokens };
-    return { tokens, errors };
+    return { tokens };
   }
 
   public makeNumber(): Token {
