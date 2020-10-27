@@ -8,6 +8,7 @@ export const MULTIPLY = "MULTIPLY";
 export const DIVIDE = "DIVIDE";
 export const LEFT_PARENTHESIS = "LEFT_PARENTHESIS";
 export const RIGHT_PARENTHESIS = "RIGHT_PARENTHESIS";
+export const EOF = "EOF";
 
 export type TYPES =
   | "INT"
@@ -17,4 +18,5 @@ export type TYPES =
   | "MULTIPLY"
   | "DIVIDE"
   | "LEFT_PARENTHESIS"
-  | "RIGHT_PARENTHESIS";
+  | "RIGHT_PARENTHESIS"
+  | "EOF";

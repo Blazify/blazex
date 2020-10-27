@@ -1,7 +1,19 @@
+import { Position } from "../error/position.ts";
 import { TYPES } from "../utils/constants.ts";
 
 export class Token {
-  public constructor(public type: TYPES, public value: unknown = null) {
+  public positionStart: Position | null = null;
+  public positionEnd: Position | null = null;
+  public constructor(public type: TYPES, public value: unknown = null, positionStart: Position | null = null, positionEnd: Position | null = null) {
+    if(positionStart) {
+      this.positionStart = positionStart.clone();
+      this.positionEnd = positionStart.clone();
+      this.positionEnd.advance("");
+    }
+
+    if(positionEnd) {
+      this.positionEnd = this.positionEnd;
+    }
   }
 
   public represent(): string {

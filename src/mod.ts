@@ -1,6 +1,7 @@
 import { Lexer } from "./core/lexer.ts";
 import { BinOpNode } from "./core/node/binary_op_node.ts";
-import { Parser } from "./core/parser.ts";
+import { NumberNode } from "./core/node/number_nodes.ts";
+import { Parser } from "./core/parser/parser.ts";
 import { Token } from "./core/token.ts";
 import { Err } from "./error/err.ts";
 
@@ -13,7 +14,7 @@ import { Err } from "./error/err.ts";
 export function run(
   name: string,
   code?: string,
-): { parsed?: BinOpNode; tokens?: Token[]; errors?: Err[] } {
+): { parsed?: BinOpNode | NumberNode; tokens?: Token[]; errors?: Err[] } {
   // Tokenizing and Lexing the code
   const { tokens, errors } = new Lexer(
     name,
@@ -25,11 +26,12 @@ export function run(
     return { tokens, errors };
   }
   // no errors in lexing so now parsing
-  const parsed = new Parser(tokens).parse();
-  if(parsed) console.log(parsed.represent());
-  else tokens.forEach(token => console.log(token.represent()));
+   const parsed = new Parser(tokens).parse();
+   if(parsed.error) console.error(parsed.error.formatted())
+   if(parsed) console.log(parsed.node?.represent());
+   else tokens.forEach(token => console.log(token.represent()));
   // return tokens and parsed binary op nodes
-  return { tokens, parsed };
+  return { tokens };
 }
 
 if (!Deno.args[0]) {

@@ -4,6 +4,7 @@ import { Position } from "../error/position.ts";
 import {
   DIGITS,
   DIVIDE,
+  EOF,
   FLOAT,
   INT,
   LEFT_PARENTHESIS,
@@ -38,22 +39,22 @@ export class Lexer {
       if ([" ", "\t"].includes(this.currentCharecter)) {
         this.advance();
       } else if (this.currentCharecter === "+") {
-        tokens.push(new Token(PLUS));
+        tokens.push(new Token(PLUS, null, this.position));
         this.advance();
       } else if (this.currentCharecter === "-") {
-        tokens.push(new Token(MINUS));
+        tokens.push(new Token(MINUS, null, this.position));
         this.advance();
       } else if (this.currentCharecter === "*") {
-        tokens.push(new Token(MULTIPLY));
+        tokens.push(new Token(MULTIPLY, null, this.position));
         this.advance();
       } else if (this.currentCharecter === "/") {
-        tokens.push(new Token(DIVIDE));
+        tokens.push(new Token(DIVIDE, null, this.position));
         this.advance();
       } else if (this.currentCharecter === "(") {
-        tokens.push(new Token(LEFT_PARENTHESIS));
+        tokens.push(new Token(LEFT_PARENTHESIS, null, this.position));
         this.advance();
       } else if (this.currentCharecter === ")") {
-        tokens.push(new Token(RIGHT_PARENTHESIS));
+        tokens.push(new Token(RIGHT_PARENTHESIS, null, this.position));
         this.advance();
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
@@ -71,6 +72,8 @@ export class Lexer {
       }
     }
 
+    tokens.push(new Token(EOF, null, this.position))
+
     if (errors.length === 0) return { tokens };
     return { tokens, errors };
   }
@@ -78,6 +81,7 @@ export class Lexer {
   public makeNumber(): Token {
     let numberString = "";
     let dotCount = 0;
+    const start = this.position.clone();
 
     while (
       this.currentCharecter !== null &&
@@ -98,7 +102,7 @@ export class Lexer {
       }
     }
 
-    if (dotCount === 0) return new Token(INT, Number(numberString));
-    return new Token(FLOAT, Number(numberString));
+    if (dotCount === 0) return new Token(INT, Number(numberString), start, this.position);
+    return new Token(FLOAT, Number(numberString), start, this.position);
   }
 }
