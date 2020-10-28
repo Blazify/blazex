@@ -1,10 +1,9 @@
+import { Context } from "./core/context.ts";
 import { Interpreter } from "./core/interpreter.ts";
 import { Lexer } from "./core/lexer.ts";
-import { BinOpNode } from "./core/node/binary_op_node.ts";
-import { NumberNode } from "./core/node/number_nodes.ts";
 import { Parser } from "./core/parser/parser.ts";
-import { Token } from "./core/token.ts";
-import { Err } from "./error/err.ts";
+import { Position } from "./error/position.ts";
+import { RuntimeError } from "./error/runtimeerr.ts";
 
 /**
  * @param name File name, reads code from the file if code not provided
@@ -15,24 +14,35 @@ export function run(
   name: string,
   code?: string,
 ) {
-  // Tokenizing and Lexing the code
-  const { tokens, errors } = new Lexer(
-    name,
-    code ?? new TextDecoder("utf-8").decode(Deno.readFileSync(Deno.args[0])),
-  ).makeTokens();
-  // if errors then return without parsing
-  if (errors) {
-    console.log(errors.map((error) => error.formatted()).join(", \n"));
-    return { errors };
+  try {
+    const { tokens, errors } = new Lexer(
+      name,
+      code ?? new TextDecoder("utf-8").decode(Deno.readFileSync(Deno.args[0])),
+    ).makeTokens();
+    if (errors) {
+      console.log(errors.map((error) => error.formatted()).join(", \n"));
+      return { errors };
+    }
+    const { node, error } = new Parser(tokens!).parse();
+    if (error) {
+      return console.log(error.formatted());
+    }
+    const interpreter = new Interpreter();
+    const context = new Context("<Global>");
+    const { value, error: rterr } = interpreter.visit(node!, context);
+    console.log(
+      "Interpreted Output:",
+      value?.represent() ?? null,
+      "\nRuntime Error:",
+      rterr?.formatted() ?? null,
+    );
+    return { tokens, interpreted: interpreter.visit(node!, context) };
+  } catch (e) {
+    console.log(
+      "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" +
+        e.stack,
+    );
   }
-  // no errors in lexing so now parsing
-  const { node, error } = new Parser(tokens!).parse();
-  const interpreter = new Interpreter();
-  const { value, error: rterr } = interpreter.visit(node!);
-  console.log("Interpreted Output:", value?.represent() ?? null, "\nParse Error:", error?.formatted() ?? null ,"\nRuntime Error:", rterr?.formatted() ?? null)
-  // if(tokens) tokens.forEach(token => console.log(token.represent()));
-  // return tokens and parsed binary op nodes
-  return { tokens, interpreted: interpreter.visit(node!) };
 }
 
 if (!Deno.args[0]) {

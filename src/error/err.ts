@@ -1,3 +1,4 @@
+import { Context } from "../core/context.ts";
 import { Position } from "./position.ts";
 
 export class Err {
@@ -9,10 +10,6 @@ export class Err {
   ) {}
 
   public formatted(): string {
-    return `File Name: ${this.positionStart.fileName}\nLine: ${this
-      .positionStart.line +
-      1} \nStarts At: ${this.positionStart.index +
-      1}\nEnds At: ${this.positionEnd.index +
-      1}\nName: ${this.name}\nDescription: ${this.description}`;
+    return `${this.name}: ${this.description}\nFile ${this.positionStart.fileName}, line ${this.positionStart.line + 1}`;
   }
 }

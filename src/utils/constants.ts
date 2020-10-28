@@ -11,12 +11,12 @@ export const RIGHT_PARENTHESIS = "RIGHT_PARENTHESIS";
 export const EOF = "EOF";
 
 export type TYPES =
-  | "INT"
-  | "FLOAT"
-  | "PLUS"
-  | "MINUS"
-  | "MULTIPLY"
-  | "DIVIDE"
-  | "LEFT_PARENTHESIS"
-  | "RIGHT_PARENTHESIS"
-  | "EOF";
+  | "INT" // int
+  | "FLOAT" // float
+  | "PLUS" // +
+  | "MINUS" // -
+  | "MULTIPLY" // *
+  | "DIVIDE" // /
+  | "LEFT_PARENTHESIS" // (
+  | "RIGHT_PARENTHESIS" // )
+  | "EOF"; // end

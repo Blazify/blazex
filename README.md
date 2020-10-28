@@ -23,6 +23,24 @@ or
 ```console
 bzs filename.bzs
 ```
+# TODO
+- [x] Tokens
+- [x] Parser
+- [x] Interpreter
+- [x] Number (Int and Floats)
+- [x] Maths Calculation (Addition, Substraction, Multiplication, Division)
+- [x] Binary Operators
+- [x] Unary Operators
+- [x] Number Node
+- [ ] Variables
+- [ ] Strings
+- [ ] Functions
+- [ ] Classes
+- [ ] Objects
+- [ ] Standard Library
+- [ ] Global Objects
+- [ ] Global Variables
 
 ## Note
+**It is in its very new born form.**
 **BlazeScript uses "-A" permission flag which means it has all permissions**

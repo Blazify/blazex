@@ -52,6 +52,15 @@ export class Parser {
     if ([PLUS, MINUS].includes(token.type)) {
       res.register(this.advance());
       const fac = res.register(this.factor());
+      if (!fac) {
+        return res.failure(
+          new InvalidSyntaxError(
+            token.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected A Number after a Unary Operator",
+          ),
+        );
+      }
       if (res.error) return res;
       return res.success(new UnaryOpNode(token, fac!));
     } else if ([INT, FLOAT].includes(token.type)) {
