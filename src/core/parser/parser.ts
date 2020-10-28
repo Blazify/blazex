@@ -68,7 +68,7 @@ export class Parser {
 
   public term(): ParseResult {
     const res = new ParseResult();
-    let left: UnaryOpNode | ParseResult | BinOpNode | NumberNode = res.register(this.factor()!)!;
+    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(this.factor()!)!;
     if(res.error) return res;
 
     while ([MULTIPLY, DIVIDE].includes(this.currentToken.type)) {
@@ -76,7 +76,7 @@ export class Parser {
       res.register(this.advance());
       const right = res.register(this.factor()!);
       if(res.error) return res;
-      left = new BinOpNode(left, opToken, right);
+      left = new BinOpNode(left, opToken, right!);
     }
     
     return res.success(left as BinOpNode | NumberNode);
@@ -84,7 +84,7 @@ export class Parser {
 
   public expr(): ParseResult {
     const res = new ParseResult();
-    let left: UnaryOpNode | ParseResult | BinOpNode | NumberNode = res.register(this.term()!)!;
+    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(this.term()!)!;
     if(res.error) return res;
 
     while ([PLUS, MINUS].includes(this.currentToken.type)) {
@@ -92,7 +92,7 @@ export class Parser {
       res.register(this.advance());
       const right = res.register(this.term()!);
       if(res.error) return res;
-      left = new BinOpNode(left, opToken, right);
+      left = new BinOpNode(left, opToken, right!);
     }
     
     return res.success(left as BinOpNode | NumberNode);

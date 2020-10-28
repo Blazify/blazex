@@ -7,13 +7,13 @@ export class ParseResult {
     public error: Err | null = null;
     public node: NumberNode | BinOpNode | UnaryOpNode | null = null;
 
-    public register<T = ParseResult | NumberNode | BinOpNode>(res: T) {
+    public register<T = ParseResult | UnaryOpNode | NumberNode | BinOpNode>(res: T): NumberNode | BinOpNode | UnaryOpNode {
         if(res instanceof ParseResult) {
             if(res.error) this.error = res.error;
-            return res.node;
+            return res.node!;
         }
 
-        return res;
+        return res as unknown as NumberNode | BinOpNode | UnaryOpNode;
     }
 
     public success(node: NumberNode | BinOpNode | UnaryOpNode) {

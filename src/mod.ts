@@ -1,3 +1,4 @@
+import { Interpreter } from "./core/interpreter.ts";
 import { Lexer } from "./core/lexer.ts";
 import { BinOpNode } from "./core/node/binary_op_node.ts";
 import { NumberNode } from "./core/node/number_nodes.ts";
@@ -26,10 +27,13 @@ export function run(
     return { tokens, errors };
   }
   // no errors in lexing so now parsing
-   const parsed = new Parser(tokens!).parse();
-   if(parsed.error) console.error(parsed.error.formatted())
-   else if(parsed.node) console.log(parsed.node?.represent());
-   else if(tokens) tokens.forEach(token => console.log(token.represent()));
+   const { node, error } = new Parser(tokens!).parse();
+   if(error) console.error(error.formatted())
+   else if(node) {
+     const interpreter = new Interpreter();
+     console.log(interpreter.visit(node).represent())
+   }
+   // if(tokens) tokens.forEach(token => console.log(token.represent()));
   // return tokens and parsed binary op nodes
   return { tokens };
 }
