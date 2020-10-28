@@ -9,13 +9,12 @@ import { Err } from "./error/err.ts";
 /**
  * @param name File name, reads code from the file if code not provided
  * @param code Optional code to evaluate
- * @returns Object of parsed, tokens and errors as keys. Note all keys are optional
  * @description Runs a BlazeScript Code
  */
 export function run(
   name: string,
   code?: string,
-): { parsed?: BinOpNode | NumberNode; tokens?: Token[]; errors?: Err[] } {
+) {
   // Tokenizing and Lexing the code
   const { tokens, errors } = new Lexer(
     name,
@@ -24,18 +23,16 @@ export function run(
   // if errors then return without parsing
   if (errors) {
     console.log(errors.map((error) => error.formatted()).join(", \n"));
-    return { tokens, errors };
+    return { errors };
   }
   // no errors in lexing so now parsing
-   const { node, error } = new Parser(tokens!).parse();
-   if(error) console.error(error.formatted())
-   else if(node) {
-     const interpreter = new Interpreter();
-     console.log(interpreter.visit(node).represent())
-   }
-   // if(tokens) tokens.forEach(token => console.log(token.represent()));
+  const { node, error } = new Parser(tokens!).parse();
+  const interpreter = new Interpreter();
+  const { value, error: rterr } = interpreter.visit(node!);
+  console.log("Interpreted Output:", value?.represent() ?? null, "\nParse Error:", error?.formatted() ?? null ,"\nRuntime Error:", rterr?.formatted() ?? null)
+  // if(tokens) tokens.forEach(token => console.log(token.represent()));
   // return tokens and parsed binary op nodes
-  return { tokens };
+  return { tokens, interpreted: interpreter.visit(node!) };
 }
 
 if (!Deno.args[0]) {

@@ -7,7 +7,10 @@ import { NumberNode } from "./number_nodes.ts";
 export class UnaryOpNode {
   public positionStart: Position;
   public positionEnd: Position;
-  constructor(public opToken: Token, public node: BinOpNode | NumberNode | UnaryOpNode) {
+  constructor(
+    public opToken: Token,
+    public node: BinOpNode | NumberNode | UnaryOpNode,
+  ) {
     this.positionStart = this.node.positionStart;
     this.positionEnd = this.node.positionEnd;
   }

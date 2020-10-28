@@ -4,8 +4,8 @@ import { NumberNode } from "./number_nodes.ts";
 import { UnaryOpNode } from "./unary_op_node.ts";
 
 export class BinOpNode {
-  public positionStart: Position
-  public positionEnd: Position
+  public positionStart: Position;
+  public positionEnd: Position;
   constructor(
     public leftNode: UnaryOpNode | NumberNode | BinOpNode,
     public opToken: Token,
@@ -16,6 +16,6 @@ export class BinOpNode {
   }
 
   public represent(): string {
-    return `(${this.leftNode.represent()}, ${this.opToken.represent()}, ${this.rightNode.represent()})`
+    return `(${this.leftNode.represent()}, ${this.opToken.represent()}, ${this.rightNode.represent()})`;
   }
 }

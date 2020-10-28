@@ -23,8 +23,14 @@ export class Parser {
 
   public parse() {
     const res = this.expr();
-    if(!res.error && this.currentToken.type !== EOF) {
-      return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '+' or '-' or '*' or '/'"))
+    if (!res.error && this.currentToken.type !== EOF) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected '+' or '-' or '*' or '/'",
+        ),
+      );
     }
 
     return res;
@@ -43,58 +49,74 @@ export class Parser {
     const res = new ParseResult();
     const token = this.currentToken;
 
-    if([PLUS, MINUS].includes(token.type)) {
+    if ([PLUS, MINUS].includes(token.type)) {
       res.register(this.advance());
       const fac = res.register(this.factor());
-      if(res.error) return res;
-      return res.success(new UnaryOpNode(token, fac!))
+      if (res.error) return res;
+      return res.success(new UnaryOpNode(token, fac!));
     } else if ([INT, FLOAT].includes(token.type)) {
       res.register(this.advance());
       return res.success(new NumberNode(token));
-    } else if(token.type === "LEFT_PARENTHESIS") {
+    } else if (token.type === "LEFT_PARENTHESIS") {
       res.register(this.advance());
       const expr = res.register(this.expr());
-      if(res.error) return res;
-      if(this.currentToken.type === "RIGHT_PARENTHESIS") {
+      if (res.error) return res;
+      if (this.currentToken.type === "RIGHT_PARENTHESIS") {
         res.register(this.advance());
-        return res.success(expr as BinOpNode)
+        return res.success(expr as BinOpNode);
       } else {
-        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected ')' but found none!"))
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected ')' but found none!",
+          ),
+        );
       }
     }
-    
-    return res.failure(new InvalidSyntaxError(token.positionStart!, token.positionEnd!, "A Int or Float was Expected"))
+
+    return res.failure(
+      new InvalidSyntaxError(
+        token.positionStart!,
+        token.positionEnd!,
+        "A Int or Float was Expected",
+      ),
+    );
   }
 
   public term(): ParseResult {
     const res = new ParseResult();
-    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(this.factor()!)!;
-    if(res.error) return res;
+    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(
+      this.factor()!,
+    )!;
+    if (res.error) return res;
 
     while ([MULTIPLY, DIVIDE].includes(this.currentToken.type)) {
       const opToken = this.currentToken;
       res.register(this.advance());
       const right = res.register(this.factor()!);
-      if(res.error) return res;
+      if (res.error) return res;
       left = new BinOpNode(left, opToken, right!);
     }
-    
+
     return res.success(left as BinOpNode | NumberNode);
   }
 
   public expr(): ParseResult {
     const res = new ParseResult();
-    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(this.term()!)!;
-    if(res.error) return res;
+    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(
+      this.term()!,
+    )!;
+    if (res.error) return res;
 
     while ([PLUS, MINUS].includes(this.currentToken.type)) {
       const opToken = this.currentToken;
       res.register(this.advance());
       const right = res.register(this.term()!);
-      if(res.error) return res;
+      if (res.error) return res;
       left = new BinOpNode(left, opToken, right!);
     }
-    
+
     return res.success(left as BinOpNode | NumberNode);
   }
 

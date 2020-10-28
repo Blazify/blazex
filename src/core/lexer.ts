@@ -59,15 +59,17 @@ export class Lexer {
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
       } else {
-        const start = this.position.clone()
-        const char = this.currentCharecter
-        this.advance()
-        errors.push(new IllegalCharecterError(start, this.position, "'" + char + "'"))
+        const start = this.position.clone();
+        const char = this.currentCharecter;
+        this.advance();
+        errors.push(
+          new IllegalCharecterError(start, this.position, "'" + char + "'"),
+        );
         return { errors };
       }
     }
 
-    tokens.push(new Token(EOF, null, this.position))
+    tokens.push(new Token(EOF, null, this.position));
 
     return { tokens };
   }
@@ -96,7 +98,9 @@ export class Lexer {
       }
     }
 
-    if (dotCount === 0) return new Token(INT, Number(numberString), start, this.position);
+    if (dotCount === 0) {
+      return new Token(INT, Number(numberString), start, this.position);
+    }
     return new Token(FLOAT, Number(numberString), start, this.position);
   }
 }

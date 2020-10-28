@@ -9,8 +9,10 @@ export class Err {
   ) {}
 
   public formatted(): string {
-    return ` File Name: ${this.positionStart.fileName}\n Line: ${this
+    return `File Name: ${this.positionStart.fileName}\nLine: ${this
       .positionStart.line +
-      1} \n Starts At: ${this.positionStart.index + 1}\n Ends At: ${this.positionEnd.index + 1}\n Name: ${this.name}\n Description: ${this.description}`;
+      1} \nStarts At: ${this.positionStart.index +
+      1}\nEnds At: ${this.positionEnd.index +
+      1}\nName: ${this.name}\nDescription: ${this.description}`;
   }
 }
