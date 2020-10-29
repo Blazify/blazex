@@ -1,4 +1,7 @@
 import { Err } from "../error/err.ts";
+import { BinOpNode } from "./node/binary_op_node.ts";
+import { NumberNode } from "./node/number_nodes.ts";
+import { UnaryOpNode } from "./node/unary_op_node.ts";
 import { Number } from "./number.ts";
 
 export class RuntimeResult {

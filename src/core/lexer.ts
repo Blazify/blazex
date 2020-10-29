@@ -2,15 +2,22 @@ import { Err } from "../error/err.ts";
 import { IllegalCharecterError } from "../error/illegalchar.ts";
 import { Position } from "../error/position.ts";
 import {
+  ASCII_LETTERS,
+  ASCII_LETTERS_AND_DIGITS,
   DIGITS,
   DIVIDE,
   EOF,
+  EQUALS,
   FLOAT,
+  IDENTIFIER,
   INT,
+  KEYWORD,
+  KEYWORDS,
   LEFT_PARENTHESIS,
   MINUS,
   MULTIPLY,
   PLUS,
+  POWER,
   RIGHT_PARENTHESIS,
 } from "../utils/constants.ts";
 import { Token } from "./token.ts";
@@ -56,6 +63,14 @@ export class Lexer {
       } else if (this.currentCharecter === ")") {
         tokens.push(new Token(RIGHT_PARENTHESIS, null, this.position));
         this.advance();
+      } else if(this.currentCharecter === "^") {
+        tokens.push(new Token(POWER, null, this.position));
+        this.advance();
+      } else if(this.currentCharecter === "=") {
+        tokens.push(new Token(EQUALS, null, this.position));
+        this.advance();
+      } else if(ASCII_LETTERS.includes(this.currentCharecter)) {
+        tokens.push(this.makeIdentifier());
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
       } else {
@@ -72,6 +87,18 @@ export class Lexer {
     tokens.push(new Token(EOF, null, this.position));
 
     return { tokens };
+  }
+
+  public makeIdentifier(): Token {
+    let identifier = "";
+    const start = this.position.clone();
+    while(this.currentCharecter !== null && ASCII_LETTERS_AND_DIGITS.includes(this.currentCharecter)) {
+      identifier += this.currentCharecter;
+      this.advance();
+    }
+
+    const type = KEYWORDS.includes(identifier) ? KEYWORD : IDENTIFIER;
+    return new Token(type, identifier, start, this.position);
   }
 
   public makeNumber(): Token {

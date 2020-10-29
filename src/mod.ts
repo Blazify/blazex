@@ -1,10 +1,11 @@
 import { Context } from "./core/context.ts";
 import { Interpreter } from "./core/interpreter.ts";
 import { Lexer } from "./core/lexer.ts";
+import { Number } from "./core/number.ts";
 import { Parser } from "./core/parser/parser.ts";
-import { Position } from "./error/position.ts";
-import { RuntimeError } from "./error/runtimeerr.ts";
-
+import { RuntimeResult } from "./core/runtime_result.ts";
+import { Err } from "./error/err.ts";
+import { SymbolTable } from "./utils/symbol_table.ts";
 /**
  * @param name File name, reads code from the file if code not provided
  * @param code Optional code to evaluate
@@ -13,7 +14,7 @@ import { RuntimeError } from "./error/runtimeerr.ts";
 export function run(
   name: string,
   code?: string,
-) {
+): { interpreted?: RuntimeResult, error?: Err, errors?: Err[] } {
   try {
     const { tokens, errors } = new Lexer(
       name,
@@ -25,23 +26,26 @@ export function run(
     }
     const { node, error } = new Parser(tokens!).parse();
     if (error) {
-      return console.log(error.formatted());
+      console.log(error.formatted());
+      return { error }
     }
     const interpreter = new Interpreter();
     const context = new Context("<Global>");
+    const global = new SymbolTable();
+    global.set("number", new Number(0))
+    context.symbolTable = global;
     const { value, error: rterr } = interpreter.visit(node!, context);
+    if(rterr) {
+      console.log(rterr.formatted());
+      return { error: rterr }
+    }
     console.log(
       "Interpreted Output:",
-      value?.represent() ?? null,
-      "\nRuntime Error:",
-      rterr?.formatted() ?? null,
+      value?.represent() ?? null
     );
-    return { tokens, interpreted: interpreter.visit(node!, context) };
+    return { interpreted: interpreter.visit(node!, context) };
   } catch (e) {
-    console.log(
-      "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" +
-        e.stack,
-    );
+    throw "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" + (e.stack ?? e);
   }
 }
 

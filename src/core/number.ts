@@ -76,6 +76,17 @@ export class Number {
     }
   }
 
+  public powBy(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.value ** other.value).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
   public setContext(context: Context | null = null) {
     this.context = context;
     return this;

@@ -21,6 +21,10 @@ export class Token {
     }
   }
 
+  public match(type: TYPES, value: unknown): boolean {
+    return this.type === type && this.value === value;
+  }
+
   public represent(): string {
     if (this.value) return `${this.type}: ${this.value}`;
     return `${this.type}`;

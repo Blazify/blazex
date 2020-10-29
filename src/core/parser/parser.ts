@@ -2,15 +2,21 @@ import { InvalidSyntaxError } from "../../error/invalidsyntax.ts";
 import {
   DIVIDE,
   EOF,
+  EQUALS,
   FLOAT,
+  IDENTIFIER,
   INT,
+  KEYWORD,
   MINUS,
   MULTIPLY,
   PLUS,
+  POWER,
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
 import { UnaryOpNode } from "../node/unary_op_node.ts";
+import { VarAcessNode } from "../node/var_access_node.ts";
+import { VarAssignNode } from "../node/var_assign_node.ts";
 import { Token } from "../token.ts";
 import { ParseResult } from "./parse_result.ts";
 
@@ -22,7 +28,7 @@ export class Parser {
   }
 
   public parse() {
-    const res = this.expr();
+    const res = this.atom();
     if (!res.error && this.currentToken.type !== EOF) {
       return res.failure(
         new InvalidSyntaxError(
@@ -45,27 +51,17 @@ export class Parser {
     return this.currentToken;
   }
 
-  public factor(): ParseResult {
+  public atom(): ParseResult {
     const res = new ParseResult();
     const token = this.currentToken;
 
-    if ([PLUS, MINUS].includes(token.type)) {
-      res.register(this.advance());
-      const fac = res.register(this.factor());
-      if (!fac) {
-        return res.failure(
-          new InvalidSyntaxError(
-            token.positionStart!,
-            this.currentToken.positionEnd!,
-            "Expected A Number after a Unary Operator",
-          ),
-        );
-      }
-      if (res.error) return res;
-      return res.success(new UnaryOpNode(token, fac!));
-    } else if ([INT, FLOAT].includes(token.type)) {
+    if ([INT, FLOAT].includes(token.type)) {
       res.register(this.advance());
       return res.success(new NumberNode(token));
+    } else if(token.type === IDENTIFIER) {
+      res.register(this.advance());
+      console.log(token)
+      return res.success(new VarAcessNode(token))
     } else if (token.type === "LEFT_PARENTHESIS") {
       res.register(this.advance());
       const expr = res.register(this.expr());
@@ -88,9 +84,50 @@ export class Parser {
       new InvalidSyntaxError(
         token.positionStart!,
         token.positionEnd!,
-        "A Int or Float was Expected",
+        "A Int or Float or Identifier was Expected",
       ),
     );
+  }
+
+  public power(): ParseResult {
+    const res = new ParseResult();
+    let left: UnaryOpNode | BinOpNode | NumberNode = res.register(
+      this.atom()!,
+    )!;
+    if (res.error) return res;
+
+    while (this.currentToken.type === POWER) {
+      const opToken = this.currentToken;
+      res.register(this.advance());
+      const right = res.register(this.factor()!);
+      if (res.error) return res;
+      left = new BinOpNode(left, opToken, right!);
+    }
+
+    return res.success(left as BinOpNode | NumberNode);
+  }
+
+  public factor(): ParseResult {
+    const res = new ParseResult();
+    const token = this.currentToken;
+
+    if ([PLUS, MINUS].includes(token.type)) {
+      res.register(this.advance());
+      const fac = res.register(this.factor());
+      if (!fac) {
+        return res.failure(
+          new InvalidSyntaxError(
+            token.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected A Number after a Unary Operator",
+          ),
+        );
+      }
+      if (res.error) return res;
+      return res.success(new UnaryOpNode(token, fac!));
+    }
+
+    return this.power();
   }
 
   public term(): ParseResult {
@@ -112,6 +149,28 @@ export class Parser {
   }
 
   public expr(): ParseResult {
+    if(this.currentToken.match(KEYWORD, "var")) {
+      const res = new ParseResult();
+      res.register(this.advance());
+
+      if(this.currentToken.type !== IDENTIFIER) {
+        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected Identifier after Keyword"))
+      }
+
+      const varName = this.currentToken;
+      res.register(this.advance());
+
+      // @ts-expect-error // due to some stupid reasons vscode vomits error at me (-,-)
+      if(this.currentToken.type !== EQUALS) {
+        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '='"))
+      }
+
+      res.register(this.advance());
+      const expr = res.register(this.expr());
+      if(res.error) return res;
+      return res.success(new VarAssignNode(varName, expr))
+    }
+
     const res = new ParseResult();
     let left: UnaryOpNode | BinOpNode | NumberNode = res.register(
       this.term()!,
@@ -126,7 +185,16 @@ export class Parser {
       left = new BinOpNode(left, opToken, right!);
     }
 
-    return res.success(left as BinOpNode | NumberNode);
+    left = res.register(left)
+
+		if (res.error) {
+			return res.failure(new InvalidSyntaxError(
+				this.currentToken.positionStart!, this.currentToken.positionEnd!,
+				"Expected 'VAR', int, float, identifier, '+', '-' or '('"
+      ))
+    }
+
+    return res.success(left);
   }
 
   public clone(): Parser {
