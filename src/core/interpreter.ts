@@ -1,6 +1,6 @@
 import { Err } from "../error/err.ts";
 import { RuntimeError } from "../error/runtimeerr.ts";
-import { DIVIDE, MINUS, MULTIPLY, PLUS, POWER } from "../utils/constants.ts";
+import { DIVIDE, DOUBLE_EQUALS, GREATER_THAN, GREATER_THAN_EQUALS, KEYWORD, LESS_THAN, LESS_THAN_EQUALS, MINUS, MULTIPLY, NOT_EQUALS, PLUS, POWER } from "../utils/constants.ts";
 import { Context } from "./context.ts";
 import { BinOpNode } from "./node/binary_op_node.ts";
 import { NumberNode } from "./node/number_nodes.ts";
@@ -21,9 +21,9 @@ export class Interpreter {
       return this.visitNumberNode(node, context);
     } else if (node instanceof UnaryOpNode) {
       return this.visitUnaryOpNode(node, context);
-    } else if(node instanceof VarAcessNode) { 
+    } else if (node instanceof VarAcessNode) {
       return this.visitVarAccessNode(node, context);
-    } else if(node instanceof VarAssignNode) {
+    } else if (node instanceof VarAssignNode) {
       return this.visitVarAssignNode(node, context);
     } else {
       return this.noVisitMethod(node, context) as unknown as RuntimeResult;
@@ -37,24 +37,38 @@ export class Interpreter {
     throw "No visit method found for node type\n";
   }
 
-  public visitVarAccessNode(node: VarAcessNode, context: Context): RuntimeResult {
+  public visitVarAccessNode(
+    node: VarAcessNode,
+    context: Context,
+  ): RuntimeResult {
     const res = new RuntimeResult();
     const varName = node.token.value;
-    const varValue = context.symbolTable?.get(varName as string);
-    if(!varValue) {
-      return res.failure(new RuntimeError(node.positionStart, node.positionEnd, `${varName} is not defined yet!`, context));
+    let varValue = context.symbolTable?.get(varName as string);
+    if (!varValue) {
+      return res.failure(
+        new RuntimeError(
+          node.positionStart,
+          node.positionEnd,
+          `${varName} is not defined yet!`,
+          context,
+        ),
+      );
     }
+    varValue = varValue.clone().setPosition(node.positionStart, node.positionEnd);
     return res.success(varValue);
   }
 
-  public visitVarAssignNode(node: VarAssignNode, context: Context): RuntimeResult {
+  public visitVarAssignNode(
+    node: VarAssignNode,
+    context: Context,
+  ): RuntimeResult {
     const res = new RuntimeResult();
     const varName = node.name.value;
     const varValue = res.register(this.visit(node.value, context));
-    if(!res.error) {
+    if (res.error) {
       return res;
     }
-    context.symbolTable?.set(varName as string, varValue!)
+    context.symbolTable?.set(varName as string, varValue!);
     return res.success(varValue!);
   }
 
@@ -91,6 +105,38 @@ export class Interpreter {
       const { result, error } = left.powBy(right)!;
       if (error) err = error;
       else if (result) final = result;
+    } else if (node.opToken.type === DOUBLE_EQUALS) {
+      const { result, error } = left.equals(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if (node.opToken.type === NOT_EQUALS) {
+      const { result, error } = left.notEquals(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if (node.opToken.type === LESS_THAN) {
+      const { result, error } = left.lessThan(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if (node.opToken.type === LESS_THAN_EQUALS) {
+      const { result, error } = left.lessThanEquals(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if (node.opToken.type === GREATER_THAN) {
+      const { result, error } = left.greaterThan(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if (node.opToken.type === GREATER_THAN_EQUALS) {
+      const { result, error } = left.greaterThanEquals(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if(node.opToken.match(KEYWORD, "and")) {
+      const { result, error } = left.and(right)!;
+      if (error) err = error;
+      else if (result) final = result;
+    } else if(node.opToken.match(KEYWORD, "or")) {
+      const { result, error } = left.or(right)!;
+      if (error) err = error;
+      else if (result) final = result;
     }
 
     if (err) return res.failure(err);
@@ -118,6 +164,10 @@ export class Interpreter {
 
     if (node.opToken.type === MINUS) {
       const { result, error } = number.multiBy(new MyNumber(-1))!;
+      if (error) err = error;
+      else if (result) number = result;
+    } if (node.opToken.match(KEYWORD, "not")) {
+      const { result, error } = number.not()!;
       if (error) err = error;
       else if (result) number = result;
     }

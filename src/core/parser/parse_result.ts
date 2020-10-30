@@ -7,26 +7,51 @@ import { VarAssignNode } from "../node/var_assign_node.ts";
 
 export class ParseResult {
   public error: Err | null = null;
-  public node: NumberNode | BinOpNode | UnaryOpNode | VarAssignNode | VarAcessNode | null = null;
+  public node:
+    | NumberNode
+    | BinOpNode
+    | UnaryOpNode
+    | VarAssignNode
+    | VarAcessNode
+    | null = null;
+  public advanceCount = 0;
 
-  public register<T = ParseResult | UnaryOpNode | NumberNode | BinOpNode>(
-    res: T,
-  ): NumberNode | BinOpNode | UnaryOpNode {
-    if (res instanceof ParseResult) {
-      if (res.error) this.error = res.error;
-      return res.node! as unknown as NumberNode | BinOpNode | UnaryOpNode;
-    }
-
-    return res as unknown as NumberNode | BinOpNode | UnaryOpNode;
+  public registerAdvancement() {
+    this.advanceCount += 1;
   }
 
-  public success(node: NumberNode | BinOpNode | UnaryOpNode | VarAssignNode | VarAcessNode) {
+  public register(
+    res: ParseResult
+    | NumberNode
+    | BinOpNode
+    | UnaryOpNode
+    | VarAssignNode
+    | VarAcessNode,
+  ):
+    | NumberNode
+    | BinOpNode
+    | UnaryOpNode
+    | VarAssignNode
+    | VarAcessNode {
+    if(res instanceof ParseResult) {
+      this.advanceCount += res.advanceCount ?? 1;
+    if (res.error) this.error = res.error;
+    return res.node!;
+    }
+
+    return res;
+  }
+
+  public success(
+    node: NumberNode | BinOpNode | UnaryOpNode | VarAssignNode | VarAcessNode,
+  ) {
     this.node = node;
     return this;
   }
 
   public failure(error: Err) {
-    this.error = error;
+    if(!this.error) this.error = error;
+    if(this.advanceCount == 0) this.error = error;
     return this;
   }
 }

@@ -3,9 +3,16 @@ import { Interpreter } from "./core/interpreter.ts";
 import { Lexer } from "./core/lexer.ts";
 import { Number } from "./core/number.ts";
 import { Parser } from "./core/parser/parser.ts";
-import { RuntimeResult } from "./core/runtime_result.ts";
 import { Err } from "./error/err.ts";
 import { SymbolTable } from "./utils/symbol_table.ts";
+
+
+const global = new SymbolTable();
+global.set("true", new Number(1));
+global.set("false", new Number(0));
+const context = new Context("<Global>");
+context.symbolTable = global;
+
 /**
  * @param name File name, reads code from the file if code not provided
  * @param code Optional code to evaluate
@@ -14,7 +21,7 @@ import { SymbolTable } from "./utils/symbol_table.ts";
 export function run(
   name: string,
   code?: string,
-): { interpreted?: RuntimeResult, error?: Err, errors?: Err[] } {
+): { interpreted?: Number | null; error?: Err | null; errors?: Err[] | null } {
   try {
     const { tokens, errors } = new Lexer(
       name,
@@ -24,33 +31,47 @@ export function run(
       console.log(errors.map((error) => error.formatted()).join(", \n"));
       return { errors };
     }
+    
     const { node, error } = new Parser(tokens!).parse();
     if (error) {
-      console.log(error.formatted());
+      console.error(error.formatted());
       return { error }
     }
+
     const interpreter = new Interpreter();
-    const context = new Context("<Global>");
-    const global = new SymbolTable();
-    global.set("number", new Number(0))
-    context.symbolTable = global;
     const { value, error: rterr } = interpreter.visit(node!, context);
-    if(rterr) {
+    if (rterr) {
       console.log(rterr.formatted());
-      return { error: rterr }
+      return { error: rterr };
     }
     console.log(
       "Interpreted Output:",
-      value?.represent() ?? null
+      value?.represent() ?? null,
     );
-    return { interpreted: interpreter.visit(node!, context) };
+    return { interpreted: value! };
   } catch (e) {
-    throw "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" + (e.stack ?? e);
+    throw "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" +
+      (e.stack ?? e);
   }
 }
 
 if (!Deno.args[0]) {
-  throw "No File or Flag provided";
+  while (true) {
+    await Deno.stdout.write(new TextEncoder().encode("blazescript > "));
+    const buf = new Uint8Array(128);
+    const n = await Deno.stdin.read(buf);
+    const message = new TextDecoder().decode(buf.subarray(0, n ?? undefined));
+    if (!message.startsWith(".")) {
+      run("<stdin>", message);
+    } else {
+      const args = message.replace(".", "").split(" ");
+      if (args[0] == "exit\r\n") {
+        Deno.exit();
+      } else {
+        console.log("Unknown command!");
+      }
+    }
+  }
 }
 
 if (Deno.args[0] == "-e") {
@@ -63,6 +84,23 @@ if (Deno.args[0] == "-e") {
   args.shift();
   run("Eval", args.join(" "));
   Deno.exit();
+} else if (Deno.args[0] == "--repl") {
+  while (true) {
+    await Deno.stdout.write(new TextEncoder().encode("blazescript > "));
+    const buf = new Uint8Array(128);
+    const n = await Deno.stdin.read(buf);
+    const message = new TextDecoder().decode(buf.subarray(0, n ?? undefined));
+    if (!message.startsWith(".")) {
+      run("<stdin>", message);
+    } else {
+      const args = message.replace(".", "").split(" ");
+      if (args[0] == "exit\r\n") {
+        Deno.exit();
+      } else {
+        console.log("Unknown command!");
+      }
+    }
+  }
 }
 
 const fileOrFolder = Deno.args[0];

@@ -23,11 +23,18 @@ export class RuntimeError extends Err {
     let position = this.positionStart;
     let ctx = this.context;
     while (ctx) {
-      res =
-        `File ${position ? position.fileName : "Unknown"}, line: ${position ? position.line +
-          1 : "Unknown"}, in ${ctx.displayName}\n` + res;
-      if(ctx.parentEntryPosition) position = ctx.parentEntryPosition!;
-      if(ctx) ctx = ctx.parent!;
+      res = `File ${
+        position
+          ? position.fileName
+          : "Unknown"
+      }, line: ${
+        position
+          ? position.line +
+            1
+          : "Unknown"
+      }, in ${ctx.displayName}\n` + res;
+      if (ctx.parentEntryPosition) position = ctx.parentEntryPosition!;
+      if (ctx) ctx = ctx.parent!;
     }
 
     return `Traceback (most recent call last):\n${res}`;

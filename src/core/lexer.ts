@@ -1,4 +1,5 @@
 import { Err } from "../error/err.ts";
+import { ExcpectedChareterError } from "../error/excpectedchar.ts";
 import { IllegalCharecterError } from "../error/illegalchar.ts";
 import { Position } from "../error/position.ts";
 import {
@@ -6,16 +7,22 @@ import {
   ASCII_LETTERS_AND_DIGITS,
   DIGITS,
   DIVIDE,
+  DOUBLE_EQUALS,
   EOF,
   EQUALS,
   FLOAT,
+  GREATER_THAN,
+  GREATER_THAN_EQUALS,
   IDENTIFIER,
   INT,
   KEYWORD,
   KEYWORDS,
   LEFT_PARENTHESIS,
+  LESS_THAN,
+  LESS_THAN_EQUALS,
   MINUS,
   MULTIPLY,
+  NOT_EQUALS,
   PLUS,
   POWER,
   RIGHT_PARENTHESIS,
@@ -63,13 +70,32 @@ export class Lexer {
       } else if (this.currentCharecter === ")") {
         tokens.push(new Token(RIGHT_PARENTHESIS, null, this.position));
         this.advance();
-      } else if(this.currentCharecter === "^") {
+      } else if (this.currentCharecter === "^") {
         tokens.push(new Token(POWER, null, this.position));
         this.advance();
-      } else if(this.currentCharecter === "=") {
-        tokens.push(new Token(EQUALS, null, this.position));
-        this.advance();
-      } else if(ASCII_LETTERS.includes(this.currentCharecter)) {
+      } else if(this.currentCharecter === "!") {
+        tokens.push(this.makeNotEquals())
+      } else if (this.currentCharecter === "=") {
+        tokens.push(this.makeEquals())
+      } else if (this.currentCharecter === "<") {
+        tokens.push(this.makeLessThan());
+      } else if (this.currentCharecter === ">") {
+        tokens.push(this.makeGreaterthan());
+      } else if (this.currentCharecter === "&") {
+        const { token, error } = this.makeAnd();
+        if(error) {
+          errors.push(error);
+          return { errors };
+        }
+        tokens.push(token!)
+      } else if (this.currentCharecter === "|") {
+        const { token, error } = this.makeOr();
+        if(error) {
+          errors.push(error);
+          return { errors };
+        }
+        tokens.push(token!)
+      } else if (ASCII_LETTERS.includes(this.currentCharecter)) {
         tokens.push(this.makeIdentifier());
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
@@ -89,10 +115,87 @@ export class Lexer {
     return { tokens };
   }
 
+  public makeAnd(): { token?: Token, error?: Err } {
+    const start = this.position.clone();
+    this.advance();
+
+    if(this.currentCharecter === "&") {
+      this.advance();
+      return { token: new Token(KEYWORD, "and", start, this.position) }
+    }
+    
+    this.advance();
+    return { error: new ExcpectedChareterError(start, this.position, "Expected '&' after '&'") }
+  }
+
+  public makeOr(): { token?: Token, error?: Err } {
+    const start = this.position.clone();
+    this.advance();
+    if(this.currentCharecter === "|") {
+      this.advance();
+      return { token: new Token(KEYWORD, "or", start, this.position) }
+    }
+    this.advance();
+    return { error: new ExcpectedChareterError(start, this.position, "Expected '|' after '|'") }
+  }
+
+  public makeNotEquals(): Token {
+    const start = this.position.clone();
+    this.advance();
+
+    if(this.currentCharecter === "=") {
+      this.advance();
+      return new Token(NOT_EQUALS, null, start, this.position)
+    }
+
+    this.advance();
+    return new Token(KEYWORD, "not", start, this.position);
+  }
+
+  public makeEquals(): Token {
+    const start = this.position.clone();
+    this.advance();
+
+    if(this.currentCharecter === "=") {
+      this.advance();
+      return new Token(DOUBLE_EQUALS, null, start, this.position);
+    }
+
+    this.advance();
+    return new Token(EQUALS, null, start, this.position)
+  }
+
+  public makeLessThan(): Token {
+    const start = this.position.clone();
+    this.advance();
+
+    if(this.currentCharecter === "=") {
+      this.advance();
+      return new Token(LESS_THAN_EQUALS, null, start, this.position);
+    }
+    this.advance();
+    return new Token(LESS_THAN, null, start, this.position)
+  }
+  
+  public makeGreaterthan(): Token {
+    const start = this.position.clone();
+    this.advance();
+
+    if(this.currentCharecter === "=") {
+      this.advance();
+      return new Token(GREATER_THAN_EQUALS, null, start, this.position);
+    }
+    this.advance();
+    return new Token(GREATER_THAN, null, start, this.position)
+  }
+
   public makeIdentifier(): Token {
     let identifier = "";
     const start = this.position.clone();
-    while(this.currentCharecter !== null && ASCII_LETTERS_AND_DIGITS.includes(this.currentCharecter)) {
+    while (
+      this.currentCharecter !== null &&
+      ASCII_LETTERS_AND_DIGITS.includes(this.currentCharecter)
+    ) {
       identifier += this.currentCharecter;
       this.advance();
     }

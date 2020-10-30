@@ -87,9 +87,113 @@ export class Number {
     }
   }
 
+  public equals(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value === other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public notEquals(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value !== other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public lessThan(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value < other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public greaterThan(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value > other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public lessThanEquals(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value <= other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public greaterThanEquals(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(this.value >= other.value)).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public and(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(Boolean(this.value && other.value))).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public or(
+    other: Number,
+  ): { result: Number | null; error: Err | null } | undefined {
+    if (other instanceof Number) {
+      return {
+        result: new Number(this.numberToBoolean(Boolean(this.value || other.value))).setContext(this.context),
+        error: null,
+      };
+    }
+  }
+
+  public not(): { result: Number | null; error: Err | null } {
+    return {
+        result: new Number(this.numberToBoolean(Boolean(!this.value))).setContext(this.context),
+        error: null,
+      };
+  }
+
   public setContext(context: Context | null = null) {
     this.context = context;
     return this;
+  }
+
+  public clone() {
+    return new Number(this.value).setPosition(this.positionStart, this.positionEnd).setContext(this.context);
+  }
+
+  public numberToBoolean(boo: boolean): number {
+    if(boo == true) return 1;
+    return 0;
   }
 
   public represent() {

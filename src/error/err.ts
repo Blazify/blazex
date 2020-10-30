@@ -10,6 +10,7 @@ export class Err {
   ) {}
 
   public formatted(): string {
-    return `${this.name}: ${this.description}\nFile ${this.positionStart.fileName}, line ${this.positionStart.line + 1}`;
+    return `${this.name}: ${this.description}\nFile ${this.positionStart.fileName}, line ${this
+      .positionStart.line + 1}`;
   }
 }

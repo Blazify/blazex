@@ -12,6 +12,12 @@ export const POWER = "POWER";
 export const KEYWORD = "KEYWORD";
 export const IDENTIFIER = "IDENTIFIER";
 export const EQUALS = "EQUALS"
+export const DOUBLE_EQUALS = "DOUBLE_EQUALS"
+export const NOT_EQUALS = "NOT_EQUALS"
+export const LESS_THAN_EQUALS = "LESS_THAN_EQUALS"
+export const GREATER_THAN_EQUALS = "GREATER_THAN_EQUALS"
+export const LESS_THAN = "LESS_THAN"
+export const GREATER_THAN = "GREATER_THAN"
 export const EOF = "EOF";
 
 export type TYPES =
@@ -27,11 +33,20 @@ export type TYPES =
   | "KEYWORD" // var
   | "IDENTIFIER" // var_name
   | "EQUALS" // =
+  | "DOUBLE_EQUALS"
+  | "NOT_EQUALS"
+  | "LESS_THAN_EQUALS"
+  | "GREATER_THAN_EQUALS"
+  | "LESS_THAN"
+  | "GREATER_THAN"
   | "EOF"; // end
 
 export const ASCII_LETTERS_AND_DIGITS = "_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
-export const ASCII_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
+export const ASCII_LETTERS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
 
 export const KEYWORDS = [
-  "var"
+  "var",
+  "and",
+  "or",
+  "not"
 ]
