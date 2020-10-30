@@ -1,0 +1,25 @@
+Grammer Rules of the Parser:
+
+Methods                                                : Priority (Bottom to above)             
+
+expr 						       : KEYWORD:var IDENTIFIER EQUALS expr
+     						       : comp-expr ((KEYWORD:and || KEYWORD:or) compExpr())
+
+compExpr 					       : KEYWORD:not compExpr
+                                                       : arith-expr ((DOUBLE_EQUALS || LESS_THAN || GREATER_THAN || LESS_THAN_EQUALS || GREATER_THAN_EQUALS) arithExpr())
+
+arithExpr                                              : term ((PLUS || MINUS) term())
+
+term	                                               : factor ((MULTIPLY || DIVIDE) factor())
+
+factor	                                               : (PLUS|MINUS) factor()
+	                                               : power()
+
+power	                                               : atom() (POWER factor)
+
+atom 	                                               : INT || FLOAT || IDENTIFIER
+	                                               : LEFT_PARENTHESIS expr RIGHT_PARENTHEIS
+
+Returns a node (BinOpNode, UnaryOpNode, NumberNode, VarAssignNode, VarAcessNode)
+
+For now the node is passed to the interpreter for the result but in future it'll be replaced with a compiler...
