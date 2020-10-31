@@ -211,6 +211,10 @@ export class Number {
     return 0;
   }
 
+  public get type(): "Int" | "Float" {
+    return this.value.toString().includes(".") ? "Float" : "Int";
+  }
+
   public represent() {
     return `${this.value}`;
   }

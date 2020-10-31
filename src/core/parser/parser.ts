@@ -206,6 +206,7 @@ export class Parser {
 
     const expr = res.register(this.expr());
     if (res.error) return res;
+    const type = expr.type;
     cases.push([condition, expr]);
 
     while (this.currentToken.match(KEYWORD, "else")) {
@@ -232,17 +233,19 @@ export class Parser {
         this.advance();
 
         const ifElseExpr = res.register(this.expr());
+        if(ifElseExpr.type !== type) return res.failure(new InvalidTypeError(ifElseCondition.positionStart, ifElseCondition.positionEnd, `${ifElseExpr.type} doesn't satisfy ${type}`))
         cases.push([ifElseCondition, ifElseExpr]);
       } else {
         const elseExpr = res.register(this.expr());
         if (res.error) return res;
+        if(elseExpr.type !== type) return res.failure(new InvalidTypeError(elseExpr.positionStart, elseExpr.positionEnd, `${elseExpr.type} doesn't satisfy ${type}`))
 
         elseCase = elseExpr;
         break;
       }
     }
 
-    return res.success(new IfNode(cases, elseCase));
+    return res.success(new IfNode(cases, elseCase, type));
   }
 
   public expr(): ParseResult {
@@ -294,9 +297,9 @@ export class Parser {
       res.registerAdvancement();
       this.advance();
 
-      const expr = res.register(this.expr()) as NumberNode;
+      const expr = res.register(this.expr());
       if (res.error) return res;
-      if(expr.token ? expr.token.type : type.value !== type.value) return res.failure(new InvalidSyntaxError(varName.positionStart!, this.currentToken.positionEnd!, `${expr.token.value} is not a type of ${type.value}`))
+      if((expr.type == IDENTIFIER) ? expr.type : type.value !== type.value) return res.failure(new InvalidTypeError(varName.positionStart!, this.currentToken.positionEnd!, `${expr.type} is not a type of ${type.value}`))
       return res.success(new VarAssignNode(varName, expr, type.value! as any, false));
     }
 

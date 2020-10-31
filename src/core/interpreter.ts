@@ -114,6 +114,9 @@ export class Interpreter {
     if (res.error) {
       return res;
     }
+
+    if(node.type !== varValue?.type) return res.failure(new RuntimeError(node.positionStart, node.positionEnd, `${varValue?.type} is not assignable to the type of ${node.type}`, context))
+    
     const get = context.symbolTable?.get(varName as string)
     if(get && !get.reassignable) return res.failure(new RuntimeError(node.positionStart, node.positionEnd, "Cannot Reassign a constant", context))
     context.symbolTable?.set(varName as string, new Variable<MyNumber>(varValue!, node.type, node.reassignable));
