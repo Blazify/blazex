@@ -1,5 +1,7 @@
 import { InvalidSyntaxError } from "../../error/invalidsyntax.ts";
+import { InvalidTypeError } from "../../error/typeerror.ts";
 import {
+  COLON,
   DIVIDE,
   DOUBLE_EQUALS,
   EOF,
@@ -14,11 +16,14 @@ import {
   LESS_THAN_EQUALS,
   MINUS,
   MULTIPLY,
+  Nodes,
   NOT_EQUALS,
   PLUS,
   POWER,
+  TYPES
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
+import { IfNode } from "../node/if_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
 import { UnaryOpNode } from "../node/unary_op_node.ts";
 import { VarAcessNode } from "../node/var_access_node.ts";
@@ -35,6 +40,7 @@ export class Parser {
 
   public parse() {
     const res = this.expr();
+    this.advance();
     if (!res.error && this.currentToken.type !== EOF) {
       return res.failure(
         new InvalidSyntaxError(
@@ -87,6 +93,10 @@ export class Parser {
           ),
         );
       }
+    } else if (this.currentToken.match(KEYWORD, "if")) {
+      const ifExpr = res.register(this.ifExpr());
+      if (res.error) return res;
+      return res.success(ifExpr);
     }
 
     return res.failure(
@@ -160,9 +170,84 @@ export class Parser {
     return res.success(left);
   }
 
+  public ifExpr(): ParseResult {
+    const res = new ParseResult();
+    const cases: [Nodes, Nodes][] = [];
+    let elseCase: Nodes | null = null;
+
+    if (!(this.currentToken.match(KEYWORD, "if"))) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected if keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const condition = res.register(this.expr());
+    if (res.error) return res;
+
+    if (!(this.currentToken.match(KEYWORD, "then"))) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected then keyword after if",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const expr = res.register(this.expr());
+    if (res.error) return res;
+    cases.push([condition, expr]);
+
+    while (this.currentToken.match(KEYWORD, "else")) {
+      res.registerAdvancement();
+      this.advance();
+
+      if (this.currentToken.match(KEYWORD, "if")) {
+        res.registerAdvancement();
+        this.advance();
+
+        const ifElseCondition = res.register(this.expr());
+        if (res.error) return res;
+
+        if (!(this.currentToken.match(KEYWORD, "then"))) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected then keyword after if",
+            ),
+          );
+        }
+        res.registerAdvancement();
+        this.advance();
+
+        const ifElseExpr = res.register(this.expr());
+        cases.push([ifElseCondition, ifElseExpr]);
+      } else {
+        const elseExpr = res.register(this.expr());
+        if (res.error) return res;
+
+        elseCase = elseExpr;
+        break;
+      }
+    }
+
+    return res.success(new IfNode(cases, elseCase));
+  }
+
   public expr(): ParseResult {
     const res = new ParseResult();
-    if (this.currentToken.match(KEYWORD, "var")) {
+    if (this.currentToken.match(KEYWORD, "val")) {
       res.registerAdvancement();
       this.advance();
 
@@ -181,12 +266,12 @@ export class Parser {
       this.advance();
 
       // @ts-expect-error // due to some stupid reasons vscode vomits error at me (-,-)
-      if (this.currentToken.type !== EQUALS) {
+      if (this.currentToken.type !== COLON) {
         return res.failure(
           new InvalidSyntaxError(
             this.currentToken.positionStart!,
             this.currentToken.positionEnd!,
-            "Expected '='",
+            "Expected ':'",
           ),
         );
       }
@@ -194,9 +279,25 @@ export class Parser {
       res.registerAdvancement();
       this.advance();
 
-      const expr = res.register(this.expr());
+      const type = this.currentToken;
+      if(!(type.match(IDENTIFIER, INT) || type.match(IDENTIFIER, FLOAT))) {
+        return res.failure(new InvalidTypeError(type.positionStart!, type.positionEnd!, "Unknown Type"))
+      }
+
+      res.registerAdvancement();
+      this.advance();
+
+      if(this.currentToken.type !== EQUALS) {
+        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '='"))
+      }
+
+      res.registerAdvancement();
+      this.advance();
+
+      const expr = res.register(this.expr()) as NumberNode;
       if (res.error) return res;
-      return res.success(new VarAssignNode(varName, expr));
+      if(expr.token ? expr.token.type : type.value !== type.value) return res.failure(new InvalidSyntaxError(varName.positionStart!, this.currentToken.positionEnd!, `${expr.token.value} is not a type of ${type.value}`))
+      return res.success(new VarAssignNode(varName, expr, type.value! as any, false));
     }
 
     let left = res.register(
@@ -204,7 +305,10 @@ export class Parser {
     )!;
     if (res.error) return res;
 
-    while (this.currentToken.match(KEYWORD, "and") || this.currentToken.match(KEYWORD, "or")) {
+    while (
+      this.currentToken.match(KEYWORD, "and") ||
+      this.currentToken.match(KEYWORD, "or")
+    ) {
       const opToken = this.currentToken;
       res.registerAdvancement();
       this.advance();
@@ -229,17 +333,17 @@ export class Parser {
   }
 
   public compExpr(): ParseResult {
-    const res = new ParseResult()
+    const res = new ParseResult();
 
-    if(this.currentToken.match(KEYWORD, "not")) {
+    if (this.currentToken.match(KEYWORD, "not")) {
       const opToken = this.currentToken;
       res.registerAdvancement();
       this.advance();
 
       const node = res.register(this.compExpr());
-      if(res.error) return res;
+      if (res.error) return res;
 
-      return res.success(new UnaryOpNode(opToken, node))
+      return res.success(new UnaryOpNode(opToken, node));
     }
 
     let left = res.register(
@@ -247,7 +351,16 @@ export class Parser {
     )!;
     if (res.error) return res;
 
-    while ([DOUBLE_EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, LESS_THAN_EQUALS, GREATER_THAN_EQUALS].includes(this.currentToken.type)) {
+    while (
+      [
+        DOUBLE_EQUALS,
+        NOT_EQUALS,
+        LESS_THAN,
+        GREATER_THAN,
+        LESS_THAN_EQUALS,
+        GREATER_THAN_EQUALS,
+      ].includes(this.currentToken.type)
+    ) {
       const opToken = this.currentToken;
       res.registerAdvancement();
       this.advance();
@@ -257,7 +370,15 @@ export class Parser {
     }
 
     const node = res.register(left);
-    if(res.error) return res.failure(new InvalidSyntaxError(node.positionStart, node.positionEnd, "A Int or Float or Identifier, '+', '-', '(', 'not', '!' was Expected"));
+    if (res.error) {
+      return res.failure(
+        new InvalidSyntaxError(
+          node.positionStart,
+          node.positionEnd,
+          "A Int or Float or Identifier, '+', '-', '(', 'not', '!' was Expected",
+        ),
+      );
+    }
 
     return res.success(node);
   }

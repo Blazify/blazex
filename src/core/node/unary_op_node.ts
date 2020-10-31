@@ -1,4 +1,5 @@
 import { Position } from "../../error/position.ts";
+import { Nodes } from "../../utils/constants.ts";
 import { ParseResult } from "../parser/parse_result.ts";
 import { Token } from "../token.ts";
 import { BinOpNode } from "./binary_op_node.ts";
@@ -11,7 +12,7 @@ export class UnaryOpNode {
   public positionEnd: Position;
   constructor(
     public opToken: Token,
-    public node: BinOpNode | NumberNode | UnaryOpNode | VarAcessNode | VarAssignNode,
+    public node: Nodes,
   ) {
     this.positionStart = this.node.positionStart;
     this.positionEnd = this.node.positionEnd;

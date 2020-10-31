@@ -32,7 +32,9 @@ bzs filename.bzs
 - [x] Binary Operators
 - [x] Unary Operators
 - [x] Number Node
-- [ ] Variables
+- [x] Variables
+- [x] Comparisions
+- [x] If-Else Statements
 - [ ] Strings
 - [ ] Functions
 - [ ] Classes

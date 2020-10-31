@@ -5,11 +5,11 @@ import { Number } from "./core/number.ts";
 import { Parser } from "./core/parser/parser.ts";
 import { Err } from "./error/err.ts";
 import { SymbolTable } from "./utils/symbol_table.ts";
-
+import { Variable } from "./utils/variable.ts";
 
 const global = new SymbolTable();
-global.set("true", new Number(1));
-global.set("false", new Number(0));
+global.set("true", new Variable<Number>(new Number(1), "Int", false));
+global.set("false", new Variable<Number>(new Number(1), "Float", false));
 const context = new Context("<Global>");
 context.symbolTable = global;
 
@@ -31,11 +31,11 @@ export function run(
       console.log(errors.map((error) => error.formatted()).join(", \n"));
       return { errors };
     }
-    
+
     const { node, error } = new Parser(tokens!).parse();
     if (error) {
       console.error(error.formatted());
-      return { error }
+      return { error };
     }
 
     const interpreter = new Interpreter();
@@ -44,10 +44,7 @@ export function run(
       console.log(rterr.formatted());
       return { error: rterr };
     }
-    console.log(
-      "Interpreted Output:",
-      value?.represent() ?? null,
-    );
+    console.log(value?.represent());
     return { interpreted: value! };
   } catch (e) {
     throw "Unexpected Error Given by Deno.\nPlease open a issue at https://github.com/RoMeAh/blazescript/issues/ with description of\n" +
@@ -68,7 +65,9 @@ if (!Deno.args[0]) {
       if (args[0] == "exit\r\n") {
         Deno.exit();
       } else {
-        console.log("Unknown command!");
+        await Deno.stdout.write(
+          new TextEncoder().encode(`Unknown command ${args.join(" ")}`),
+        );
       }
     }
   }

@@ -1,9 +1,6 @@
 import { Position } from "../../error/position.ts";
+import { Nodes, TYPES } from "../../utils/constants.ts";
 import { Token } from "../token.ts";
-import { BinOpNode } from "./binary_op_node.ts";
-import { NumberNode } from "./number_nodes.ts";
-import { UnaryOpNode } from "./unary_op_node.ts";
-import { VarAcessNode } from "./var_access_node.ts";
 
 export class VarAssignNode {
   public positionStart: Position;
@@ -11,7 +8,9 @@ export class VarAssignNode {
 
   constructor(
     public name: Token,
-    public value: VarAcessNode | VarAssignNode | UnaryOpNode | NumberNode | BinOpNode,
+    public value: Nodes,
+    public type: TYPES,
+    public reassignable: boolean
   ) {
     this.positionStart = name.positionStart!;
     this.positionEnd = value.positionEnd!;

@@ -92,7 +92,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value === other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value === other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -103,7 +104,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value !== other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value !== other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -114,7 +116,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value < other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value < other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -125,7 +128,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value > other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value > other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -136,7 +140,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value <= other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value <= other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -147,7 +152,8 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(this.value >= other.value)).setContext(this.context),
+        result: new Number(this.numberToBoolean(this.value >= other.value))
+          .setContext(this.context),
         error: null,
       };
     }
@@ -158,7 +164,9 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(Boolean(this.value && other.value))).setContext(this.context),
+        result: new Number(
+          this.numberToBoolean(Boolean(this.value && other.value)),
+        ).setContext(this.context),
         error: null,
       };
     }
@@ -169,7 +177,9 @@ export class Number {
   ): { result: Number | null; error: Err | null } | undefined {
     if (other instanceof Number) {
       return {
-        result: new Number(this.numberToBoolean(Boolean(this.value || other.value))).setContext(this.context),
+        result: new Number(
+          this.numberToBoolean(Boolean(this.value || other.value)),
+        ).setContext(this.context),
         error: null,
       };
     }
@@ -177,9 +187,11 @@ export class Number {
 
   public not(): { result: Number | null; error: Err | null } {
     return {
-        result: new Number(this.numberToBoolean(Boolean(!this.value))).setContext(this.context),
-        error: null,
-      };
+      result: new Number(this.numberToBoolean(Boolean(!this.value))).setContext(
+        this.context,
+      ),
+      error: null,
+    };
   }
 
   public setContext(context: Context | null = null) {
@@ -188,11 +200,14 @@ export class Number {
   }
 
   public clone() {
-    return new Number(this.value).setPosition(this.positionStart, this.positionEnd).setContext(this.context);
+    return new Number(this.value).setPosition(
+      this.positionStart,
+      this.positionEnd,
+    ).setContext(this.context);
   }
 
   public numberToBoolean(boo: boolean): number {
-    if(boo == true) return 1;
+    if (boo == true) return 1;
     return 0;
   }
 
