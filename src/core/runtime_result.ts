@@ -1,11 +1,9 @@
 import { Err } from "../error/err.ts";
-import { BinOpNode } from "./node/binary_op_node.ts";
-import { NumberNode } from "./node/number_nodes.ts";
-import { UnaryOpNode } from "./node/unary_op_node.ts";
-import { Number } from "./number.ts";
+import { BaseType } from "./types/base_type.ts";
+import { Number } from "./types/number.ts";
 
 export class RuntimeResult {
-  public value: Number | null = null;
+  public value: BaseType | null = null;
   public error: Err | null = null;
 
   public register(res: RuntimeResult | Number) {
@@ -17,8 +15,8 @@ export class RuntimeResult {
     return this.value;
   }
 
-  public success(value: Number) {
-    this.value = value;
+  public success(value: BaseType) {
+    this.value = value as unknown as Number;
     return this;
   }
 

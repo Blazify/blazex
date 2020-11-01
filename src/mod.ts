@@ -1,8 +1,8 @@
 import { Context } from "./core/context.ts";
 import { Interpreter } from "./core/interpreter.ts";
 import { Lexer } from "./core/lexer.ts";
-import { Number } from "./core/number.ts";
 import { Parser } from "./core/parser/parser.ts";
+import { BaseType } from "./core/types/base_type.ts";
 import { Err } from "./error/err.ts";
 import { SymbolTable } from "./utils/symbol_table.ts";
 import { Variable } from "./utils/variable.ts";
@@ -21,7 +21,11 @@ context.symbolTable = global;
 export function run(
   name: string,
   code?: string,
-): { interpreted?: Number | null; error?: Err | null; errors?: Err[] | null } {
+): {
+  interpreted?: BaseType | null;
+  error?: Err | null;
+  errors?: Err[] | null;
+} {
   try {
     const { tokens, errors } = new Lexer(
       name,

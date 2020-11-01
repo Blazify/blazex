@@ -1,7 +1,9 @@
 import { InvalidSyntaxError } from "../../error/invalidsyntax.ts";
 import { InvalidTypeError } from "../../error/typeerror.ts";
 import {
+  ARROW,
   COLON,
+  COMMA,
   DIVIDE,
   DOUBLE_EQUALS,
   EOF,
@@ -13,6 +15,7 @@ import {
   INT,
   KEYWORD,
   LangTypes,
+  LEFT_PARENTHESIS,
   LESS_THAN,
   LESS_THAN_EQUALS,
   MINUS,
@@ -21,10 +24,13 @@ import {
   NOT_EQUALS,
   PLUS,
   POWER,
+  RIGHT_PARENTHESIS,
   TYPES,
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
+import { CallNode } from "../node/call_node.ts";
 import { ForNode } from "../node/for_node.ts";
+import { FuncDefNode } from "../node/func_def.ts";
 import { IfNode } from "../node/if_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
 import { UnaryOpNode } from "../node/unary_op_node.ts";
@@ -44,7 +50,10 @@ export class Parser {
   public parse() {
     const res = this.expr();
     this.advance();
-    if (!res.error && this.currentToken.type !== EOF) {
+    if (
+      !res.error && this.currentToken.type !== EOF &&
+      this.currentToken.type !== INT
+    ) {
       return res.failure(
         new InvalidSyntaxError(
           this.currentToken.positionStart!,
@@ -108,6 +117,10 @@ export class Parser {
       const whileExpr = res.register(this.whileExpr());
       if (res.error) return res;
       return res.success(whileExpr);
+    } else if (this.currentToken.match(KEYWORD, "fun")) {
+      const funDef = res.register(this.funDef());
+      if (res.error) return res;
+      return res.success(funDef);
     }
 
     return res.failure(
@@ -119,88 +132,215 @@ export class Parser {
     );
   }
 
-  public power(): ParseResult {
+  public call(): ParseResult {
     const res = new ParseResult();
-    let left = res.register(
-      this.atom()!,
-    )!;
+    const atom = res.register(this.atom());
     if (res.error) return res;
+    const argNodes: Nodes[] = [];
 
-    while (this.currentToken.type === POWER) {
-      const opToken = this.currentToken;
+    if (this.currentToken.type === LEFT_PARENTHESIS) {
       res.registerAdvancement();
       this.advance();
-      const right = res.register(this.factor()!);
-      if (res.error) return res;
-      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+      // @ts-expect-error
+      if (this.currentToken.type === RIGHT_PARENTHESIS) {
+        res.registerAdvancement();
+        this.advance();
+      } else {
+        argNodes.push(res.register(this.expr()));
+        if (res.error) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected ')', 'var', int, float, identifier, '+', '-' or '('",
+            ),
+          );
+        }
 
-      } else if (right.type !== left.type) {
-        return res.failure(
-          new InvalidTypeError(
-            left.positionStart,
-            right.positionStart,
-            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
-          ),
-        );
+        // @ts-expect-error
+        while (this.currentToken.type === COMMA) {
+          res.registerAdvancement();
+          this.advance();
+          argNodes.push(res.register(this.expr()));
+        }
+
+        // @ts-expect-error
+        if (this.currentToken.type !== RIGHT_PARENTHESIS) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected ')' or ','",
+            ),
+          );
+        }
       }
-      left = new BinOpNode(left, opToken, right);
+      return res.success(new CallNode(atom, argNodes));
     }
 
-    return res.success(left);
+    return res.success(atom);
   }
 
-  public factor(): ParseResult {
+  public funDef(): ParseResult {
     const res = new ParseResult();
-    const token = this.currentToken;
+    if (!(this.currentToken.match(KEYWORD, "fun"))) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected 'fun' keyword",
+        ),
+      );
+    }
 
-    if ([PLUS, MINUS].includes(token.type)) {
+    res.registerAdvancement();
+    this.advance();
+
+    let varNameToken = undefined;
+    if (this.currentToken.type === IDENTIFIER) {
+      varNameToken = this.currentToken;
       res.registerAdvancement();
       this.advance();
-      const fac = res.register(this.factor());
-      if (!fac) {
+
+      // @ts-expect-error
+      if (this.currentToken.type !== LEFT_PARENTHESIS) {
         return res.failure(
           new InvalidSyntaxError(
-            token.positionStart!,
+            this.currentToken.positionStart!,
             this.currentToken.positionEnd!,
-            "Expected A Number after a Unary Operator",
+            "Expected '('",
           ),
         );
       }
-      if (res.error) return res;
-      return res.success(new UnaryOpNode(token, fac));
+    } else {
+      if (this.currentToken.type !== LEFT_PARENTHESIS) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected '(' or identifier",
+          ),
+        );
+      }
     }
 
-    return this.power();
-  }
+    res.registerAdvancement();
+    this.advance();
 
-  public term(): ParseResult {
-    const res = new ParseResult();
-    let left = res.register(
-      this.factor()!,
-    )!;
-    if (res.error) return res;
+    const argNameTokens: Token[] = [];
 
-    while ([MULTIPLY, DIVIDE].includes(this.currentToken.type)) {
-      const opToken = this.currentToken;
+    // @ts-expect-error
+    if (this.currentToken.type === IDENTIFIER) {
+      const name = this.currentToken;
+
       res.registerAdvancement();
       this.advance();
-      const right = res.register(this.factor()!);
-      if (res.error) return res;
-      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
 
-      } else if (right.type !== left.type) {
+      if (this.currentToken.type === COLON) {
+        res.registerAdvancement();
+        this.advance();
+
+        if (LangTypes.includes(this.currentToken.value as any)) {
+          name.type = this.currentToken.value as TYPES;
+        } else {
+          return res.failure(
+            new InvalidTypeError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Unknown Type",
+            ),
+          );
+        }
+        argNameTokens.push(name);
+
+        res.registerAdvancement();
+        this.advance();
+      }
+
+      while (this.currentToken.type === COMMA) {
+        res.registerAdvancement();
+        this.advance();
+
+        if (this.currentToken.type === IDENTIFIER) {
+          const nameE = this.currentToken;
+
+          res.registerAdvancement();
+          this.advance();
+
+          if (this.currentToken.type === COLON) {
+            res.registerAdvancement();
+            this.advance();
+
+            if (LangTypes.includes(this.currentToken.value as any)) {
+              nameE.type = this.currentToken.value as TYPES;
+            } else {
+              return res.failure(
+                new InvalidTypeError(
+                  this.currentToken.positionStart!,
+                  this.currentToken.positionEnd!,
+                  "Unknown Type",
+                ),
+              );
+            }
+
+            argNameTokens.push(nameE);
+
+            res.registerAdvancement();
+            this.advance();
+          }
+        } else {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected Identifier",
+            ),
+          );
+        }
+      }
+
+      if (this.currentToken.type !== RIGHT_PARENTHESIS) {
         return res.failure(
-          new InvalidTypeError(
-            left.positionStart,
-            right.positionStart,
-            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected ')' or ','",
           ),
         );
       }
-      left = new BinOpNode(left, opToken, right);
+    } else {
+      // @ts-expect-error
+      if (this.currentToken.type !== RIGHT_PARENTHESIS) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected ')' or identifier",
+          ),
+        );
+      }
     }
 
-    return res.success(left);
+    res.registerAdvancement();
+    this.advance();
+
+    if (this.currentToken.type !== ARROW) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected '=>'",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const body = res.register(this.expr());
+    if (res.error) return res;
+
+    return res.success(new FuncDefNode(body, varNameToken, argNameTokens));
   }
 
   public forExpr(): ParseResult {
@@ -236,70 +376,22 @@ export class Parser {
     let startValue: Nodes;
     let type: TYPES;
     // @ts-expect-error
-    if (this.currentToken.type !== COLON) {
-      // @ts-expect-error
-      if (this.currentToken.type !== EQUALS) {
-        return res.failure(
-          new InvalidSyntaxError(
-            this.currentToken.positionStart!,
-            this.currentToken.positionEnd!,
-            "Expected ':' or '='",
-          ),
-        );
-      } else {
-        res.registerAdvancement();
-        this.advance();
-
-        startValue = res.register(this.expr());
-        if (res.error) return res;
-        if (LangTypes.includes(startValue.type as any)) {
-          type = startValue.type;
-        } else {
-          return res.failure(
-            new InvalidTypeError(
-              this.currentToken.positionStart!,
-              this.currentToken.positionEnd!,
-              "Unknown type",
-            ),
-          );
-        }
-      }
+    if (this.currentToken.type !== EQUALS) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected ':' or '='",
+        ),
+      );
     } else {
       res.registerAdvancement();
       this.advance();
 
-      if (LangTypes.includes(this.currentToken.value as any)) {
-        type = this.currentToken.value as any;
-
-        res.registerAdvancement();
-        this.advance();
-
-        if (this.currentToken.type !== EQUALS) {
-          return res.failure(
-            new InvalidSyntaxError(
-              this.currentToken.positionStart!,
-              this.currentToken.positionEnd!,
-              "Expected '='",
-            ),
-          );
-        }
-
-        res.registerAdvancement();
-        this.advance();
-
-        startValue = res.register(this.expr());
-        if (res.error) return res;
-        if (
-          (startValue.type == IDENTIFIER) ? startValue.type : type !== type
-        ) {
-          return res.failure(
-            new InvalidTypeError(
-              varName.positionStart!,
-              this.currentToken.positionEnd!,
-              `${startValue.type} is not a type of ${type}`,
-            ),
-          );
-        }
+      startValue = res.register(this.expr());
+      if (res.error) return res;
+      if (LangTypes.includes(startValue.type as any)) {
+        type = startValue.type;
       } else {
         return res.failure(
           new InvalidTypeError(
@@ -497,6 +589,88 @@ export class Parser {
     }
 
     return res.success(new IfNode(cases, elseCase, type));
+  }
+
+  public power(): ParseResult {
+    const res = new ParseResult();
+    let left = res.register(
+      this.call()!,
+    )!;
+    if (res.error) return res;
+
+    while (this.currentToken.type === POWER) {
+      const opToken = this.currentToken;
+      res.registerAdvancement();
+      this.advance();
+      const right = res.register(this.factor()!);
+      if (res.error) return res;
+      if (right.type === IDENTIFIER || left.type === IDENTIFIER) {
+      } else if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
+      left = new BinOpNode(left, opToken, right);
+    }
+
+    return res.success(left);
+  }
+
+  public factor(): ParseResult {
+    const res = new ParseResult();
+    const token = this.currentToken;
+
+    if ([PLUS, MINUS].includes(token.type)) {
+      res.registerAdvancement();
+      this.advance();
+      const fac = res.register(this.factor());
+      if (!fac) {
+        return res.failure(
+          new InvalidSyntaxError(
+            token.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected A Number after a Unary Operator",
+          ),
+        );
+      }
+      if (res.error) return res;
+      return res.success(new UnaryOpNode(token, fac));
+    }
+
+    return this.power();
+  }
+
+  public term(): ParseResult {
+    const res = new ParseResult();
+    let left = res.register(
+      this.factor()!,
+    )!;
+    if (res.error) return res;
+
+    while ([MULTIPLY, DIVIDE].includes(this.currentToken.type)) {
+      const opToken = this.currentToken;
+      res.registerAdvancement();
+      this.advance();
+      const right = res.register(this.factor()!);
+      if (res.error) return res;
+      if (right.type === IDENTIFIER || left.type === IDENTIFIER) {
+      } else if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
+      left = new BinOpNode(left, opToken, right);
+    }
+
+    return res.success(left);
   }
 
   public expr(): ParseResult {
@@ -711,8 +885,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.compExpr());
       if (res.error) return res;
-      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
-
+      if (right.type === IDENTIFIER || left.type === IDENTIFIER) {
       } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
@@ -774,8 +947,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.arithExpr());
       if (res.error) return res;
-      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
-
+      if (right.type === IDENTIFIER || left.type === IDENTIFIER) {
       } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
@@ -815,8 +987,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.term());
       if (res.error) return res;
-      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
-
+      if (right.type === IDENTIFIER || left.type === IDENTIFIER) {
       } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(

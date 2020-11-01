@@ -7,7 +7,9 @@ export class VarAcessNode {
   public positionEnd: Position;
   public type: TYPES;
   constructor(public token: Token) {
-    this.type = LangTypes.includes(token.value as any) ? token.value as TYPES: "IDENTIFIER";
+    this.type = LangTypes.includes(token.value as any)
+      ? token.value as TYPES
+      : "IDENTIFIER";
     this.positionStart = token.positionStart!;
     this.positionEnd = token.positionEnd!;
   }

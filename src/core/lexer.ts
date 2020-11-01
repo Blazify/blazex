@@ -3,9 +3,11 @@ import { ExcpectedChareterError } from "../error/excpectedchar.ts";
 import { IllegalCharecterError } from "../error/illegalchar.ts";
 import { Position } from "../error/position.ts";
 import {
+  ARROW,
   ASCII_LETTERS,
   ASCII_LETTERS_AND_DIGITS,
   COLON,
+  COMMA,
   DIGITS,
   DIVIDE,
   DOUBLE_EQUALS,
@@ -103,6 +105,9 @@ export class Lexer {
       } else if (this.currentCharecter === ":") {
         tokens.push(new Token(COLON, null, this.position));
         this.advance();
+      } else if (this.currentCharecter === ",") {
+        tokens.push(new Token(COMMA, null, this.position));
+        this.advance();
       } else {
         const start = this.position.clone();
         const char = this.currentCharecter;
@@ -175,6 +180,9 @@ export class Lexer {
     if (this.currentCharecter === "=") {
       this.advance();
       return new Token(DOUBLE_EQUALS, null, start, this.position);
+    } else if (this.currentCharecter === ">") {
+      this.advance();
+      return new Token(ARROW, null, start, this.position);
     }
 
     this.advance();

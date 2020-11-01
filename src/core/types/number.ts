@@ -1,62 +1,62 @@
-import { Err } from "../error/err.ts";
-import { Position } from "../error/position.ts";
-import { RuntimeError } from "../error/runtimeerr.ts";
-import { Context } from "./context.ts";
+import { Err } from "../../error/err.ts";
+import { RuntimeError } from "../../error/runtimeerr.ts";
+import { BaseType } from "./base_type.ts";
 
-export class Number {
-  public positionStart!: Position | null;
-  public positionEnd!: Position | null;
-  public context!: Context | null;
-  constructor(public value: number) {
-    this.setPosition();
-    this.setContext();
+export class Number extends BaseType {
+  public get value(): number {
+    return this._value;
   }
 
-  public setPosition(
-    start: Position | null = null,
-    end: Position | null = null,
-  ) {
-    this.positionStart = start;
-    this.positionEnd = end;
-    return this;
+  public set value(value: number) {
+    this._value = value;
+  }
+
+  constructor(private _value: number) {
+    super();
   }
 
   public addTo(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.value + other.value).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.addTo(other);
     }
   }
 
   public subBy(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.value - other.value).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.subBy(other);
     }
   }
 
   public multiBy(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.value * other.value).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.multiBy(other);
     }
   }
 
   public divBy(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       if (other.value == 0) {
         return {
@@ -73,95 +73,111 @@ export class Number {
         result: new Number(this.value / other.value).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.divBy(other);
     }
   }
 
   public powBy(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.value ** other.value).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.powBy(other);
     }
   }
 
   public equals(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value === other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.equals(other);
     }
   }
 
   public notEquals(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value !== other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.notEquals(other);
     }
   }
 
   public lessThan(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value < other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.lessThan(other);
     }
   }
 
   public greaterThan(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value > other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.greaterThan(other);
     }
   }
 
   public lessThanEquals(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value <= other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.lessThanEquals(other);
     }
   }
 
   public greaterThanEquals(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(this.numberToBoolean(this.value >= other.value))
           .setContext(this.context),
         error: null,
       };
+    } else {
+      return super.greaterThanEquals(other);
     }
   }
 
   public and(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(
@@ -169,12 +185,14 @@ export class Number {
         ).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.and(other);
     }
   }
 
   public or(
     other: Number,
-  ): { result: Number | null; error: Err | null } | undefined {
+  ): { result: Number | null; error: Err | null } {
     if (other instanceof Number) {
       return {
         result: new Number(
@@ -182,6 +200,8 @@ export class Number {
         ).setContext(this.context),
         error: null,
       };
+    } else {
+      return super.or(other);
     }
   }
 
@@ -192,11 +212,6 @@ export class Number {
       ),
       error: null,
     };
-  }
-
-  public setContext(context: Context | null = null) {
-    this.context = context;
-    return this;
   }
 
   public clone() {

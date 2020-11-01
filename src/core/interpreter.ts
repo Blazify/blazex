@@ -25,8 +25,12 @@ import { UnaryOpNode } from "./node/unary_op_node.ts";
 import { VarAcessNode } from "./node/var_access_node.ts";
 import { VarAssignNode } from "./node/var_assign_node.ts";
 import { WhileNode } from "./node/while_node.ts";
-import { Number as MyNumber } from "./number.ts";
+import { Number as MyNumber } from "./types/number.ts";
 import { RuntimeResult } from "./runtime_result.ts";
+import { FuncDefNode } from "./node/func_def.ts";
+import { CallNode } from "./node/call_node.ts";
+import { BaseType } from "./types/base_type.ts";
+import { Function } from "./types/function.ts";
 
 export class Interpreter {
   public visit(
@@ -49,6 +53,10 @@ export class Interpreter {
       return this.visitForNode(node, context);
     } else if (node instanceof WhileNode) {
       return this.visitWhileNode(node, context);
+    } else if (node instanceof FuncDefNode) {
+      return this.visitFuncDefNode(node, context);
+    } else if (node instanceof CallNode) {
+      return this.visitCallNode(node, context);
     } else {
       return this.noVisitMethod() as unknown as RuntimeResult;
     }
@@ -58,20 +66,61 @@ export class Interpreter {
     throw "No visit method found for node type\n";
   }
 
+  public visitCallNode(node: CallNode, context: Context): RuntimeResult {
+    const res = new RuntimeResult();
+    const args = [];
+
+    let valueToCall = res.register(this.visit(node.nodeToCall, context));
+    if (res.error) return res;
+    valueToCall = valueToCall?.clone().setPosition(
+      node.positionStart,
+      node.positionEnd,
+    );
+
+    for (const arg of node.argNodes) {
+      args.push(res.register(this.visit(arg, context))!);
+      if (res.error) return res;
+    }
+
+    const value = res.register(valueToCall?.execute(args));
+    if (res.error) return res;
+
+    return res.success(value!);
+  }
+
+  public visitFuncDefNode(node: FuncDefNode, context: Context): RuntimeResult {
+    const res = new RuntimeResult();
+
+    const name = node.varName?.value;
+    const body = node.bodyNode;
+    const args = node.argNameTokens;
+
+    const value = new Function(name as string, body, args).setContext(context)
+      .setPosition(node.positionStart, node.positionEnd);
+    if (node.varName) {
+      context.symbolTable?.set(
+        name as string,
+        new Variable(value, value.type, false),
+      );
+    }
+
+    return res.success(value);
+  }
+
   public visitForNode(
-    node: ForNode, 
-    context: Context
+    node: ForNode,
+    context: Context,
   ): RuntimeResult {
     const res = new RuntimeResult();
 
     const start = res.register(this.visit(node.startValue, context));
     if (res.error) return res;
 
-    const end = res.register(this.visit(node.endValue, context))
-    if(res.error) return res;
+    const end = res.register(this.visit(node.endValue, context));
+    if (res.error) return res;
 
-    let stepValue: MyNumber;
-    if(node.stepValueNode) {
+    let stepValue: BaseType;
+    if (node.stepValueNode) {
       stepValue = res.register(this.visit(node.stepValueNode, context))!;
     } else {
       stepValue = new MyNumber(1);
@@ -79,40 +128,43 @@ export class Interpreter {
 
     let i = start?.value!;
     let condition;
-    if(stepValue.value >= 0) {
+    if (stepValue.value >= 0) {
       condition = i < end!.value;
     } else {
       condition = i > end!.value;
     }
 
-    while(condition) {
-      if(i == end?.value) break;
-      context.symbolTable?.set(node.varNameToken.value as string, new Variable<Number>(i, start!.type, true));
+    while (condition) {
+      if (i == end?.value) break;
+      context.symbolTable?.set(
+        node.varNameToken.value as string,
+        new Variable<Number>(i, start!.type, true),
+      );
       i += stepValue.value!;
       res.register(this.visit(node.bodyNode, context));
-      if(res.error) return res;
+      if (res.error) return res;
     }
 
     return res.success(null as unknown as MyNumber);
   }
 
   public visitWhileNode(
-    node: WhileNode, 
-    context: Context
+    node: WhileNode,
+    context: Context,
   ): RuntimeResult {
     const res = new RuntimeResult();
 
-    while(true) {
+    while (true) {
       const condition = res.register(this.visit(node.conditionNode, context));
-      if(res.error) return res;
+      if (res.error) return res;
 
-      if(!(condition?.value == 0 ? false : true)) break;
+      if (!(condition?.value == 0 ? false : true)) break;
 
-      res.register(this.visit(node.bodyNode, context))
-      if(res.error) return res;
+      res.register(this.visit(node.bodyNode, context));
+      if (res.error) return res;
     }
 
-    return res.success(null as unknown as MyNumber);
+    return res.success(null as any);
   }
 
   public visitIfNode(
@@ -146,7 +198,7 @@ export class Interpreter {
   ): RuntimeResult {
     const res = new RuntimeResult();
     const varName = node.token.value;
-    let varValue = context.symbolTable?.get<MyNumber>(varName as string)?.value;
+    let varValue = context.symbolTable?.get(varName as string).value;
     if (!varValue) {
       return res.failure(
         new RuntimeError(
@@ -161,7 +213,7 @@ export class Interpreter {
       node.positionStart,
       node.positionEnd,
     );
-    return res.success(varValue);
+    return res.success(varValue!);
   }
 
   public visitVarAssignNode(
@@ -199,19 +251,19 @@ export class Interpreter {
     }
     context.symbolTable?.set(
       varName as string,
-      new Variable<MyNumber>(varValue!, node.type, node.reassignable),
+      new Variable(varValue!, node.type, node.reassignable),
     );
     return res.success(varValue!);
   }
 
   public visitBinOpNode(node: BinOpNode, context: Context) {
     const res = new RuntimeResult();
-    const left: MyNumber = res.register(
-      this.visit(node.leftNode, context) as unknown as MyNumber,
+    const left = res.register(
+      this.visit(node.leftNode, context),
     )!;
     if (res.error) return res;
-    const right: MyNumber = res.register(
-      this.visit(node.rightNode, context) as unknown as MyNumber,
+    const right = res.register(
+      this.visit(node.rightNode, context),
     )!;
     if (res.error) return res;
     let final!: MyNumber;

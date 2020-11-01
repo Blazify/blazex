@@ -1,5 +1,7 @@
 import { BinOpNode } from "../core/node/binary_op_node.ts";
+import { CallNode } from "../core/node/call_node.ts";
 import { ForNode } from "../core/node/for_node.ts";
+import { FuncDefNode } from "../core/node/func_def.ts";
 import { IfNode } from "../core/node/if_node.ts";
 import { NumberNode } from "../core/node/number_nodes.ts";
 import { UnaryOpNode } from "../core/node/unary_op_node.ts";
@@ -10,6 +12,8 @@ import { WhileNode } from "../core/node/while_node.ts";
 export const DIGITS: (number | string)[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "."];
 
 export const COLON = "COLON";
+export const COMMA = "COMMA";
+export const ARROW = "ARROW";
 export const INT = "Int";
 export const FLOAT = "Float";
 export const PLUS = "PLUS";
@@ -49,7 +53,9 @@ export type TYPES =
   | "GREATER_THAN_EQUALS" // >=
   | "LESS_THAN" // <
   | "GREATER_THAN" // >
-  | "COLON"
+  | "COLON" // :
+  | "COMMA" // ,
+  | "ARROW" // =>
   | "EOF"; // end
 
 export const ASCII_LETTERS_AND_DIGITS =
@@ -69,7 +75,8 @@ export const KEYWORDS = [
   "for",
   "to",
   "step",
-  "while"
+  "while",
+  "fun",
 ];
 
 export const LangTypes: ["Int", "Float"] = ["Int", "Float"];
@@ -82,4 +89,6 @@ export type Nodes =
   | VarAssignNode
   | IfNode
   | ForNode
-  | WhileNode;
+  | WhileNode
+  | FuncDefNode
+  | CallNode;
