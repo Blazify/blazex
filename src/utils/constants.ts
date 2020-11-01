@@ -7,7 +7,7 @@ import { VarAssignNode } from "../core/node/var_assign_node.ts";
 
 export const DIGITS: (number | string)[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "."];
 
-export const COLON = "COLON"
+export const COLON = "COLON";
 export const INT = "Int";
 export const FLOAT = "Float";
 export const PLUS = "PLUS";

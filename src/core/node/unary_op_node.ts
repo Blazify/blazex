@@ -10,7 +10,7 @@ import { VarAssignNode } from "./var_assign_node.ts";
 export class UnaryOpNode {
   public positionStart: Position;
   public positionEnd: Position;
-  public type: TYPES
+  public type: TYPES;
   constructor(
     public opToken: Token,
     public node: Nodes,

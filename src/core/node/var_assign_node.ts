@@ -10,7 +10,7 @@ export class VarAssignNode {
     public name: Token,
     public value: Nodes,
     public type: TYPES,
-    public reassignable: boolean
+    public reassignable: boolean,
   ) {
     this.positionStart = name.positionStart!;
     this.positionEnd = value.positionEnd!;

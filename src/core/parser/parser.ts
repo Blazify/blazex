@@ -20,7 +20,7 @@ import {
   NOT_EQUALS,
   PLUS,
   POWER,
-  TYPES
+  TYPES,
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
 import { IfNode } from "../node/if_node.ts";
@@ -121,7 +121,15 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
-      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
+      if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -165,7 +173,15 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
-      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
+      if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -235,12 +251,28 @@ export class Parser {
         this.advance();
 
         const ifElseExpr = res.register(this.expr());
-        if(ifElseExpr.type !== type) return res.failure(new InvalidTypeError(ifElseCondition.positionStart, ifElseCondition.positionEnd, `${ifElseExpr.type} doesn't satisfy ${type}`))
+        if (ifElseExpr.type !== type) {
+          return res.failure(
+            new InvalidTypeError(
+              ifElseCondition.positionStart,
+              ifElseCondition.positionEnd,
+              `${ifElseExpr.type} doesn't satisfy ${type}`,
+            ),
+          );
+        }
         cases.push([ifElseCondition, ifElseExpr]);
       } else {
         const elseExpr = res.register(this.expr());
         if (res.error) return res;
-        if(elseExpr.type !== type) return res.failure(new InvalidTypeError(elseExpr.positionStart, elseExpr.positionEnd, `${elseExpr.type} doesn't satisfy ${type}`))
+        if (elseExpr.type !== type) {
+          return res.failure(
+            new InvalidTypeError(
+              elseExpr.positionStart,
+              elseExpr.positionEnd,
+              `${elseExpr.type} doesn't satisfy ${type}`,
+            ),
+          );
+        }
 
         elseCase = elseExpr;
         break;
@@ -273,30 +305,48 @@ export class Parser {
       // @ts-expect-error // due to some stupid reasons vscode vomits error at me (-,-)
       if (this.currentToken.type !== COLON) {
         //@ts-expect-error
-        if(this.currentToken.type !== EQUALS) {
-          return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '='"))
+        if (this.currentToken.type !== EQUALS) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected '='",
+            ),
+          );
         }
 
         res.registerAdvancement();
         this.advance();
 
         const expr = res.register(this.expr());
-        return res.success(new VarAssignNode(varName, expr, expr.type, false))
+        return res.success(new VarAssignNode(varName, expr, expr.type, false));
       }
 
       res.registerAdvancement();
       this.advance();
 
       const type = this.currentToken;
-      if(!(type.match(IDENTIFIER, INT) || type.match(IDENTIFIER, FLOAT))) {
-        return res.failure(new InvalidTypeError(type.positionStart!, type.positionEnd!, "Unknown Type"))
+      if (!(type.match(IDENTIFIER, INT) || type.match(IDENTIFIER, FLOAT))) {
+        return res.failure(
+          new InvalidTypeError(
+            type.positionStart!,
+            type.positionEnd!,
+            "Unknown Type",
+          ),
+        );
       }
 
       res.registerAdvancement();
       this.advance();
 
-      if(this.currentToken.type !== EQUALS) {
-        return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '='"))
+      if (this.currentToken.type !== EQUALS) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected '='",
+          ),
+        );
       }
 
       res.registerAdvancement();
@@ -304,8 +354,20 @@ export class Parser {
 
       const expr = res.register(this.expr());
       if (res.error) return res;
-      if((expr.type == IDENTIFIER) ? expr.type : type.value !== type.value) return res.failure(new InvalidTypeError(varName.positionStart!, this.currentToken.positionEnd!, `${expr.type} is not a type of ${type.value}`))
-      return res.success(new VarAssignNode(varName, expr, type.value! as TYPES, false));
+      if (
+        (expr.type == IDENTIFIER) ? expr.type : type.value !== type.value
+      ) {
+        return res.failure(
+          new InvalidTypeError(
+            varName.positionStart!,
+            this.currentToken.positionEnd!,
+            `${expr.type} is not a type of ${type.value}`,
+          ),
+        );
+      }
+      return res.success(
+        new VarAssignNode(varName, expr, type.value! as TYPES, false),
+      );
     }
 
     let left = res.register(
@@ -322,7 +384,15 @@ export class Parser {
       this.advance();
       const right = res.register(this.compExpr());
       if (res.error) return res;
-      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
+      if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -375,7 +445,15 @@ export class Parser {
       this.advance();
       const right = res.register(this.arithExpr());
       if (res.error) return res;
-      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
+      if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -406,7 +484,15 @@ export class Parser {
       this.advance();
       const right = res.register(this.term());
       if (res.error) return res;
-      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
+      if (right.type !== left.type) {
+        return res.failure(
+          new InvalidTypeError(
+            left.positionStart,
+            right.positionStart,
+            `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`,
+          ),
+        );
+      }
       left = new BinOpNode(left, opToken, right);
     }
 

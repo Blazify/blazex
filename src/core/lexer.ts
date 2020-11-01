@@ -100,7 +100,7 @@ export class Lexer {
         tokens.push(this.makeIdentifier());
       } else if (DIGITS.includes(Number(this.currentCharecter))) {
         tokens.push(this.makeNumber());
-      } else if(this.currentCharecter === ":") {
+      } else if (this.currentCharecter === ":") {
         tokens.push(new Token(COLON, null, this.position));
         this.advance();
       } else {

@@ -60,22 +60,22 @@ export class Interpreter {
     context: Context,
   ): RuntimeResult {
     const res = new RuntimeResult();
-   for(const [condition, expression] of node.cases) {
-     const conditionValue = res.register(this.visit(condition, context));
-     if(res.error) return res;
+    for (const [condition, expression] of node.cases) {
+      const conditionValue = res.register(this.visit(condition, context));
+      if (res.error) return res;
 
-     if(conditionValue?.value === 1) {
-       const exprValue = res.register(this.visit(expression, context));
-       if(res.error) return res;
-       return res.success(exprValue!);
-     }
-   }
+      if (conditionValue?.value === 1) {
+        const exprValue = res.register(this.visit(expression, context));
+        if (res.error) return res;
+        return res.success(exprValue!);
+      }
+    }
 
-   if(node.elseCase) {
-     const elseValue = res.register(this.visit(node.elseCase, context));
-     if(res.error) return res;
-     return res.success(elseValue!);
-   }
+    if (node.elseCase) {
+      const elseValue = res.register(this.visit(node.elseCase, context));
+      if (res.error) return res;
+      return res.success(elseValue!);
+    }
 
     return res;
   }
@@ -115,11 +115,32 @@ export class Interpreter {
       return res;
     }
 
-    if(node.type !== varValue?.type) return res.failure(new RuntimeError(node.positionStart, node.positionEnd, `${varValue?.type} is not assignable to the type of ${node.type}`, context))
-    
-    const get = context.symbolTable?.get(varName as string)
-    if(get && !get.reassignable) return res.failure(new RuntimeError(node.positionStart, node.positionEnd, "Cannot Reassign a constant", context))
-    context.symbolTable?.set(varName as string, new Variable<MyNumber>(varValue!, node.type, node.reassignable));
+    if (node.type !== varValue?.type) {
+      return res.failure(
+        new RuntimeError(
+          node.positionStart,
+          node.positionEnd,
+          `${varValue?.type} is not assignable to the type of ${node.type}`,
+          context,
+        ),
+      );
+    }
+
+    const get = context.symbolTable?.get(varName as string);
+    if (get && !get.reassignable) {
+      return res.failure(
+        new RuntimeError(
+          node.positionStart,
+          node.positionEnd,
+          "Cannot Reassign a constant",
+          context,
+        ),
+      );
+    }
+    context.symbolTable?.set(
+      varName as string,
+      new Variable<MyNumber>(varValue!, node.type, node.reassignable),
+    );
     return res.success(varValue!);
   }
 
