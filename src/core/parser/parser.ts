@@ -12,6 +12,7 @@ import {
   IDENTIFIER,
   INT,
   KEYWORD,
+  LangTypes,
   LESS_THAN,
   LESS_THAN_EQUALS,
   MINUS,
@@ -23,11 +24,13 @@ import {
   TYPES,
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
+import { ForNode } from "../node/for_node.ts";
 import { IfNode } from "../node/if_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
 import { UnaryOpNode } from "../node/unary_op_node.ts";
 import { VarAcessNode } from "../node/var_access_node.ts";
 import { VarAssignNode } from "../node/var_assign_node.ts";
+import { WhileNode } from "../node/while_node.ts";
 import { Token } from "../token.ts";
 import { ParseResult } from "./parse_result.ts";
 
@@ -97,6 +100,14 @@ export class Parser {
       const ifExpr = res.register(this.ifExpr());
       if (res.error) return res;
       return res.success(ifExpr);
+    } else if (this.currentToken.match(KEYWORD, "for")) {
+      const forExpr = res.register(this.forExpr());
+      if (res.error) return res;
+      return res.success(forExpr);
+    } else if (this.currentToken.match(KEYWORD, "while")) {
+      const whileExpr = res.register(this.whileExpr());
+      if (res.error) return res;
+      return res.success(whileExpr);
     }
 
     return res.failure(
@@ -121,7 +132,9 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
-      if (right.type !== left.type) {
+      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+
+      } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
             left.positionStart,
@@ -173,7 +186,9 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
-      if (right.type !== left.type) {
+      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+
+      } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
             left.positionStart,
@@ -186,6 +201,208 @@ export class Parser {
     }
 
     return res.success(left);
+  }
+
+  public forExpr(): ParseResult {
+    const res = new ParseResult();
+
+    if (!(this.currentToken.match(KEYWORD, "for"))) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected for keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    if (this.currentToken.type !== IDENTIFIER) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected Identifier",
+        ),
+      );
+    }
+
+    const varName = this.currentToken;
+    res.registerAdvancement();
+    this.advance();
+
+    let startValue: Nodes;
+    let type: TYPES;
+    // @ts-expect-error
+    if (this.currentToken.type !== COLON) {
+      // @ts-expect-error
+      if (this.currentToken.type !== EQUALS) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected ':' or '='",
+          ),
+        );
+      } else {
+        res.registerAdvancement();
+        this.advance();
+
+        startValue = res.register(this.expr());
+        if (res.error) return res;
+        if (LangTypes.includes(startValue.type as any)) {
+          type = startValue.type;
+        } else {
+          return res.failure(
+            new InvalidTypeError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Unknown type",
+            ),
+          );
+        }
+      }
+    } else {
+      res.registerAdvancement();
+      this.advance();
+
+      if (LangTypes.includes(this.currentToken.value as any)) {
+        type = this.currentToken.value as any;
+
+        res.registerAdvancement();
+        this.advance();
+
+        if (this.currentToken.type !== EQUALS) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected '='",
+            ),
+          );
+        }
+
+        res.registerAdvancement();
+        this.advance();
+
+        startValue = res.register(this.expr());
+        if (res.error) return res;
+        if (
+          (startValue.type == IDENTIFIER) ? startValue.type : type !== type
+        ) {
+          return res.failure(
+            new InvalidTypeError(
+              varName.positionStart!,
+              this.currentToken.positionEnd!,
+              `${startValue.type} is not a type of ${type}`,
+            ),
+          );
+        }
+      } else {
+        return res.failure(
+          new InvalidTypeError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Unknown type",
+          ),
+        );
+      }
+    }
+
+    if (!this.currentToken.match(KEYWORD, "to")) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected 'to' keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const endValue = res.register(this.expr());
+    if (res.error) return res;
+
+    if (endValue.type !== type) {
+      return res.failure(
+        new InvalidTypeError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          `${endValue.type} doesn't satsfy ${type}`,
+        ),
+      );
+    }
+
+    let step: Nodes | undefined;
+
+    if (this.currentToken.match(KEYWORD, "step")) {
+      res.registerAdvancement();
+      this.advance();
+
+      step = res.register(this.expr());
+    } else {
+      step = undefined;
+    }
+
+    if (!(this.currentToken.match(KEYWORD, "then"))) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected 'then' keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const body = res.register(this.expr());
+    if (res.error) return res;
+
+    return res.success(new ForNode(varName, startValue, endValue, body, step));
+  }
+
+  public whileExpr(): ParseResult {
+    const res = new ParseResult();
+
+    if (!this.currentToken.match(KEYWORD, "while")) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected 'while' keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const condition = res.register(this.expr());
+    if (res.error) return res;
+
+    if (!this.currentToken.match(KEYWORD, "then")) {
+      return res.failure(
+        new InvalidSyntaxError(
+          this.currentToken.positionStart!,
+          this.currentToken.positionEnd!,
+          "Expected 'then' keyword",
+        ),
+      );
+    }
+
+    res.registerAdvancement();
+    this.advance();
+
+    const body = res.register(this.expr());
+    if (res.error) return res;
+
+    return res.success(new WhileNode(condition, body));
   }
 
   public ifExpr(): ParseResult {
@@ -318,15 +535,28 @@ export class Parser {
         res.registerAdvancement();
         this.advance();
 
-        const expr = res.register(this.expr());
-        return res.success(new VarAssignNode(varName, expr, expr.type, false));
+        let expr = res.register(this.expr());
+        if (res.error) return res;
+        if (LangTypes.includes(expr.type as any)) {
+          return res.success(
+            new VarAssignNode(varName, expr, expr.type, false),
+          );
+        } else {
+          res.failure(
+            new InvalidTypeError(
+              expr.positionStart,
+              expr.positionEnd,
+              "Unknown Type, Please Specify a type",
+            ),
+          );
+        }
       }
 
       res.registerAdvancement();
       this.advance();
 
       const type = this.currentToken;
-      if (!(type.match(IDENTIFIER, INT) || type.match(IDENTIFIER, FLOAT))) {
+      if (!LangTypes.includes(type.value as any)) {
         return res.failure(
           new InvalidTypeError(
             type.positionStart!,
@@ -368,6 +598,103 @@ export class Parser {
       return res.success(
         new VarAssignNode(varName, expr, type.value! as TYPES, false),
       );
+    } else if (this.currentToken.match(KEYWORD, "var")) {
+      res.registerAdvancement();
+      this.advance();
+
+      if (this.currentToken.type !== IDENTIFIER) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected Identifier after Keyword",
+          ),
+        );
+      }
+
+      const varName = this.currentToken;
+      res.registerAdvancement();
+      this.advance();
+
+      // @ts-expect-error // due to some stupid reasons vscode vomits error at me (-,-)
+      if (this.currentToken.type !== COLON) {
+        //@ts-expect-error
+        if (this.currentToken.type !== EQUALS) {
+          return res.failure(
+            new InvalidSyntaxError(
+              this.currentToken.positionStart!,
+              this.currentToken.positionEnd!,
+              "Expected '='",
+            ),
+          );
+        }
+
+        res.registerAdvancement();
+        this.advance();
+
+        let expr = res.register(this.expr());
+        if (res.error) return res;
+        if (LangTypes.includes(expr.type as any)) {
+          return res.success(
+            new VarAssignNode(varName, expr, expr.type, false),
+          );
+        } else {
+          res.failure(
+            new InvalidTypeError(
+              expr.positionStart,
+              expr.positionEnd,
+              "Unknown Type, Please Specify a type",
+            ),
+          );
+        }
+      }
+
+      res.registerAdvancement();
+      this.advance();
+
+      const type = this.currentToken;
+      if (!LangTypes.includes(type.value as any)) {
+        return res.failure(
+          new InvalidTypeError(
+            type.positionStart!,
+            type.positionEnd!,
+            "Unknown Type",
+          ),
+        );
+      }
+
+      res.registerAdvancement();
+      this.advance();
+
+      if (this.currentToken.type !== EQUALS) {
+        return res.failure(
+          new InvalidSyntaxError(
+            this.currentToken.positionStart!,
+            this.currentToken.positionEnd!,
+            "Expected '='",
+          ),
+        );
+      }
+
+      res.registerAdvancement();
+      this.advance();
+
+      const expr = res.register(this.expr());
+      if (res.error) return res;
+      if (
+        (expr.type == IDENTIFIER) ? expr.type : type.value !== type.value
+      ) {
+        return res.failure(
+          new InvalidTypeError(
+            varName.positionStart!,
+            this.currentToken.positionEnd!,
+            `${expr.type} is not a type of ${type.value}`,
+          ),
+        );
+      }
+      return res.success(
+        new VarAssignNode(varName, expr, type.value! as TYPES, true),
+      );
     }
 
     let left = res.register(
@@ -384,7 +711,9 @@ export class Parser {
       this.advance();
       const right = res.register(this.compExpr());
       if (res.error) return res;
-      if (right.type !== left.type) {
+      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+
+      } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
             left.positionStart,
@@ -445,7 +774,9 @@ export class Parser {
       this.advance();
       const right = res.register(this.arithExpr());
       if (res.error) return res;
-      if (right.type !== left.type) {
+      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+
+      } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
             left.positionStart,
@@ -484,7 +815,9 @@ export class Parser {
       this.advance();
       const right = res.register(this.term());
       if (res.error) return res;
-      if (right.type !== left.type) {
+      if(right.type === IDENTIFIER || left.type === IDENTIFIER) {
+
+      } else if (right.type !== left.type) {
         return res.failure(
           new InvalidTypeError(
             left.positionStart,

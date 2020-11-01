@@ -1,9 +1,11 @@
 import { BinOpNode } from "../core/node/binary_op_node.ts";
+import { ForNode } from "../core/node/for_node.ts";
 import { IfNode } from "../core/node/if_node.ts";
 import { NumberNode } from "../core/node/number_nodes.ts";
 import { UnaryOpNode } from "../core/node/unary_op_node.ts";
 import { VarAcessNode } from "../core/node/var_access_node.ts";
 import { VarAssignNode } from "../core/node/var_assign_node.ts";
+import { WhileNode } from "../core/node/while_node.ts";
 
 export const DIGITS: (number | string)[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "."];
 
@@ -57,13 +59,20 @@ export const ASCII_LETTERS =
 
 export const KEYWORDS = [
   "val",
+  "var",
   "and", // &&
   "or", // ||
   "not", // !,
   "if",
   "then",
   "else",
+  "for",
+  "to",
+  "step",
+  "while"
 ];
+
+export const LangTypes: ["Int", "Float"] = ["Int", "Float"];
 
 export type Nodes =
   | BinOpNode
@@ -71,4 +80,6 @@ export type Nodes =
   | UnaryOpNode
   | VarAcessNode
   | VarAssignNode
-  | IfNode;
+  | IfNode
+  | ForNode
+  | WhileNode;

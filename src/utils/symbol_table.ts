@@ -1,4 +1,3 @@
-import { Number } from "../core/number.ts";
 import { Variable } from "./variable.ts";
 
 export class SymbolTable {

@@ -18,11 +18,13 @@ import {
 import { Variable } from "../utils/variable.ts";
 import { Context } from "./context.ts";
 import { BinOpNode } from "./node/binary_op_node.ts";
+import { ForNode } from "./node/for_node.ts";
 import { IfNode } from "./node/if_node.ts";
 import { NumberNode } from "./node/number_nodes.ts";
 import { UnaryOpNode } from "./node/unary_op_node.ts";
 import { VarAcessNode } from "./node/var_access_node.ts";
 import { VarAssignNode } from "./node/var_assign_node.ts";
+import { WhileNode } from "./node/while_node.ts";
 import { Number as MyNumber } from "./number.ts";
 import { RuntimeResult } from "./runtime_result.ts";
 
@@ -43,16 +45,74 @@ export class Interpreter {
       return this.visitVarAssignNode(node, context);
     } else if (node instanceof IfNode) {
       return this.visitIfNode(node, context);
+    } else if (node instanceof ForNode) {
+      return this.visitForNode(node, context);
+    } else if (node instanceof WhileNode) {
+      return this.visitWhileNode(node, context);
     } else {
-      return this.noVisitMethod(node, context) as unknown as RuntimeResult;
+      return this.noVisitMethod() as unknown as RuntimeResult;
     }
   }
 
-  public noVisitMethod(
-    _node: Nodes,
-    _context: Context,
-  ) {
+  public noVisitMethod() {
     throw "No visit method found for node type\n";
+  }
+
+  public visitForNode(
+    node: ForNode, 
+    context: Context
+  ): RuntimeResult {
+    const res = new RuntimeResult();
+
+    const start = res.register(this.visit(node.startValue, context));
+    if (res.error) return res;
+
+    const end = res.register(this.visit(node.endValue, context))
+    if(res.error) return res;
+
+    let stepValue: MyNumber;
+    if(node.stepValueNode) {
+      stepValue = res.register(this.visit(node.stepValueNode, context))!;
+    } else {
+      stepValue = new MyNumber(1);
+    }
+
+    let i = start?.value!;
+    let condition;
+    if(stepValue.value >= 0) {
+      condition = i < end!.value;
+    } else {
+      condition = i > end!.value;
+    }
+
+    while(condition) {
+      if(i == end?.value) break;
+      context.symbolTable?.set(node.varNameToken.value as string, new Variable<Number>(i, start!.type, true));
+      i += stepValue.value!;
+      res.register(this.visit(node.bodyNode, context));
+      if(res.error) return res;
+    }
+
+    return res.success(null as unknown as MyNumber);
+  }
+
+  public visitWhileNode(
+    node: WhileNode, 
+    context: Context
+  ): RuntimeResult {
+    const res = new RuntimeResult();
+
+    while(true) {
+      const condition = res.register(this.visit(node.conditionNode, context));
+      if(res.error) return res;
+
+      if(!(condition?.value == 0 ? false : true)) break;
+
+      res.register(this.visit(node.bodyNode, context))
+      if(res.error) return res;
+    }
+
+    return res.success(null as unknown as MyNumber);
   }
 
   public visitIfNode(
@@ -127,7 +187,7 @@ export class Interpreter {
     }
 
     const get = context.symbolTable?.get(varName as string);
-    if (get && !get.reassignable) {
+    if (get && get.reassignable) {
       return res.failure(
         new RuntimeError(
           node.positionStart,
