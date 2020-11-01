@@ -121,6 +121,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
+      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -164,6 +165,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.factor()!);
       if (res.error) return res;
+      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -270,13 +272,16 @@ export class Parser {
 
       // @ts-expect-error // due to some stupid reasons vscode vomits error at me (-,-)
       if (this.currentToken.type !== COLON) {
-        return res.failure(
-          new InvalidSyntaxError(
-            this.currentToken.positionStart!,
-            this.currentToken.positionEnd!,
-            "Expected ':'",
-          ),
-        );
+        //@ts-expect-error
+        if(this.currentToken.type !== EQUALS) {
+          return res.failure(new InvalidSyntaxError(this.currentToken.positionStart!, this.currentToken.positionEnd!, "Expected '='"))
+        }
+
+        res.registerAdvancement();
+        this.advance();
+
+        const expr = res.register(this.expr());
+        return res.success(new VarAssignNode(varName, expr, expr.type, false))
       }
 
       res.registerAdvancement();
@@ -300,7 +305,7 @@ export class Parser {
       const expr = res.register(this.expr());
       if (res.error) return res;
       if((expr.type == IDENTIFIER) ? expr.type : type.value !== type.value) return res.failure(new InvalidTypeError(varName.positionStart!, this.currentToken.positionEnd!, `${expr.type} is not a type of ${type.value}`))
-      return res.success(new VarAssignNode(varName, expr, type.value! as any, false));
+      return res.success(new VarAssignNode(varName, expr, type.value! as TYPES, false));
     }
 
     let left = res.register(
@@ -317,6 +322,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.compExpr());
       if (res.error) return res;
+      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -369,6 +375,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.arithExpr());
       if (res.error) return res;
+      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
       left = new BinOpNode(left, opToken, right);
     }
 
@@ -399,6 +406,7 @@ export class Parser {
       this.advance();
       const right = res.register(this.term());
       if (res.error) return res;
+      if(right.type !== left.type) return res.failure(new InvalidTypeError(left.positionStart, right.positionStart, `The Lefthand type of binary operation ${left.type} is not same as the one of ${right.type}`))
       left = new BinOpNode(left, opToken, right);
     }
 
