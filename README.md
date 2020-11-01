@@ -35,8 +35,10 @@ bzs filename.bzs
 - [x] Variables
 - [x] Comparisions
 - [x] If-Else Statements
-- [ ] Strings
-- [ ] Functions
+- [x] For, When Loops
+- [x] Strings
+- [x] Chars
+- [x] Functions
 - [ ] Classes
 - [ ] Objects
 - [ ] Standard Library
