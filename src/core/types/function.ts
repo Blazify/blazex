@@ -1,5 +1,5 @@
 import { RuntimeError } from "../../error/runtimeerr.ts";
-import { Nodes } from "../../utils/constants.ts";
+import { Nodes, TYPES } from "../../utils/constants.ts";
 import { SymbolTable } from "../../utils/symbol_table.ts";
 import { Variable } from "../../utils/variable.ts";
 import { Context } from "../context.ts";
@@ -86,5 +86,9 @@ export class Function extends BaseType {
 
   public represent(): string {
     return `<function ${this.name}>`;
+  }
+
+  get type(): TYPES {
+    return `Function: ${this.bodyNode.type}` as TYPES
   }
 }

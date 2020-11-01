@@ -57,7 +57,7 @@ export class BaseType {
 
   public addTo(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -71,7 +71,7 @@ export class BaseType {
 
   public subBy(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -85,7 +85,7 @@ export class BaseType {
 
   public multiBy(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -99,7 +99,7 @@ export class BaseType {
 
   public divBy(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -113,7 +113,7 @@ export class BaseType {
 
   public powBy(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -127,7 +127,7 @@ export class BaseType {
 
   public equals(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -141,7 +141,7 @@ export class BaseType {
 
   public notEquals(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -155,7 +155,7 @@ export class BaseType {
 
   public lessThan(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -169,7 +169,7 @@ export class BaseType {
 
   public greaterThan(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -183,7 +183,7 @@ export class BaseType {
 
   public lessThanEquals(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -197,7 +197,7 @@ export class BaseType {
 
   public greaterThanEquals(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -211,7 +211,7 @@ export class BaseType {
 
   public and(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -225,7 +225,7 @@ export class BaseType {
 
   public or(
     _other: unknown,
-  ): { result: Number | null; error: Err | null } {
+  ): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(
@@ -237,7 +237,7 @@ export class BaseType {
     };
   }
 
-  public not(): { result: Number | null; error: Err | null } {
+  public not(): { result: any | null; error: Err | null } {
     return {
       result: null,
       error: new RuntimeError(

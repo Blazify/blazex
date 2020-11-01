@@ -31,6 +31,10 @@ import { FuncDefNode } from "./node/func_def.ts";
 import { CallNode } from "./node/call_node.ts";
 import { BaseType } from "./types/base_type.ts";
 import { Function } from "./types/function.ts";
+import { StringNode } from "./node/string_node.ts";
+import { String } from "./types/string.ts";
+import { Char } from "./types/char.ts";
+import { CharNode } from "./node/char_node.ts";
 
 export class Interpreter {
   public visit(
@@ -57,6 +61,10 @@ export class Interpreter {
       return this.visitFuncDefNode(node, context);
     } else if (node instanceof CallNode) {
       return this.visitCallNode(node, context);
+    } else if(node instanceof StringNode) {
+      return this.visitStringNode(node, context);
+    } else if(node instanceof CharNode) {
+      return this.visitCharNode(node, context)
     } else {
       return this.noVisitMethod() as unknown as RuntimeResult;
     }
@@ -64,6 +72,14 @@ export class Interpreter {
 
   public noVisitMethod() {
     throw "No visit method found for node type\n";
+  }
+
+  public visitStringNode(node: StringNode, context: Context) {
+    return new RuntimeResult().success(new String(node.token.value as string).setContext(context).setPosition(node.positionStart, node.positionEnd))
+  }
+
+  public visitCharNode(node: StringNode, context: Context) {
+    return new RuntimeResult().success(new Char(node.token.value as string).setContext(context).setPosition(node.positionStart, node.positionEnd))
   }
 
   public visitCallNode(node: CallNode, context: Context): RuntimeResult {

@@ -6,6 +6,7 @@ import {
   ARROW,
   ASCII_LETTERS,
   ASCII_LETTERS_AND_DIGITS,
+  CHAR,
   COLON,
   COMMA,
   DIGITS,
@@ -29,6 +30,7 @@ import {
   PLUS,
   POWER,
   RIGHT_PARENTHESIS,
+  STRING,
 } from "../utils/constants.ts";
 import { Token } from "./token.ts";
 
@@ -108,6 +110,16 @@ export class Lexer {
       } else if (this.currentCharecter === ",") {
         tokens.push(new Token(COMMA, null, this.position));
         this.advance();
+      } else if(this.currentCharecter === "'") {
+        const { token, error } = this.makeChar();
+        if(error) {
+          errors.push(error);
+          return { errors };
+        } else if(token) {
+          tokens.push(token);
+        }
+      } else if(this.currentCharecter === "\"") {
+        tokens.push(this.makeString());
       } else {
         const start = this.position.clone();
         const char = this.currentCharecter;
@@ -256,5 +268,51 @@ export class Lexer {
       return new Token(INT, Number(numberString), start, this.position);
     }
     return new Token(FLOAT, Number(numberString), start, this.position);
+  }
+
+  public makeString(): Token {
+    let string = "";
+    const start = this.position.clone();
+    let escape = false;
+    this.advance();
+
+    const escapeChars = {
+      "n": "\n",
+      "t": "\t"
+    }
+
+    while(this.currentCharecter !== null && this.currentCharecter !== "\"" || escape) {
+      if(escape) {
+        string += escapeChars[this.currentCharecter as keyof typeof escapeChars] ?? this.currentCharecter;
+      } else {
+        if(this.currentCharecter === "\\") {
+        escape = true;
+        } else {
+        string += this.currentCharecter;
+      }
+    }
+      this.advance();
+      escape = false;
+    }
+
+    this.advance();
+
+    return new Token(STRING, string, start, this.position)
+  }
+
+  public makeChar(): { token?: Token, error?: Err } {
+    const start = this.position.clone();
+    let char = '';
+
+    this.advance();
+    char += this.currentCharecter;
+
+    this.advance();
+    if(this.currentCharecter !== "'") {
+      return { error: new ExcpectedChareterError(start, this.position, "Expected \"'\"") }
+    }
+
+    this.advance();
+    return { token: new Token(CHAR, char, start, this.position) }
   }
 }

@@ -2,6 +2,7 @@ import { InvalidSyntaxError } from "../../error/invalidsyntax.ts";
 import { InvalidTypeError } from "../../error/typeerror.ts";
 import {
   ARROW,
+  CHAR,
   COLON,
   COMMA,
   DIVIDE,
@@ -25,14 +26,17 @@ import {
   PLUS,
   POWER,
   RIGHT_PARENTHESIS,
+  STRING,
   TYPES,
 } from "../../utils/constants.ts";
 import { BinOpNode } from "../node/binary_op_node.ts";
 import { CallNode } from "../node/call_node.ts";
+import { CharNode } from "../node/char_node.ts";
 import { ForNode } from "../node/for_node.ts";
 import { FuncDefNode } from "../node/func_def.ts";
 import { IfNode } from "../node/if_node.ts";
 import { NumberNode } from "../node/number_nodes.ts";
+import { StringNode } from "../node/string_node.ts";
 import { UnaryOpNode } from "../node/unary_op_node.ts";
 import { VarAcessNode } from "../node/var_access_node.ts";
 import { VarAssignNode } from "../node/var_assign_node.ts";
@@ -83,6 +87,14 @@ export class Parser {
       res.registerAdvancement();
       this.advance();
       return res.success(new NumberNode(token));
+    } else if(token.type === STRING) {
+      res.registerAdvancement();
+      this.advance();
+      return res.success(new StringNode(token))
+    } else if(token.type === CHAR) {
+      res.registerAdvancement();
+      this.advance();
+      return res.success(new CharNode(token));
     } else if (token.type === IDENTIFIER) {
       res.registerAdvancement();
       this.advance();
