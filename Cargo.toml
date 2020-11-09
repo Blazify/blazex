@@ -1,0 +1,12 @@
+[package]
+name = "blazescript"
+version = "0.0.1"
+authors = ["RoMeAh <teamblazeyt3129@gmail.com>"]
+edition = "2018"
+license = "Apache-2.0 License"
+license-file = "./LICENSE"
+readme = "./README.md"
+repository = "https://github.com/BlazifyOrg/blazescript"
+
+[dependencies]
+# None
