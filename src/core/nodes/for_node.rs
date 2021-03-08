@@ -21,8 +21,8 @@ impl ForNode {
         body_node: Nodes,
         step_value_node: Option<Nodes>,
     ) -> ForNode {
-        let pos_start = var_name_token.pos_start;
-        let mut pos_end = var_name_token.pos_end;
+        let pos_start = var_name_token.clone().pos_start;
+        let pos_end: Position;
         match body_node.clone() {
             Nodes::Number(node) => pos_end = node.pos_end,
             Nodes::StringNode(node) => pos_end = node.pos_end,
@@ -32,6 +32,7 @@ impl ForNode {
             Nodes::UnaryOp(node) => pos_end = node.pos_end,
             Nodes::ForNode(node) => pos_end = node.pos_end,
             Nodes::VarAssignNode(node) => pos_end = node.pos_end,
+            Nodes::VarReassignNode(node) => pos_end = node.pos_end,
             Nodes::VarAccessNode(node) => pos_end = node.pos_end,
             Nodes::WhileNode(node) => pos_end = node.pos_end,
             Nodes::BooleanNode(node) => pos_end = node.pos_end,

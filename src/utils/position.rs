@@ -1,10 +1,10 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Position {
     pub index: i64,
     pub line: i64,
     pub column: i64,
-    pub file_name: &'static str,
-    pub file_content: &'static str,
+    pub file_name: String,
+    pub file_content: String,
 }
 
 impl Position {
@@ -12,15 +12,15 @@ impl Position {
         index: i64,
         line: i64,
         column: i64,
-        file_name: &'static str,
-        file_content: &'static str,
+        file_name: &str,
+        file_content: &str,
     ) -> Position {
         Position {
             index,
             line,
             column,
-            file_name,
-            file_content,
+            file_name: String::from(file_name),
+            file_content: String::from(file_content),
         }
     }
 
@@ -38,8 +38,8 @@ impl Position {
             index: self.index,
             line: self.index,
             column: self.column,
-            file_name: self.file_name,
-            file_content: self.file_content,
+            file_name: self.file_name.clone(),
+            file_content: self.file_content.clone(),
         }
     }
 }

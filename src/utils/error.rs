@@ -9,17 +9,12 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(
-        name: &'static str,
-        pos_start: Position,
-        pos_end: Position,
-        description: &str,
-    ) -> Error {
+    pub fn new(name: &str, pos_start: Position, pos_end: Position, description: &str) -> Error {
         Error {
             name: String::from(name),
             pos_start,
             pos_end,
-            description: String::from(description),
+            description: String::from(description)
         }
     }
 

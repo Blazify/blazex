@@ -3,16 +3,15 @@ use crate::utils::constants::Nodes;
 use crate::utils::position::Position;
 
 #[derive(Debug, Clone)]
-pub struct VarAssignNode {
+pub struct VarReassignNode {
     pub name: Token,
     pub value: Nodes,
     pub pos_start: Position,
     pub pos_end: Position,
-    pub assignable: bool,
 }
 
-impl VarAssignNode {
-    pub fn new(name: Token, value: Nodes, assignable: bool) -> VarAssignNode {
+impl VarReassignNode {
+    pub fn new(name: Token, value: Nodes) -> VarReassignNode {
         let pos_start: Position = name.clone().pos_start.clone();
         let pos_end: Position;
         match value.clone() {
@@ -32,12 +31,11 @@ impl VarAssignNode {
             Nodes::BooleanNode(node) => pos_end = node.pos_end,
         };
 
-        VarAssignNode {
+        VarReassignNode {
             name,
             value,
             pos_end,
             pos_start,
-            assignable,
         }
     }
 }

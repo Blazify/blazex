@@ -1,39 +1,31 @@
 # BlazeScript
+**It is not released as a cargo crate.**
 
 ## Installation
 
-- **1. Download and Install [Deno](https://deno.land/#installation)**
+- **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
 - **2. Clone this repository by the below given command**
 ```console
-git clone git@github.com:RoMeAh/blazescript.git
+git clone git@github.com:BlazifyOrg/blazescript.git
 ```
-- **3. Go to the Directory, Bundle it and then install it globally**
+- **3. Go to the Directory, Compile it**
 ```console
 cd blazescript/
-deno bundle src/mod.ts bzs.js
-deno install -f -A bzs.js
+cargo build --release
 ```
+- **4. Set target/release/blazescript(.exe) to path**
 
-## Running Code
-
-```console
-bzs --eval 1 + 1 * 5
-```
-or
-```console
-bzs filename.bzs
-```
 # TODO
 - [x] Tokens
 - [x] Parser
-- [x] Interpreter
+- [ ] ~~Interpreter~~ Compiler
 - [x] Number (Int and Floats)
-- [x] Maths Calculation (Addition, Substraction, Multiplication, Division)
+- [x] Maths Calculation (Addition, Subtraction, Multiplication, Division)
 - [x] Binary Operators
 - [x] Unary Operators
 - [x] Number Node
 - [x] Variables
-- [x] Comparisions
+- [x] Comparisons
 - [x] If-Else Statements
 - [x] For, When Loops
 - [x] Strings
@@ -47,4 +39,7 @@ bzs filename.bzs
 
 ## Note
 **It is in its very new born form.**
-**BlazeScript uses "-A" permission flag which means it has all permissions**
+
+
+## Author
+- [RoMeAh (Ronit Rahaman)](https://github.com/RoMeAh)

@@ -31,6 +31,7 @@ pub mod core {
         pub mod unary_node;
         pub mod var_access_node;
         pub mod var_assign_node;
+        pub mod var_reassign_node;
         pub mod while_node;
     }
     // Parser
@@ -42,19 +43,36 @@ pub mod core {
 
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::parser::Parser;
-use std::process::exit;
+
+use crate::utils::constants::{DynType, Tokens};
 
 fn main() {
-    let lexed = Lexer::new("lol.bzs", "if 5 == 10 then 50").tokenize();
+    let lexed = Lexer::new("eval.bzs", "69420").tokenize();
     if lexed.error.is_some() {
         println!("{}", lexed.error.unwrap().prettify());
-        exit(1);
+        return;
     }
 
-    let parsed = Parser::new(lexed.tokens).parse();
-    if parsed.error.is_some() {
+    let parsed = Parser::new(lexed.tokens.clone()).parse();
+    if parsed.error.is_some() || parsed.node.is_none() {
         println!("{}", parsed.error.unwrap().prettify());
-        exit(1);
+        return;
     }
-    println!("{:?}", parsed.node.unwrap());
+    for token in lexed.tokens {
+        print!("[{:?}]", token.r#type);
+        match token.value {
+            DynType::Int(i) => {
+                if token.r#type == Tokens::Int {
+                    println!(": {}", i);
+                } else {
+                    println!();
+                }
+            }
+            DynType::Float(f) => println!(": {}", f),
+            DynType::String(s) => println!(": {}", s),
+            DynType::Boolean(b) => println!(": {}", b),
+            DynType::Char(c) => println!(": {}", c),
+        };
+    }
+    println!("\nParsed:\n{:?}", parsed.node);
 }

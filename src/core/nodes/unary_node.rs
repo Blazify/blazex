@@ -12,8 +12,8 @@ pub struct UnaryNode {
 
 impl UnaryNode {
     pub fn new(node: Nodes, op_token: Token) -> UnaryNode {
-        let mut pos_start: Position = op_token.pos_start;
-        let mut pos_end: Position = op_token.pos_end;
+        let pos_start: Position;
+        let pos_end: Position;
         match node.clone() {
             Nodes::Number(node) => {
                 pos_start = node.pos_start;
@@ -44,6 +44,10 @@ impl UnaryNode {
                 pos_end = node.pos_end
             }
             Nodes::VarAssignNode(node) => {
+                pos_start = node.pos_start;
+                pos_end = node.pos_end
+            }
+            Nodes::VarReassignNode(node) => {
                 pos_start = node.pos_start;
                 pos_end = node.pos_end
             }

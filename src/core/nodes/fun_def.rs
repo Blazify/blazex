@@ -18,7 +18,7 @@ impl FunDef {
         if !name.clone().is_none() {
             pos_start = name.clone().unwrap().pos_start;
         } else if vec_args.len() > 0 {
-            pos_start = vec_args[0].pos_start;
+            pos_start = vec_args[0].pos_start.clone();
         } else {
             match body_node.clone() {
                 Nodes::Number(node) => pos_start = node.pos_start,
@@ -29,6 +29,7 @@ impl FunDef {
                 Nodes::UnaryOp(node) => pos_start = node.pos_start,
                 Nodes::ForNode(node) => pos_start = node.pos_start,
                 Nodes::VarAssignNode(node) => pos_start = node.pos_start,
+                Nodes::VarReassignNode(node) => pos_start = node.pos_start,
                 Nodes::VarAccessNode(node) => pos_start = node.pos_start,
                 Nodes::WhileNode(node) => pos_start = node.pos_start,
                 Nodes::FunDef(node) => pos_start = node.pos_start,
@@ -47,6 +48,7 @@ impl FunDef {
             Nodes::UnaryOp(node) => pos_end = node.pos_end,
             Nodes::ForNode(node) => pos_end = node.pos_end,
             Nodes::VarAssignNode(node) => pos_end = node.pos_end,
+            Nodes::VarReassignNode(node) => pos_end = node.pos_end,
             Nodes::VarAccessNode(node) => pos_end = node.pos_end,
             Nodes::WhileNode(node) => pos_end = node.pos_end,
             Nodes::CallNode(node) => pos_end = node.pos_end,

@@ -28,8 +28,8 @@ impl Token {
         Token {
             r#type: *r#type,
             value: self.value.clone(),
-            pos_start: self.pos_start,
-            pos_end: self.pos_end,
+            pos_start: self.pos_start.clone(),
+            pos_end: self.pos_end.clone(),
         }
     }
 

@@ -26,6 +26,7 @@ impl WhileNode {
             Nodes::BooleanNode(node) => pos_start = node.pos_start,
             Nodes::FunDef(node) => pos_start = node.pos_start,
             Nodes::CallNode(node) => pos_start = node.pos_start,
+            Nodes::VarReassignNode(node) => pos_start = node.pos_start,
         };
 
         let pos_end: Position;
@@ -38,6 +39,7 @@ impl WhileNode {
             Nodes::UnaryOp(node) => pos_end = node.pos_end,
             Nodes::ForNode(node) => pos_end = node.pos_end,
             Nodes::VarAssignNode(node) => pos_end = node.pos_end,
+            Nodes::VarReassignNode(node) => pos_end = node.pos_end,
             Nodes::VarAccessNode(node) => pos_end = node.pos_end,
             Nodes::WhileNode(node) => pos_end = node.pos_end,
             Nodes::BooleanNode(node) => pos_end = node.pos_end,

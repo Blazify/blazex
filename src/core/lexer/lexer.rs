@@ -10,17 +10,17 @@ use crate::utils::{
 use std::convert::TryInto;
 
 pub struct Lexer {
-    pub file_name: &'static str,
-    pub text: &'static str,
+    pub file_name: String,
+    pub text: String,
     pub current_char: char,
     pub position: Position,
 }
 
 impl Lexer {
-    pub fn new(file_name: &'static str, text: &'static str) -> Lexer {
+    pub fn new(file_name: &str, text: &str) -> Lexer {
         let mut lexer = Lexer {
-            file_name,
-            text,
+            file_name: String::from(file_name),
+            text: String::from(text),
             current_char: ' ',
             position: Position::new(-1, 0, -1, file_name, text),
         };
@@ -121,7 +121,7 @@ impl Lexer {
                         "Illegal Character",
                         start,
                         self.position.clone(),
-                        format!("Unexpected Character '{}'.", char).as_str(),
+                        format!("Unexpected Character '{}'.", char).as_str()
                     )),
                 );
             }
@@ -223,7 +223,7 @@ impl Lexer {
                     "Expected Charecter",
                     start,
                     self.position.clone(),
-                    "Expected Charecter \"'\" because chars are unicode charecters.",
+                    "Expected Charecter \"'\" because chars are unicode charecters."
                 )),
             );
         }
@@ -329,7 +329,7 @@ impl Lexer {
                 "Expected Charecter",
                 start,
                 self.position.clone(),
-                "Expected one more '|'",
+                "Expected one more '|'"
             )),
         )
     }
@@ -359,7 +359,7 @@ impl Lexer {
                 "Expected Charecter",
                 start,
                 self.position.clone(),
-                "Expected one more '|'",
+                "Expected one more '|'"
             )),
         )
     }
