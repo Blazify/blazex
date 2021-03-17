@@ -1,20 +1,7 @@
-use crate::core::nodes::binary_op_node::BinOpNode;
-use crate::core::nodes::boolean_node::BooleanNode;
-use crate::core::nodes::call_node::CallNode;
-use crate::core::nodes::char_node::CharNode;
-use crate::core::nodes::for_node::ForNode;
-use crate::core::nodes::fun_def::FunDef;
-use crate::core::nodes::if_node::IfNode;
-use crate::core::nodes::number_node::NumberNode;
-use crate::core::nodes::string_node::StringNode;
-use crate::core::nodes::unary_node::UnaryNode;
-use crate::core::nodes::var_access_node::VarAccessNode;
-use crate::core::nodes::var_assign_node::VarAssignNode;
-use crate::core::nodes::var_reassign_node::VarReassignNode;
-use crate::core::nodes::while_node::WhileNode;
+use crate::core::parser::nodes::Node;
 use crate::core::parser::parser_result::ParseResult;
 use crate::core::token::Token;
-use crate::utils::constants::{DynType, Nodes, Tokens};
+use crate::utils::constants::{DynType, Tokens};
 use crate::utils::error::Error;
 
 #[derive(Debug, Clone)]
@@ -37,19 +24,20 @@ impl Parser {
     pub fn advance(&mut self) -> Token {
         self.token_index += 1;
         if self.token_index < self.tokens.len() {
-            self.current_token = self.tokens.clone()[self.token_index].clone();
+            self.current_token = self.tokens.clone()[self.clone().token_index].clone();
         };
         self.current_token.clone()
     }
 
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.expr();
+        self.advance();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected Operators, Variables, Functions, etc but found none"
+                "Expected Operators, Variables, Functions, etc but found none",
             ));
         }
         res
@@ -79,7 +67,7 @@ impl Parser {
                     "Invalid Syntax Error",
                     self.current_token.pos_start.clone(),
                     self.current_token.pos_end.clone(),
-                    "Expected Identifier"
+                    "Expected Identifier",
                 ));
             }
 
@@ -92,29 +80,32 @@ impl Parser {
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
                     self.current_token.pos_end.clone(),
-                    "Expected '='"
+                    "Expected '='",
                 ));
             }
 
             res.register_advancement();
             self.advance();
 
-            let expr = res.register(self.expr());
+            let expr = res.register(self.expr()).unwrap();
             res.register_advancement();
             self.advance();
 
-            let assignable = if var_type == String::from("var") {
+            let reassignable = if var_type == String::from("var") {
                 true
             } else {
                 false
             };
-            return res.success(Nodes::VarAssignNode(Box::new(VarAssignNode::new(
-                var_name,
-                expr.unwrap(),
-                assignable,
-            ))));
+            return res.success(Node::VarAssignNode {
+                name: var_name.clone(),
+                value: Box::new(expr),
+                reassignable,
+                pos_start: var_name.pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
+        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.comp_expr());
         if res.error.is_some() {
             return res;
@@ -136,11 +127,13 @@ impl Parser {
             if res.error.is_some() {
                 return res;
             }
-            left = Option::from(Nodes::BinOp(Box::new(BinOpNode::new(
-                left.unwrap(),
+            left = Option::from(Node::BinOpNode {
+                left: Box::new(left.clone().unwrap()),
+                right: Box::new(right.clone().unwrap()),
                 op_token,
-                right.unwrap(),
-            ))));
+                pos_start: pos_start.clone(),
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         if res.error.is_some() {
@@ -148,7 +141,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'var', int, float, identifier, '+', '-' or '('"
+                "Expected 'var', int, float, identifier, '+', '-' or '('",
             ));
         }
 
@@ -172,12 +165,15 @@ impl Parser {
                 return res;
             }
 
-            return res.success(Nodes::UnaryOp(Box::new(UnaryNode::new(
-                node.unwrap(),
-                op_token,
-            ))));
+            return res.success(Node::UnaryNode {
+                node: Box::new(node.clone().unwrap()),
+                op_token: op_token.clone(),
+                pos_start: op_token.pos_start,
+                pos_end: self.current_token.clone().pos_start,
+            });
         }
 
+        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.arith_expr());
         if res.error.is_some() {
             return res;
@@ -201,11 +197,13 @@ impl Parser {
             if res.error.is_some() {
                 return res;
             }
-            left = Option::from(Nodes::BinOp(Box::new(BinOpNode::new(
-                left.unwrap(),
+            left = Option::from(Node::BinOpNode {
+                left: Box::new(left.clone().unwrap()),
+                right: Box::new(right.clone().unwrap()),
                 op_token,
-                right.unwrap(),
-            ))));
+                pos_start: pos_start.clone(),
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         if res.error.is_some() {
@@ -213,7 +211,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "A Int or Float or Identifier, '+', '-', '(', 'not', '!' was Expected"
+                "A Int or Float or Identifier, '+', '-', '(', 'not', '!' was Expected",
             ));
         }
         res.success(left.unwrap())
@@ -222,6 +220,7 @@ impl Parser {
     pub fn arith_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
+        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.term());
         if res.error.is_some() {
             return res;
@@ -237,11 +236,13 @@ impl Parser {
                 return res;
             }
 
-            left = Option::from(Nodes::BinOp(Box::new(BinOpNode::new(
-                left.unwrap(),
+            left = Option::from(Node::BinOpNode {
+                left: Box::new(left.clone().unwrap()),
+                right: Box::new(right.clone().unwrap()),
                 op_token,
-                right.unwrap(),
-            ))));
+                pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         res.success(left.unwrap())
@@ -250,6 +251,7 @@ impl Parser {
     pub fn term(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
+        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.factor());
         if res.error.is_some() {
             return res;
@@ -265,11 +267,13 @@ impl Parser {
                 return res;
             }
 
-            left = Option::from(Nodes::BinOp(Box::new(BinOpNode::new(
-                left.unwrap(),
+            left = Option::from(Node::BinOpNode {
+                left: Box::new(left.clone().unwrap()),
+                right: Box::new(right.clone().unwrap()),
                 op_token,
-                right.unwrap(),
-            ))));
+                pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         res.success(left.unwrap())
@@ -286,16 +290,19 @@ impl Parser {
             if res.error.is_some() {
                 return res;
             }
-            return res.success(Nodes::UnaryOp(Box::new(UnaryNode::new(
-                factor.unwrap(),
-                token,
-            ))));
+            return res.success(Node::UnaryNode {
+                op_token: token.clone(),
+                node: Box::new(factor.clone().unwrap()),
+                pos_start: token.pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
         self.power()
     }
 
     pub fn power(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.call());
         if res.error.is_some() {
             return res;
@@ -311,11 +318,13 @@ impl Parser {
                 return res;
             }
 
-            left = Option::from(Nodes::BinOp(Box::new(BinOpNode::new(
-                left.unwrap(),
+            left = Option::from(Node::BinOpNode {
+                left: Box::new(left.clone().unwrap()),
+                right: Box::new(right.clone().unwrap()),
                 op_token,
-                right.unwrap(),
-            ))));
+                pos_start: pos_start.clone(),
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         res.success(left.unwrap())
@@ -323,13 +332,14 @@ impl Parser {
 
     pub fn call(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
         let atom = res.register(self.atom());
         if res.error.is_some() {
             return res;
         }
 
         if self.current_token.r#type == Tokens::LeftParenthesis {
-            let mut arg_nodes: Vec<Nodes> = vec![];
+            let mut arg_nodes: Vec<Node> = vec![];
             res.register_advancement();
             self.advance();
 
@@ -343,7 +353,7 @@ impl Parser {
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
                         self.current_token.pos_end.clone(),
-                        "Expected ')', 'var', int, float, identifier, '+', '-' or ','"
+                        "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
                     ));
                 }
                 arg_nodes.push(expr.unwrap());
@@ -358,7 +368,7 @@ impl Parser {
                             "Invalid Syntax",
                             self.current_token.pos_start.clone(),
                             self.current_token.pos_end.clone(),
-                            "Expected ')', 'var', int, float, identifier, '+', '-' or ','"
+                            "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
                         ));
                     }
                     arg_nodes.push(expr.unwrap());
@@ -369,14 +379,16 @@ impl Parser {
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
                         self.current_token.pos_end.clone(),
-                        "Expected ')' or ','"
+                        "Expected ')' or ','",
                     ));
                 }
             }
-            return res.success(Nodes::CallNode(Box::new(CallNode::new(
-                atom.unwrap(),
-                Some(arg_nodes),
-            ))));
+            return res.success(Node::CallNode {
+                node_to_call: Box::new(atom.clone().unwrap()),
+                args: arg_nodes,
+                pos_start: pos_start.clone(),
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         res.success(atom.unwrap())
@@ -389,19 +401,35 @@ impl Parser {
         if [Tokens::Int, Tokens::Float].contains(&token.r#type) {
             res.register_advancement();
             self.advance();
-            return res.success(Nodes::Number(Box::new(NumberNode::new(token))));
+            return res.success(Node::NumberNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::Boolean {
             res.register_advancement();
             self.advance();
-            return res.success(Nodes::BooleanNode(Box::new(BooleanNode::new(token))));
+            return res.success(Node::BooleanNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::String {
             res.register_advancement();
             self.advance();
-            return res.success(Nodes::StringNode(Box::new(StringNode::new(token))));
+            return res.success(Node::StringNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::Char {
             res.register_advancement();
             self.advance();
-            return res.success(Nodes::CharNode(Box::new(CharNode::new(token))));
+            return res.success(Node::CharNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::Identifier {
             res.register_advancement();
             self.advance();
@@ -418,13 +446,19 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
-                return res.success(Nodes::VarReassignNode(Box::new(VarReassignNode::new(
-                    token,
-                    new_value.unwrap(),
-                ))));
+                return res.success(Node::VarReassignNode {
+                    name: token.clone(),
+                    value: Box::new(new_value.clone().unwrap()),
+                    pos_start: token.clone().pos_start,
+                    pos_end: self.current_token.clone().pos_end,
+                });
             }
 
-            return res.success(Nodes::VarAccessNode(Box::new(VarAccessNode::new(token))));
+            return res.success(Node::VarAccessNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
@@ -437,9 +471,11 @@ impl Parser {
                     "Invalid Syntax",
                     self.current_token.clone().pos_start,
                     self.current_token.clone().pos_end,
-                    "Expected ')'"
+                    "Expected ')'",
                 ));
             }
+
+            self.advance();
             return res.success(expr.unwrap());
         } else if token
             .clone()
@@ -483,7 +519,7 @@ impl Parser {
             "Invalid Syntax",
             token.pos_start,
             token.pos_end,
-            "A Int, Float, String, Char, Keyword, Identifier, '+', '-', '(', etc was Expected"
+            "A Int, Float, String, Char, Keyword, Identifier, '+', '-', '(', etc was Expected",
         ))
     }
 
@@ -498,15 +534,16 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'if'"
+                "Expected 'if'",
             ));
         }
 
         res.register_advancement();
         self.advance();
 
-        let mut cases: Vec<(Nodes, Nodes)> = vec![];
-        let mut else_case: Option<Nodes> = None;
+        let pos_start = self.current_token.clone().pos_start;
+        let mut cases: Vec<(Node, Node)> = vec![];
+        let mut else_case: Option<Node> = None;
 
         let first_condition = res.register(self.expr());
         if res.error.is_some() {
@@ -516,13 +553,13 @@ impl Parser {
         if !self
             .current_token
             .clone()
-            .matches(Tokens::Keyword, DynType::String("then".to_string()))
+            .matches(Tokens::LeftCurlyBraces, DynType::None)
         {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'then'"
+                "Expected '{'",
             ));
         }
 
@@ -534,6 +571,19 @@ impl Parser {
             return res;
         }
         cases.push((first_condition.unwrap(), first_expr.unwrap()));
+
+        if !self
+            .current_token
+            .clone()
+            .matches(Tokens::RightCurlyBraces, DynType::None)
+        {
+            return res.failure(Error::new(
+                "Invalid Syntax",
+                self.current_token.pos_start.clone(),
+                self.current_token.pos_end.clone(),
+                "Expected '}'",
+            ));
+        }
 
         while self
             .current_token
@@ -559,13 +609,13 @@ impl Parser {
                 if !self
                     .current_token
                     .clone()
-                    .matches(Tokens::Keyword, DynType::String("then".to_string()))
+                    .matches(Tokens::LeftCurlyBraces, DynType::None)
                 {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
                         self.current_token.pos_end.clone(),
-                        "Expected 'then'"
+                        "Expected '{'",
                     ));
                 }
 
@@ -578,6 +628,19 @@ impl Parser {
                 }
 
                 cases.push((condition.unwrap(), expr.unwrap()));
+
+                if !self
+                    .current_token
+                    .clone()
+                    .matches(Tokens::RightCurlyBraces, DynType::None)
+                {
+                    return res.failure(Error::new(
+                        "Invalid Syntax",
+                        self.current_token.pos_start.clone(),
+                        self.current_token.pos_end.clone(),
+                        "Expected '}'",
+                    ));
+                }
                 res.register_advancement();
                 self.advance();
             } else {
@@ -590,11 +653,17 @@ impl Parser {
                 self.advance();
             }
         }
-        res.success(Nodes::IfNode(Box::new(IfNode::new(cases, else_case))))
+        res.success(Node::IfNode {
+            cases,
+            else_case: Box::new(else_case.clone()),
+            pos_start,
+            pos_end: self.current_token.clone().pos_end,
+        })
     }
 
     pub fn while_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
         if !self
             .current_token
             .clone()
@@ -604,14 +673,14 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'while'"
+                "Expected 'while'",
             ));
         }
 
         res.register_advancement();
         self.advance();
 
-        let condition = res.register(self.expr());
+        let condition_node = res.register(self.expr());
         if res.error.is_some() {
             return res;
         }
@@ -619,28 +688,43 @@ impl Parser {
         if !self
             .current_token
             .clone()
-            .matches(Tokens::Keyword, DynType::String("then".to_string()))
+            .matches(Tokens::LeftCurlyBraces, DynType::None)
         {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'then'"
+                "Expected '{'",
             ));
         }
 
         res.register_advancement();
         self.advance();
 
-        let body = res.register(self.expr());
+        let body_node = res.register(self.expr());
         if res.error.is_some() {
             return res;
         }
 
-        res.success(Nodes::WhileNode(Box::new(WhileNode::new(
-            condition.unwrap(),
-            body.unwrap(),
-        ))))
+        if !self
+            .current_token
+            .clone()
+            .matches(Tokens::RightCurlyBraces, DynType::None)
+        {
+            return res.failure(Error::new(
+                "Invalid Syntax",
+                self.current_token.pos_start.clone(),
+                self.current_token.pos_end.clone(),
+                "Expected '}'",
+            ));
+        }
+
+        res.success(Node::WhileNode {
+            condition_node: Box::new(condition_node.clone().unwrap()),
+            body_node: Box::new(body_node.clone().unwrap()),
+            pos_start: pos_start.clone(),
+            pos_end: self.current_token.clone().pos_end,
+        })
     }
 
     pub fn for_expr(&mut self) -> ParseResult {
@@ -654,19 +738,20 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'for'"
+                "Expected 'for'",
             ));
         }
 
         res.register_advancement();
         self.advance();
+        let start = self.current_token.clone().pos_start;
 
         if self.current_token.r#type != Tokens::Identifier {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected Identifier"
+                "Expected Identifier",
             ));
         }
 
@@ -679,7 +764,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected '='"
+                "Expected '='",
             ));
         }
 
@@ -700,7 +785,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'to'"
+                "Expected 'to'",
             ));
         }
 
@@ -712,7 +797,7 @@ impl Parser {
             return res;
         }
 
-        let mut step: Option<Nodes> = None;
+        let mut step: Option<Node> = None;
         if self
             .current_token
             .clone()
@@ -730,13 +815,13 @@ impl Parser {
         if !self
             .current_token
             .clone()
-            .matches(Tokens::Keyword, DynType::String("then".to_string()))
+            .matches(Tokens::LeftCurlyBraces, DynType::None)
         {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'then'"
+                "Expected '{'",
             ));
         }
 
@@ -748,17 +833,35 @@ impl Parser {
             return res;
         }
 
-        res.success(Nodes::ForNode(Box::new(ForNode::new(
-            var_name,
-            init_expr.unwrap(),
-            end_expr.unwrap(),
-            body.unwrap(),
-            step,
-        ))))
+        if !self
+            .current_token
+            .clone()
+            .matches(Tokens::RightCurlyBraces, DynType::None)
+        {
+            return res.failure(Error::new(
+                "Invalid Syntax",
+                self.current_token.pos_start.clone(),
+                self.current_token.pos_end.clone(),
+                "Expected '}'",
+            ));
+        }
+
+        self.advance();
+
+        res.success(Node::ForNode {
+            var_name_token: var_name,
+            start_value: Box::new(init_expr.clone().unwrap()),
+            end_value: Box::new(end_expr.clone().unwrap()),
+            body_node: Box::new(body.clone().unwrap()),
+            step_value_node: Box::new(step.clone()),
+            pos_start: start,
+            pos_end: self.current_token.clone().pos_end,
+        })
     }
 
     pub fn fun_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
         if !self
             .current_token
             .clone()
@@ -768,7 +871,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected 'fun'"
+                "Expected 'fun'",
             ));
         }
 
@@ -787,7 +890,7 @@ impl Parser {
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
                     self.current_token.pos_end.clone(),
-                    "Expected '('"
+                    "Expected '('",
                 ));
             }
         } else if self.current_token.r#type != Tokens::LeftParenthesis {
@@ -795,7 +898,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected '(' or identifier"
+                "Expected '(' or identifier",
             ));
         }
 
@@ -824,7 +927,7 @@ impl Parser {
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
                         self.current_token.pos_end.clone(),
-                        "Expected Identifier"
+                        "Expected Identifier",
                     ));
                 }
             }
@@ -834,7 +937,7 @@ impl Parser {
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
                     self.current_token.pos_end.clone(),
-                    "Expected ')' or ','"
+                    "Expected ')' or ','",
                 ));
             }
         } else if self.current_token.r#type != Tokens::RightParenthesis {
@@ -842,7 +945,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected ')' or identifier"
+                "Expected ')' or identifier",
             ));
         }
 
@@ -854,7 +957,7 @@ impl Parser {
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
                 self.current_token.pos_end.clone(),
-                "Expected '=>'"
+                "Expected '=>'",
             ));
         }
 
@@ -866,10 +969,12 @@ impl Parser {
             return res;
         }
 
-        res.success(Nodes::FunDef(Box::new(FunDef::new(
-            body_node.unwrap(),
-            fun_name,
-            Some(args_name_tokens),
-        ))))
+        res.success(Node::FunDef {
+            name: fun_name,
+            body_node: Box::new(body_node.clone().unwrap()),
+            arg_tokens: args_name_tokens,
+            pos_start,
+            pos_end: self.current_token.clone().pos_end,
+        })
     }
 }

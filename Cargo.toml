@@ -1,11 +1,23 @@
 [package]
 name = "blazescript"
-version = "0.0.1"
+version = "1.0.0-SNAPSHOT"
 authors = ["RoMeAh <teamblazeyt3129@gmail.com>"]
 edition = "2018"
-license-file = "./LICENSE"
-readme = "./README.md"
-repository = "https://github.com/BlazifyOrg/blazescript"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/RoMeAh/blazescript"
 
 [dependencies]
-# None
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+rustyline = "8.0.0"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "blazescript"
+path = "src/main.rs"
+test = false
+
+[features]
+development = []

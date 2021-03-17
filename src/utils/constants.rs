@@ -1,10 +1,3 @@
-use crate::core::nodes::{
-    binary_op_node::BinOpNode, boolean_node::BooleanNode, call_node::CallNode, char_node::CharNode,
-    for_node::ForNode, fun_def::FunDef, if_node::IfNode, number_node::NumberNode,
-    string_node::StringNode, unary_node::UnaryNode, var_access_node::VarAccessNode,
-    var_assign_node::VarAssignNode, var_reassign_node::VarReassignNode, while_node::WhileNode,
-};
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Tokens {
     Int,
@@ -21,6 +14,8 @@ pub enum Tokens {
     Divide,
     LeftParenthesis,
     RightParenthesis,
+    LeftCurlyBraces,
+    RightCurlyBraces,
     Power,
     Keyword,
     Identifier,
@@ -32,7 +27,7 @@ pub enum Tokens {
     GreaterThan,
     GreaterThanEquals,
     EOF,
-    None,
+    Unknown,
 }
 
 pub fn get_keywords() -> Vec<String> {
@@ -43,7 +38,6 @@ pub fn get_keywords() -> Vec<String> {
         string("or"),
         string("not"),
         string("if"),
-        string("then"),
         string("else"),
         string("for"),
         string("to"),
@@ -80,22 +74,5 @@ pub enum DynType {
     String(String),
     Char(char),
     Boolean(bool),
-}
-
-#[derive(Debug, Clone)]
-pub enum Nodes {
-    Number(Box<NumberNode>),
-    BinOp(Box<BinOpNode>),
-    UnaryOp(Box<UnaryNode>),
-    IfNode(Box<IfNode>),
-    ForNode(Box<ForNode>),
-    VarAssignNode(Box<VarAssignNode>),
-    StringNode(Box<StringNode>),
-    CharNode(Box<CharNode>),
-    VarAccessNode(Box<VarAccessNode>),
-    VarReassignNode(Box<VarReassignNode>),
-    WhileNode(Box<WhileNode>),
-    BooleanNode(Box<BooleanNode>),
-    FunDef(Box<FunDef>),
-    CallNode(Box<CallNode>),
+    None,
 }

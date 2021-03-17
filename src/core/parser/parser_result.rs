@@ -1,9 +1,9 @@
-use crate::utils::constants::Nodes;
+use crate::core::parser::nodes::Node;
 use crate::utils::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct ParseResult {
-    pub node: Option<Nodes>,
+    pub node: Option<Node>,
     pub error: Option<Error>,
     pub advance_count: i64,
 }
@@ -17,7 +17,7 @@ impl ParseResult {
         }
     }
 
-    pub fn register(&mut self, res: ParseResult) -> Option<Nodes> {
+    pub fn register(&mut self, res: ParseResult) -> Option<Node> {
         self.advance_count += res.advance_count;
         if res.error.is_some() {
             self.error = res.error.clone();
@@ -29,7 +29,7 @@ impl ParseResult {
         self.advance_count += 1;
     }
 
-    pub fn success(&mut self, node: Nodes) -> ParseResult {
+    pub fn success(&mut self, node: Node) -> ParseResult {
         self.node = Some(node);
         self.clone()
     }

@@ -1,20 +1,25 @@
 use crate::utils::position::Position;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Error {
-    pub name: String,
+    pub name: &'static str,
     pub pos_start: Position,
     pub pos_end: Position,
-    pub description: String,
+    pub description: &'static str,
 }
 
 impl Error {
-    pub fn new(name: &str, pos_start: Position, pos_end: Position, description: &str) -> Error {
+    pub fn new(
+        name: &'static str,
+        pos_start: Position,
+        pos_end: Position,
+        description: &'static str,
+    ) -> Error {
         Error {
-            name: String::from(name),
+            name,
             pos_start,
             pos_end,
-            description: String::from(description)
+            description,
         }
     }
 
@@ -31,8 +36,8 @@ impl Error {
                 .split("\n")
                 .collect::<Vec<&str>>()[self.pos_start.line as usize]
                 .replace("\t", ""),
-            " ".repeat((self.pos_start.column - 1) as usize)
-                + &*"^".repeat((self.pos_end.column - self.pos_start.column + 1) as usize)
+            " ".repeat((self.pos_start.column) as usize)
+                + &*"^".repeat((self.pos_end.column - self.pos_start.column) as usize)
         )
     }
 }

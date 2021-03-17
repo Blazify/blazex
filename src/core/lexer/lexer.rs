@@ -12,16 +12,16 @@ use std::convert::TryInto;
 pub struct Lexer {
     pub file_name: String,
     pub text: String,
-    pub current_char: char,
+    pub current_char: Option<char>,
     pub position: Position,
 }
 
 impl Lexer {
-    pub fn new(file_name: &str, text: &str) -> Lexer {
+    pub fn new(file_name: &'static str, text: &'static str) -> Lexer {
         let mut lexer = Lexer {
             file_name: String::from(file_name),
             text: String::from(text),
-            current_char: ' ',
+            current_char: None,
             position: Position::new(-1, 0, -1, file_name, text),
         };
         lexer.advance();
@@ -29,108 +29,129 @@ impl Lexer {
     }
 
     fn advance(&mut self) {
-        self.position.advance(self.current_char);
+        self.position.advance(self.current_char.unwrap_or(' '));
         if self.text.len() > self.position.index.try_into().unwrap() {
             let split: Vec<char> = self.text.chars().collect::<Vec<char>>();
             let index: i64 = self.position.index.try_into().unwrap();
-            self.current_char = split[index as usize];
+            self.current_char = Some(split[index as usize]);
         } else {
-            self.current_char = ';';
+            self.current_char = None;
         }
     }
 
     pub fn tokenize(&mut self) -> LexerResult {
         let mut tokens: Vec<Token> = vec![];
 
-        while self.current_char != ';' {
+        while self.current_char.is_some() {
             let start = self.position.clone();
             let mut end = self.position.clone();
-            end.advance(self.current_char);
-            if [' ', '\n'].contains(&self.current_char) {
+            end.advance(self.current_char.unwrap());
+
+            if [' ', '\n', '\t'].contains(&self.current_char.unwrap()) {
                 self.advance();
-            } else if self.current_char == '+' {
-                tokens.push(Token::new(Tokens::Plus, start, end, None));
-                self.advance();
-            } else if self.current_char == '-' {
-                tokens.push(Token::new(Tokens::Minus, start, end, None));
-                self.advance();
-            } else if self.current_char == '*' {
-                tokens.push(Token::new(Tokens::Multiply, start, end, None));
-                self.advance();
-            } else if self.current_char == '/' {
-                tokens.push(Token::new(Tokens::Divide, start, end, None));
-                self.advance();
-            } else if self.current_char == '(' {
-                tokens.push(Token::new(Tokens::LeftParenthesis, start, end, None));
-                self.advance();
-            } else if self.current_char == ')' {
-                tokens.push(Token::new(Tokens::RightParenthesis, start, end, None));
-                self.advance();
-            } else if self.current_char == '^' {
-                tokens.push(Token::new(Tokens::Power, start, end, None));
-                self.advance();
-            } else if self.current_char == ':' {
-                tokens.push(Token::new(Tokens::Colon, start, end, None));
-                self.advance();
-            } else if self.current_char == ',' {
-                tokens.push(Token::new(Tokens::Comma, start, end, None));
-                self.advance();
-            } else if self.current_char == '"' {
-                tokens.push(self.make_string());
-            } else if self.current_char == '\'' {
-                let result = self.make_char();
-                if result.error.is_none() && !result.token.is_none() {
-                    tokens.push(result.token.unwrap());
-                } else {
-                    return LexerResult::new(None, Some(result.error.unwrap()));
-                };
-            } else if self.current_char == '|' {
-                let result = self.make_or();
-                if result.error.is_none() && !result.token.is_none() {
-                    tokens.push(result.token.unwrap());
-                } else {
-                    return LexerResult::new(None, Some(result.error.unwrap()));
-                };
-            } else if self.current_char == '&' {
-                let result = self.make_and();
-                if result.error.is_none() && !result.token.is_none() {
-                    tokens.push(result.token.unwrap());
-                } else {
-                    return LexerResult::new(None, Some(result.error.unwrap()));
-                };
-            } else if self.current_char == '!' {
-                tokens.push(self.make_not());
-            } else if self.current_char == '<' {
-                tokens.push(self.make_less_than());
-            } else if self.current_char == '>' {
-                tokens.push(self.make_greater_than());
-            } else if self.current_char == '=' {
-                tokens.push(self.make_equals());
-            } else if get_number().contains(&self.current_char.to_digit(36).unwrap_or(69420))
-                || self.current_char == '.'
-            {
-                tokens.push(self.make_number());
-            } else if get_ascii_letters().contains(&self.current_char.to_string().as_str()) {
-                tokens.push(self.make_identifiers());
+                continue;
+            }
+
+            let token = match self.current_char.unwrap() {
+                '+' => Tokens::Plus,
+                '-' => Tokens::Minus,
+                '*' => Tokens::Multiply,
+                '/' => Tokens::Divide,
+                '(' => Tokens::LeftParenthesis,
+                ')' => Tokens::RightParenthesis,
+                '{' => Tokens::LeftCurlyBraces,
+                '}' => Tokens::RightCurlyBraces,
+                '^' => Tokens::Power,
+                ':' => Tokens::Colon,
+                ',' => Tokens::Comma,
+                _ => Tokens::Unknown,
+            };
+
+            let mut token_is_unknown = false;
+            if token == Tokens::Unknown {
+                let mut res = LexerResult::new(None, None);
+                match self.current_char.unwrap() {
+                    '"' => tokens.push(self.make_string()),
+                    '!' => tokens.push(self.make_not()),
+                    '<' => tokens.push(self.make_less_than()),
+                    '>' => tokens.push(self.make_greater_than()),
+                    '=' => tokens.push(self.make_equals()),
+                    '\'' => {
+                        let result = self.make_char();
+                        if result.error.is_none() && !result.token.is_none() {
+                            tokens.push(result.token.unwrap());
+                        } else {
+                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        };
+                    }
+                    '|' => {
+                        let result = self.make_or();
+                        if result.error.is_none() && !result.token.is_none() {
+                            tokens.push(result.token.unwrap());
+                        } else {
+                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        };
+                    }
+                    '&' => {
+                        let result = self.make_and();
+                        if result.error.is_none() && !result.token.is_none() {
+                            tokens.push(result.token.unwrap());
+                        } else {
+                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        };
+                    }
+                    _ => {
+                        let no = self.current_char.unwrap().to_digit(36);
+                        if no.is_some() {
+                            if get_number().contains(&no.unwrap())
+                                || self.current_char.unwrap() == '.'
+                            {
+                                tokens.push(self.make_number());
+                            } else if get_ascii_letters()
+                                .contains(&self.current_char.unwrap().to_string().as_str())
+                            {
+                                tokens.push(self.make_identifiers());
+                            } else {
+                                token_is_unknown = true;
+                            }
+                        } else {
+                            token_is_unknown = true;
+                        }
+                    }
+                }
+
+                if res.error.is_some() {
+                    return res;
+                }
             } else {
-                let start = self.position.clone();
-                let char = self.current_char.to_string();
+                tokens.push(Token::new(token, start, end, DynType::None));
+                self.advance();
+            }
+
+            if token_is_unknown {
+                let start_1 = self.position.clone();
+                let char = self.current_char.unwrap().to_string();
                 return LexerResult::new(
                     None,
                     Some(Error::new(
                         "Illegal Character",
-                        start,
+                        start_1,
                         self.position.clone(),
-                        format!("Unexpected Character '{}'.", char).as_str()
+                        Box::leak(
+                            format!("Unexpected Character '{}'", char)
+                                .to_owned()
+                                .into_boxed_str(),
+                        ),
                     )),
                 );
             }
         }
+
         tokens.push(Token::new(
             Tokens::EOF,
             self.position.clone(),
             self.position.clone(),
-            None,
+            DynType::None,
         ));
         LexerResult::new(Some(tokens), None)
     }
@@ -140,37 +161,34 @@ impl Lexer {
         let mut dot_count = 0;
         let start = self.position.clone();
 
-        while self.current_char != ';'
-            && (get_number().contains(&self.current_char.to_digit(36).unwrap_or(69420))
-                || self.current_char == '.')
-        {
-            if self.current_char == '.' {
-                dot_count += 1;
-                str_num.push('.');
-                self.advance();
-            } else {
-                str_num.push(self.current_char);
-                self.advance();
+        while self.current_char.is_some() {
+            if self.current_char.unwrap().to_digit(36).is_none()
+                && self.current_char.unwrap() != '.'
+            {
+                break;
             }
+            if self.current_char.unwrap() == '.' {
+                dot_count += 1;
+            }
+            str_num.push(self.current_char.unwrap());
+            self.advance();
         }
 
-        self.advance();
-
-        if dot_count != 0 {
-            return Token::new(
+        return if dot_count > 0 {
+            Token::new(
                 Tokens::Float,
                 start,
                 self.position.clone(),
-                Some(DynType::Float(str_num.parse::<f32>().unwrap())),
-            );
-        }
-
-        return Token::new(
-            Tokens::Int,
-            start,
-            self.position.clone(),
-            Some(DynType::Int(str_num.parse::<i64>().unwrap())),
-        );
+                DynType::Float(str_num.parse::<f32>().unwrap()),
+            )
+        } else {
+            Token::new(
+                Tokens::Int,
+                start,
+                self.position.clone(),
+                DynType::Int(str_num.parse::<i64>().unwrap()),
+            )
+        };
     }
 
     fn make_string(&mut self) -> Token {
@@ -179,20 +197,23 @@ impl Lexer {
         let mut escape = true;
         self.advance();
 
-        while self.current_char != ';' && self.current_char != '"' || escape {
+        while self.current_char.is_some() || escape {
+            if self.current_char.unwrap() == '"' {
+                break;
+            }
             if escape {
-                if self.current_char == '\n' {
+                if self.current_char.unwrap_or(' ') == '\n' {
                     str_raw.push('\n');
-                } else if self.current_char == '\t' {
+                } else if self.current_char.unwrap_or(' ') == '\t' {
                     str_raw.push('\t');
                 } else {
-                    str_raw.push(self.current_char);
+                    str_raw.push(self.current_char.unwrap());
                 }
             } else {
-                if self.current_char == '\\' {
+                if self.current_char.unwrap_or(' ') == '\\' {
                     escape = true;
                 } else {
-                    str_raw.push(self.current_char);
+                    str_raw.push(self.current_char.unwrap());
                 }
             }
 
@@ -200,12 +221,11 @@ impl Lexer {
             escape = false;
         }
 
-        self.advance();
         Token::new(
             Tokens::String,
             start,
             self.position.clone(),
-            Some(DynType::String(str_raw)),
+            DynType::String(str_raw),
         )
     }
 
@@ -216,26 +236,24 @@ impl Lexer {
         let new_char = self.current_char;
         self.advance();
 
-        if self.current_char != '\'' {
+        if self.current_char.unwrap_or(' ') != '\'' {
             return LexerMethodResult::new(
                 None,
                 Some(Error::new(
-                    "Expected Charecter",
+                    "Expected Character",
                     start,
                     self.position.clone(),
-                    "Expected Charecter \"'\" because chars are unicode charecters."
+                    "Expected Character \"'\" because chars are unicode characters.",
                 )),
             );
         }
-
-        self.advance();
 
         LexerMethodResult::new(
             Some(Token::new(
                 Tokens::Char,
                 start,
                 self.position.clone(),
-                Some(DynType::Char(new_char)),
+                DynType::Char(new_char.unwrap()),
             )),
             None,
         )
@@ -245,62 +263,83 @@ impl Lexer {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '=' {
+        if self.current_char.unwrap_or(' ') == '=' {
             self.advance();
-            return Token::new(Tokens::DoubleEquals, start, self.position.clone(), None);
-        } else if self.current_char == '>' {
+            return Token::new(
+                Tokens::DoubleEquals,
+                start,
+                self.position.clone(),
+                DynType::None,
+            );
+        } else if self.current_char.unwrap_or(' ') == '>' {
             self.advance();
-            return Token::new(Tokens::Arrow, start, self.position.clone(), None);
+            return Token::new(Tokens::Arrow, start, self.position.clone(), DynType::None);
         }
 
-        self.advance();
-        Token::new(Tokens::Equals, start, self.position.clone(), None)
+        Token::new(Tokens::Equals, start, self.position.clone(), DynType::None)
     }
 
     fn make_less_than(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '=' {
-            return Token::new(Tokens::LessThanEquals, start, self.position.clone(), None);
+        if self.current_char.unwrap_or(' ') == '=' {
+            return Token::new(
+                Tokens::LessThanEquals,
+                start,
+                self.position.clone(),
+                DynType::None,
+            );
         }
 
-        self.advance();
-        Token::new(Tokens::LessThan, start, self.position.clone(), None)
+        Token::new(
+            Tokens::LessThan,
+            start,
+            self.position.clone(),
+            DynType::None,
+        )
     }
 
     fn make_greater_than(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '=' {
+        if self.current_char.unwrap_or(' ') == '=' {
             return Token::new(
                 Tokens::GreaterThanEquals,
                 start,
                 self.position.clone(),
-                None,
+                DynType::None,
             );
         }
 
-        self.advance();
-        Token::new(Tokens::GreaterThan, start, self.position.clone(), None)
+        Token::new(
+            Tokens::GreaterThan,
+            start,
+            self.position.clone(),
+            DynType::None,
+        )
     }
 
     fn make_not(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '=' {
+        if self.current_char.unwrap_or(' ') == '=' {
             self.advance();
-            return Token::new(Tokens::NotEquals, start, self.position.clone(), None);
+            return Token::new(
+                Tokens::NotEquals,
+                start,
+                self.position.clone(),
+                DynType::None,
+            );
         }
 
-        self.advance();
         Token::new(
             Tokens::Keyword,
             start,
             self.position.clone(),
-            Some(DynType::String("not".to_string())),
+            DynType::String("not".to_string()),
         )
     }
 
@@ -308,28 +347,26 @@ impl Lexer {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '|' {
+        if self.current_char.unwrap_or(' ') == '|' {
             self.advance();
             return LexerMethodResult::new(
                 Some(Token::new(
                     Tokens::Keyword,
                     start,
                     self.position.clone(),
-                    Some(DynType::String("or".to_string())),
+                    DynType::String("or".to_string()),
                 )),
                 None,
             );
         }
 
-        self.advance();
-
         LexerMethodResult::new(
             None,
             Some(Error::new(
-                "Expected Charecter",
+                "Expected Character",
                 start,
                 self.position.clone(),
-                "Expected one more '|'"
+                "Expected one more '|'",
             )),
         )
     }
@@ -338,28 +375,26 @@ impl Lexer {
         let start = self.position.clone();
         self.advance();
 
-        if self.current_char == '&' {
+        if self.current_char.unwrap_or(' ') == '&' {
             self.advance();
             return LexerMethodResult::new(
                 Some(Token::new(
                     Tokens::Keyword,
                     start,
                     self.position.clone(),
-                    Some(DynType::String("and".to_string())),
+                    DynType::String("and".to_string()),
                 )),
                 None,
             );
         }
 
-        self.advance();
-
         LexerMethodResult::new(
             None,
             Some(Error::new(
-                "Expected Charecter",
+                "Expected Character",
                 start,
                 self.position.clone(),
-                "Expected one more '|'"
+                "Expected one more '&'",
             )),
         )
     }
@@ -368,10 +403,13 @@ impl Lexer {
         let mut identifier = String::new();
         let start = self.position.clone();
 
-        while self.current_char != ';'
-            && get_ascii_letters_and_digits().contains(&self.current_char.to_string().as_str())
-        {
-            identifier.push(self.current_char);
+        while self.current_char.is_some() {
+            if !get_ascii_letters_and_digits()
+                .contains(&self.current_char.unwrap().to_string().as_str())
+            {
+                break;
+            }
+            identifier.push(self.current_char.unwrap());
             self.advance();
         }
 
@@ -386,11 +424,11 @@ impl Lexer {
             identifier_type,
             start,
             self.position.clone(),
-            Some(if identifier_type != Tokens::Boolean {
+            if identifier_type != Tokens::Boolean {
                 DynType::String(identifier)
             } else {
                 DynType::Boolean(identifier.parse::<bool>().unwrap())
-            }),
+            },
         )
     }
 }

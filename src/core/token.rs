@@ -1,4 +1,5 @@
 use crate::utils::{constants::DynType, constants::Tokens, position::Position};
+use std::fmt::{Display, Error, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -8,25 +9,29 @@ pub struct Token {
     pub pos_end: Position,
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        return if self.value == DynType::None {
+            write!(f, "[{:?}]", self.r#type)
+        } else {
+            write!(f, "[{:?}]", self.value)
+        };
+    }
+}
+
 impl Token {
-    pub fn new(
-        r#type: Tokens,
-        pos_start: Position,
-        pos_end: Position,
-        value: Option<DynType>,
-    ) -> Token {
+    pub fn new(r#type: Tokens, pos_start: Position, pos_end: Position, value: DynType) -> Token {
         Token {
             r#type,
-            value: value.unwrap_or(DynType::Int(0)),
+            value,
             pos_start,
             pos_end,
         }
     }
 
     pub fn clone(&mut self) -> Token {
-        let r#type = &self.r#type;
         Token {
-            r#type: *r#type,
+            r#type: *&self.r#type,
             value: self.value.clone(),
             pos_start: self.pos_start.clone(),
             pos_end: self.pos_end.clone(),

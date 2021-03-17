@@ -1,10 +1,10 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub index: i64,
     pub line: i64,
     pub column: i64,
-    pub file_name: String,
-    pub file_content: String,
+    pub file_name: &'static str,
+    pub file_content: &'static str,
 }
 
 impl Position {
@@ -12,22 +12,22 @@ impl Position {
         index: i64,
         line: i64,
         column: i64,
-        file_name: &str,
-        file_content: &str,
+        file_name: &'static str,
+        file_content: &'static str,
     ) -> Position {
         Position {
             index,
             line,
             column,
-            file_name: String::from(file_name),
-            file_content: String::from(file_content),
+            file_name,
+            file_content,
         }
     }
 
-    pub fn advance(&mut self, charecter: char) {
+    pub fn advance(&mut self, character: char) {
         self.index += 1;
         self.column += 1;
-        if charecter == '\n' {
+        if character == '\n' {
             self.line += 1;
             self.column += 1;
         }
