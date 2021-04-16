@@ -1,4 +1,4 @@
-use blazescript::{core::llvm::compiler::Jit, Compile};
+use blazescript::{core::compiler::bytecode::BytecodeGen, Compile};
 use rustyline::{error::ReadlineError, Editor};
 
 fn main() {
@@ -9,7 +9,7 @@ fn main() {
         match readline {
             Ok(line) => {
                 let compiled =
-                    Jit::from_source("REPL", Box::leak(line.to_owned().into_boxed_str()));
+                    BytecodeGen::from_source("REPL", Box::leak(line.to_owned().into_boxed_str()));
                 match compiled {
                     Ok(n) => println!("{}", n),
                     Err(e) => println!("{}", e),

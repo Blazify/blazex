@@ -8,7 +8,6 @@ readme = "README.md"
 repository = "https://github.com/RoMeAh/blazescript"
 
 [dependencies]
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
 rustyline = "8.0.0"
 
 [lib]

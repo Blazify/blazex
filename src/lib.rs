@@ -15,10 +15,10 @@ pub mod core {
         pub mod parser;
         pub mod parser_result;
     }
-    // LLVM Code Generator
-    pub mod llvm {
-        pub mod compiler;
-        pub mod compiler_result;
+    // Compiler
+    pub mod compiler {
+        pub mod bytecode;
+        pub mod op_code;
     }
 }
 
@@ -34,9 +34,9 @@ use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
 
 pub trait Compile {
-    fn from_ast(node: &Node) -> Result<i64, String>;
+    fn from_ast(node: &Node) -> Result<String, String>;
 
-    fn from_source(name: &'static str, file_content: &'static str) -> Result<i64, String> {
+    fn from_source(name: &'static str, file_content: &'static str) -> Result<String, String> {
         let is_dev = cfg!(feature = "development");
         let line_decor = "----------";
         let lexed = Lexer::new(name, file_content).tokenize();
