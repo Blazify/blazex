@@ -76,3 +76,45 @@ pub enum DynType {
     Boolean(bool),
     None,
 }
+
+impl DynType {
+    pub fn into_int(self) -> i64 {
+        if let DynType::Int(i) = self {
+            i
+        } else {
+            panic!()
+        }
+    }
+
+    pub fn into_float(self) -> f32 {
+        if let DynType::Float(i) = self {
+            i
+        } else {
+            panic!()
+        }
+    }
+
+    pub fn into_string(self) -> String {
+        if let DynType::String(i) = self {
+            i
+        } else {
+            panic!()
+        }
+    }
+
+    pub fn into_char(self) -> char {
+        if let DynType::Char(i) = self {
+            i
+        } else {
+            panic!()
+        }
+    }
+
+    pub fn into_boolean(self) -> bool {
+        if let DynType::Boolean(i) = self {
+            i
+        } else {
+            panic!()
+        }
+    }
+}

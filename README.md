@@ -4,19 +4,23 @@
 
 - **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
 - **2. Clone this repository by the below given command**
+
 ```console
 git clone git@github.com:RoMeAh/blazescript.git
 ```
+
 - **3. Go to the Directory, Compile it**
+
 ```console
 cd blazescript/
 cargo install --path ./ --bin main
 ```
 
 # TODO
+
 - [x] Tokens
 - [x] Parser
-- [x]  Compiler
+- [x] Interpreter
 - [x] Number (Int and Floats)
 - [x] Maths Calculation (Addition, Subtraction, Multiplication, Division)
 - [x] Binary Operators
@@ -34,8 +38,10 @@ cargo install --path ./ --bin main
 - [ ] Standard Library
 
 ## Note
+
 - **It is in its very new born form.**
 - **I made the use of a library named inkwell for code generation to LLVM.**
 
 ## Author
+
 - [RoMeAh (Ronit Rahaman)](https://github.com/RoMeAh)

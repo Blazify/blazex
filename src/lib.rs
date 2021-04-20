@@ -15,25 +15,29 @@ pub mod core {
         pub mod parser;
         pub mod parser_result;
     }
-    // Compiler
-    pub mod compiler {
-        pub mod bytecode;
-        pub mod op_code;
+    // Interpreter
+    pub mod interpreter {
+        pub mod interpreter;
+        pub mod runtime_result;
+        pub mod r#type;
     }
 }
 
 // Utils
 pub mod utils {
     pub mod constants;
+    pub mod context;
     pub mod error;
     pub mod position;
+    pub mod symbol;
+    pub mod symbol_table;
 }
 
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
 
-pub trait Compile {
+pub trait Interpret {
     fn from_ast(node: &Node) -> Result<String, String>;
 
     fn from_source(name: &'static str, file_content: &'static str) -> Result<String, String> {
