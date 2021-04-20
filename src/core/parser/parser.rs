@@ -226,7 +226,7 @@ impl Parser {
             return res;
         }
 
-        if [Tokens::Plus, Tokens::Minus].contains(&self.current_token.r#type) {
+        while [Tokens::Plus, Tokens::Minus].contains(&self.current_token.r#type) {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();
@@ -257,7 +257,7 @@ impl Parser {
             return res;
         }
 
-        if [Tokens::Multiply, Tokens::Divide].contains(&self.current_token.r#type) {
+        while [Tokens::Multiply, Tokens::Divide].contains(&self.current_token.r#type) {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();
