@@ -17,6 +17,3 @@ path = "src/lib.rs"
 name = "blazescript"
 path = "src/main.rs"
 test = false
-
-[features]
-development = []

@@ -36,41 +36,22 @@ pub mod utils {
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
+use crate::utils::context::Context;
 
 pub trait Interpret {
-    fn from_ast(node: &Node) -> Result<String, String>;
+    fn from_ast(node: &Node, ctx: Context) -> Result<String, String>;
 
-    fn from_source(name: &'static str, file_content: &'static str) -> Result<String, String> {
-        let is_dev = cfg!(feature = "development");
-        let line_decor = "----------";
+    fn from_source(name: &'static str, file_content: &'static str, ctx: Context) -> Result<String, String> {
         let lexed = Lexer::new(name, file_content).tokenize();
-        if is_dev {
-            println!("{}Lexing{}\n", line_decor, line_decor);
-        }
-
         if lexed.error.is_some() {
             return Err(lexed.error.unwrap().prettify());
         }
-        if is_dev {
-            for token in lexed.tokens.clone() {
-                println!("{}", token);
-            }
-            println!("\n{}Lexing End{}\n", line_decor, line_decor);
-        }
 
         let parsed = Parser::new(lexed.tokens.clone()).parse();
-        if is_dev {
-            println!("\n{}Parsing{}\n", line_decor, line_decor);
-        }
-
         if parsed.error.is_some() || parsed.node.is_none() {
             return Err(parsed.error.unwrap().prettify());
         }
 
-        if is_dev {
-            println!("{}", parsed.clone().node.unwrap());
-            println!("\n{}Parsing End{}\n", line_decor, line_decor);
-        }
-        Self::from_ast(&parsed.node.unwrap())
+        Self::from_ast(&parsed.node.unwrap(), ctx)
     }
 }

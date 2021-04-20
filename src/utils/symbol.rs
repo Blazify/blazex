@@ -1,5 +1,6 @@
 use crate::core::interpreter::r#type::Type;
 
+#[derive(Debug, Clone)]
 pub struct Symbol {
     pub value: Type,
     pub reassignable: bool,

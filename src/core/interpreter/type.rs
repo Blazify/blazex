@@ -1,5 +1,6 @@
 use crate::core::interpreter::runtime_result::RuntimeResult;
 use crate::utils::{constants::Tokens, context::Context, error::Error, position::Position};
+use std::ops::Neg;
 
 #[derive(Debug, Clone)]
 pub enum Type {
@@ -27,6 +28,12 @@ pub enum Type {
         pos_end: Position,
         ctx: Context,
     },
+    Boolean {
+        val: bool,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
 }
 
 impl Type {
@@ -36,6 +43,7 @@ impl Type {
             Type::Float { pos_start, .. } => pos_start,
             Type::String { pos_start, .. } => pos_start,
             Type::Char { pos_start, .. } => pos_start,
+            Type::Boolean { pos_start, .. } => pos_start,
         }
     }
 
@@ -45,6 +53,7 @@ impl Type {
             Type::Float { pos_end, .. } => pos_end,
             Type::String { pos_end, .. } => pos_end,
             Type::Char { pos_end, .. } => pos_end,
+            Type::Boolean { pos_end, .. } => pos_end,
         }
     }
 
@@ -54,6 +63,7 @@ impl Type {
             Type::Float { ctx, .. } => ctx,
             Type::String { ctx, .. } => ctx,
             Type::Char { ctx, .. } => ctx,
+            Type::Boolean { ctx, .. } => ctx,
         }
     }
 
@@ -169,6 +179,47 @@ impl Type {
                         "Unexpected type",
                     )
                     .set_ctx(ctx),
+                )
+            }
+            _ => RuntimeResult::new().failure(
+                Error::new(
+                    "Runtime Error",
+                    self.clone().get_pos_start(),
+                    self.clone().get_pos_end(),
+                    "Unexpected type",
+                )
+                .set_ctx(self.clone().get_ctx()),
+            ),
+        }
+    }
+
+    pub fn unary(self, u: Tokens) -> RuntimeResult {
+        match self.clone() {
+            Self::Int {
+                val,
+                ctx,
+                pos_end,
+                pos_start,
+            } => {
+                if let Tokens::Minus = u {
+                    return RuntimeResult::new().success(Type::Int {
+                        val: val.neg(),
+                        ctx,
+                        pos_end,
+                        pos_start,
+                    });
+                } else if let Tokens::Plus = u {
+                    return RuntimeResult::new().success(Type::Int {
+                        val: val.abs(),
+                        ctx,
+                        pos_end,
+                        pos_start,
+                    });
+                }
+
+                RuntimeResult::new().failure(
+                    Error::new("Runtime Error", pos_start, pos_end, "Unexpected token")
+                        .set_ctx(self.clone().get_ctx()),
                 )
             }
             _ => RuntimeResult::new().failure(

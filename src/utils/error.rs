@@ -31,8 +31,9 @@ impl Error {
     }
 
     pub fn prettify(&mut self) -> String {
+        let mut res = String::new();
+
         if self.ctx.is_some() {
-            let mut res = String::new();
             let mut pos = Some(self.pos_start);
             let mut ctx = self.ctx.as_ref();
 
@@ -56,14 +57,15 @@ impl Error {
                 pos = ctx.unwrap().parent_position;
                 if ctx.unwrap().parent.is_some() {
                     ctx = ctx.unwrap().parent.as_ref().as_ref();
+                } else {
+                    ctx = None
                 }
             }
-
-            return format!("Traceback (most recent call last):\n{}", res.clone());
         }
 
         format!(
-            "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",
+            "Traceback (most recent call last):\n{}\n\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",
+            res,
             self.name,
             self.description,
             self.pos_start.file_name,

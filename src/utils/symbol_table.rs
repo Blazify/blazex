@@ -1,9 +1,9 @@
-use crate::core::interpreter::r#type::Type;
 use std::collections::HashMap;
+use crate::utils::symbol::Symbol;
 
 #[derive(Debug, Clone)]
 pub struct SymbolTable {
-    pub symbols: HashMap<String, Type>,
+    pub symbols: HashMap<String, Symbol>,
     pub parent: Option<Box<SymbolTable>>,
 }
 
@@ -15,16 +15,20 @@ impl SymbolTable {
         }
     }
 
-    pub fn get(&mut self, name: String) -> Option<&Type> {
+    pub fn get(&mut self, name: String) -> Option<&Symbol> {
         if self.symbols.contains_key(&name) {
             return self.symbols.get(&name);
         }
 
-        return self.parent.as_ref().unwrap().symbols.get(&name);
+        if self.parent.clone().is_some() {
+            return self.parent.as_ref().unwrap().symbols.get(&name);
+        }
+
+        None
     }
 
-    pub fn set(mut self, name: String, val: Type) -> Type {
-        self.symbols.insert(name, val).unwrap()
+    pub fn set(mut self, name: String, val: Symbol) {
+        self.symbols.insert(name, val);
     }
 
     pub fn delete(mut self, name: String) {

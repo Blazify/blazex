@@ -13,14 +13,17 @@ git clone git@github.com:RoMeAh/blazescript.git
 
 ```console
 cd blazescript/
-cargo install --path ./ --bin main
+cargo install --path ./ --bin blazescript
 ```
+
+# Dependencies
+- Rustyline for the REPL
 
 # TODO
 
 - [x] Tokens
 - [x] Parser
-- [x] Interpreter
+- [ ] Interpreter (Work in Progress...)
 - [x] Number (Int and Floats)
 - [x] Maths Calculation (Addition, Subtraction, Multiplication, Division)
 - [x] Binary Operators
@@ -40,8 +43,6 @@ cargo install --path ./ --bin main
 ## Note
 
 - **It is in its very new born form.**
-- **I made the use of a library named inkwell for code generation to LLVM.**
 
 ## Author
-
 - [RoMeAh (Ronit Rahaman)](https://github.com/RoMeAh)
