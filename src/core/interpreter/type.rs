@@ -39,6 +39,15 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn is_true(self) -> bool {
+        match self.clone() {
+            Self::Boolean { val, .. } => val,
+            Self::Int { val, .. } => val != 0,
+            Self::Float { val, .. } => val != 0.0,
+            _ => panic!("Not bool convertible"),
+        }
+    }
+
     pub fn get_pos_start(self) -> Position {
         match self {
             Type::Int { pos_start, .. } => pos_start,

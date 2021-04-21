@@ -584,6 +584,8 @@ impl Parser {
                 "Expected '}'",
             ));
         }
+        self.advance();
+        res.register_advancement();
 
         while self
             .current_token
@@ -651,6 +653,7 @@ impl Parser {
                 else_case = Some(else_expr.unwrap());
                 res.register_advancement();
                 self.advance();
+                break;
             }
         }
         res.success(Node::IfNode {

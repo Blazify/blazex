@@ -25,11 +25,11 @@ impl Interpret for Interpreter {
 
 /**
    WhileNode
-   IfNode
    FunDef
    ForNode
    CharNode
    CallNode
+   x IfNode
    x VarReassignNode
    x VarAssignNode
    x VarAccessNode
@@ -48,7 +48,7 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                if let DynType::Int(_i) = token.value {
+                if let DynType::Int(_) = token.value {
                     res.success(Type::Int {
                         val: token.value.into_int(),
                         ctx,
@@ -226,6 +226,32 @@ impl Interpreter {
                 }
 
                 res.success(result.unwrap().clone().value)
+            }
+            Node::IfNode {
+                cases, else_case, ..
+            } => {
+                for (condition, expression) in cases {
+                    let condition_val = res
+                        .clone()
+                        .register(Self::interpret_node(condition, ctx.clone()));
+                    if condition_val.clone().error.is_some() {
+                        return condition_val;
+                    }
+
+                    if condition_val.clone().val.unwrap().is_true() {
+                        let expr_val = res
+                            .clone()
+                            .register(Self::interpret_node(expression, ctx.clone()));
+                        return expr_val;
+                    }
+                }
+                if else_case.is_some() {
+                    let else_val = res
+                        .clone()
+                        .register(Self::interpret_node(else_case.unwrap(), ctx.clone()));
+                    return else_val;
+                }
+                res
             }
             _ => {
                 panic!("Not implemented yet")
