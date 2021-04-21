@@ -1,3 +1,5 @@
+use crate::utils::error::Error;
+use crate::utils::symbol::Symbol;
 use crate::{
     core::{
         interpreter::{r#type::Type, runtime_result::RuntimeResult},
@@ -6,8 +8,6 @@ use crate::{
     utils::{constants::DynType, context::Context},
     Interpret,
 };
-use crate::utils::error::Error;
-use crate::utils::symbol::Symbol;
 
 pub struct Interpreter {}
 
@@ -108,61 +108,121 @@ impl Interpreter {
                     left_built
                         .val
                         .unwrap()
-                        .op(right_built.val.unwrap(), op_token.r#type)
+                        .op(right_built.val.unwrap(), op_token),
                 )
             }
             Node::UnaryNode { node, op_token, .. } => {
-                let built = res.clone().register(Self::interpret_node(*node.clone(), ctx));
+                let built = res
+                    .clone()
+                    .register(Self::interpret_node(*node.clone(), ctx));
                 if built.error.is_some() {
                     return built;
                 }
 
                 res.register(built.val.unwrap().unary(op_token.r#type))
-            },
-            Node::BooleanNode { token, pos_start, pos_end} => {
-                res.success(Type::Boolean {
-                    val: token.value.into_boolean(),
-                    pos_start,
-                    pos_end,
-                    ctx
-                })
-            },
-            Node::VarAssignNode {name, value, reassignable, pos_start, pos_end} => {
-                let val = res.clone().register(Self::interpret_node(*value.clone(), ctx.clone()));
+            }
+            Node::BooleanNode {
+                token,
+                pos_start,
+                pos_end,
+            } => res.success(Type::Boolean {
+                val: token.value.into_boolean(),
+                pos_start,
+                pos_end,
+                ctx,
+            }),
+            Node::VarAssignNode {
+                name,
+                value,
+                reassignable,
+                pos_start,
+                pos_end,
+            } => {
+                let val = res
+                    .clone()
+                    .register(Self::interpret_node(*value.clone(), ctx.clone()));
                 if val.error.is_some() {
-                    return val
+                    return val;
                 }
 
-                if ctx.symbol_table.clone().get(name.clone().value.into_string()).is_some() {
-                    return res.failure(Error::new("Runtime Error", pos_start, pos_end, "Variable Declared Twice").set_ctx(ctx));
+                if ctx
+                    .symbol_table
+                    .clone()
+                    .get(name.clone().value.into_string())
+                    .is_some()
+                {
+                    return res.failure(
+                        Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Variable Declared Twice",
+                        )
+                        .set_ctx(ctx),
+                    );
                 }
 
-                ctx.symbol_table.set(name.value.into_string(), Symbol::new(val.clone().val.unwrap(), reassignable));
+                ctx.symbol_table.set(
+                    name.value.into_string(),
+                    Symbol::new(val.clone().val.unwrap(), reassignable),
+                );
                 res.success(val.val.unwrap())
-            },
-            Node::VarReassignNode { value, name, pos_start, pos_end } => {
+            }
+            Node::VarReassignNode {
+                value,
+                name,
+                pos_start,
+                pos_end,
+            } => {
                 let result = ctx.symbol_table.get(name.clone().value.into_string());
                 if result.clone().is_none() {
-                    return res.failure(Error::new("Runtime Error", pos_start, pos_end, "Variable not reassignable").set_ctx(ctx.clone()));
+                    return res.failure(
+                        Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Variable not reassignable",
+                        )
+                        .set_ctx(ctx.clone()),
+                    );
                 }
 
                 if result.clone().unwrap().reassignable == false {
-                    return res.failure(Error::new("Runtime Error", pos_start, pos_end, "Variable not reassignable").set_ctx(ctx.clone()));
+                    return res.failure(
+                        Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Variable not reassignable",
+                        )
+                        .set_ctx(ctx.clone()),
+                    );
                 }
 
-                let val = res.clone().register(Self::interpret_node(*value.clone(), ctx.clone()));
+                let val = res
+                    .clone()
+                    .register(Self::interpret_node(*value.clone(), ctx.clone()));
                 if val.error.is_some() {
                     return val;
-
                 }
-                ctx.symbol_table.set(name.value.into_string(), Symbol::new(val.clone().val.unwrap(), true));
+                ctx.symbol_table.set(
+                    name.value.into_string(),
+                    Symbol::new(val.clone().val.unwrap(), true),
+                );
                 res.success(val.clone().val.unwrap())
-            },
-            Node::VarAccessNode { token, pos_start, pos_end } => {
+            }
+            Node::VarAccessNode {
+                token,
+                pos_start,
+                pos_end,
+            } => {
                 let result = ctx.symbol_table.get(token.clone().value.into_string());
 
                 if result.clone().is_none() {
-                    return res.failure(Error::new("Runtime Error", pos_start, pos_end, "Variable not found").set_ctx(ctx.clone()));
+                    return res.failure(
+                        Error::new("Runtime Error", pos_start, pos_end, "Variable not found")
+                            .set_ctx(ctx.clone()),
+                    );
                 }
 
                 res.success(result.unwrap().clone().value)

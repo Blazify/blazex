@@ -1,4 +1,6 @@
 use crate::core::interpreter::runtime_result::RuntimeResult;
+use crate::core::token::Token;
+use crate::utils::constants::DynType;
 use crate::utils::{constants::Tokens, context::Context, error::Error, position::Position};
 use std::ops::Neg;
 
@@ -67,7 +69,7 @@ impl Type {
         }
     }
 
-    pub fn op(self, n: Type, op: Tokens) -> RuntimeResult {
+    pub fn op(self, n: Type, op: Token) -> RuntimeResult {
         match self.clone() {
             Type::Int {
                 val: v,
@@ -79,7 +81,7 @@ impl Type {
                     val: v1, pos_end, ..
                 } = n
                 {
-                    return match op {
+                    return match op.r#type {
                         Tokens::Plus => RuntimeResult::new().success(Type::Int {
                             val: v + v1,
                             ctx,
@@ -103,6 +105,42 @@ impl Type {
                             ctx,
                             pos_start,
                             pos_end,
+                        }),
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::LessThan => RuntimeResult::new().success(Type::Boolean {
+                            val: v < v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::LessThanEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v <= v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::GreaterThan => RuntimeResult::new().success(Type::Boolean {
+                            val: v > v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v >= v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
                         }),
                         _ => RuntimeResult::new().failure(
                             Error::new(
@@ -135,7 +173,7 @@ impl Type {
                     val: v1, pos_end, ..
                 } = n
                 {
-                    return match op {
+                    return match op.r#type {
                         Tokens::Plus => RuntimeResult::new().success(Type::Float {
                             val: v + v1,
                             ctx,
@@ -160,6 +198,42 @@ impl Type {
                             pos_start,
                             pos_end,
                         }),
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::LessThan => RuntimeResult::new().success(Type::Boolean {
+                            val: v < v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::LessThanEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v <= v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::GreaterThan => RuntimeResult::new().success(Type::Boolean {
+                            val: v > v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: v >= v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
                         _ => RuntimeResult::new().failure(
                             Error::new(
                                 "Runtime Error",
@@ -179,6 +253,72 @@ impl Type {
                         "Unexpected type",
                     )
                     .set_ctx(ctx),
+                )
+            }
+            Type::Boolean {
+                val,
+                ctx,
+                pos_start,
+                ..
+            } => {
+                if let Type::Boolean {
+                    val: v1, pos_end, ..
+                } = n
+                {
+                    if op
+                        .clone()
+                        .matches(Tokens::Keyword, DynType::String("and".to_string()))
+                    {
+                        return RuntimeResult::new().success(Type::Boolean {
+                            val: val && v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        });
+                    } else if op
+                        .clone()
+                        .matches(Tokens::Keyword, DynType::String("or".to_string()))
+                    {
+                        return RuntimeResult::new().success(Type::Boolean {
+                            val: val || v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        });
+                    }
+
+                    match op.r#type {
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: val == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                            val: val == v1,
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
+                        _ => RuntimeResult::new().failure(
+                            Error::new(
+                                "Runtime Error",
+                                self.clone().get_pos_start(),
+                                self.clone().get_pos_end(),
+                                "Unexpected type",
+                            )
+                            .set_ctx(self.clone().get_ctx()),
+                        ),
+                    };
+                }
+                RuntimeResult::new().failure(
+                    Error::new(
+                        "Runtime Error",
+                        self.clone().get_pos_start(),
+                        self.clone().get_pos_end(),
+                        "Unexpected type",
+                    )
+                    .set_ctx(self.clone().get_ctx()),
                 )
             }
             _ => RuntimeResult::new().failure(
