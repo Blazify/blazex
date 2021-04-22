@@ -1,11 +1,9 @@
-use crate::utils::error::Error;
-use crate::utils::symbol::Symbol;
 use crate::{
     core::{
         interpreter::{r#type::Type, runtime_result::RuntimeResult},
         parser::nodes::Node,
     },
-    utils::{constants::DynType, context::Context},
+    utils::{constants::DynType, context::Context, error::Error, symbol::Symbol},
     Interpret,
 };
 
@@ -24,11 +22,11 @@ impl Interpret for Interpreter {
 }
 
 /**
-   WhileNode
    FunDef
-   ForNode
-   CharNode
    CallNode
+   x WhileNode
+   x ForNode
+   x CharNode
    x IfNode
    x VarReassignNode
    x VarAssignNode
@@ -90,36 +88,27 @@ impl Interpreter {
                 op_token,
                 ..
             } => {
-                let left_built = res
-                    .clone()
-                    .register(Self::interpret_node(*left.clone(), ctx.clone()));
+                let left_built = Self::interpret_node(*left.clone(), ctx.clone());
                 if left_built.error.is_some() {
                     return left_built;
                 }
 
-                let right_built = res
-                    .clone()
-                    .register(Self::interpret_node(*right.clone(), ctx.clone()));
+                let right_built = Self::interpret_node(*right.clone(), ctx.clone());
                 if right_built.error.is_some() {
                     return right_built;
                 }
-
-                res.register(
-                    left_built
-                        .val
-                        .unwrap()
-                        .op(right_built.val.unwrap(), op_token),
-                )
+                left_built
+                    .val
+                    .unwrap()
+                    .op(right_built.val.unwrap(), op_token)
             }
             Node::UnaryNode { node, op_token, .. } => {
-                let built = res
-                    .clone()
-                    .register(Self::interpret_node(*node.clone(), ctx));
+                let built = Self::interpret_node(*node.clone(), ctx);
                 if built.error.is_some() {
                     return built;
                 }
 
-                res.register(built.val.unwrap().unary(op_token.r#type))
+                built.val.unwrap().unary(op_token.r#type)
             }
             Node::BooleanNode {
                 token,
@@ -138,9 +127,7 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let val = res
-                    .clone()
-                    .register(Self::interpret_node(*value.clone(), ctx.clone()));
+                let val = Self::interpret_node(*value.clone(), ctx.clone());
                 if val.error.is_some() {
                     return val;
                 }
@@ -199,9 +186,7 @@ impl Interpreter {
                     );
                 }
 
-                let val = res
-                    .clone()
-                    .register(Self::interpret_node(*value.clone(), ctx.clone()));
+                let val = Self::interpret_node(*value.clone(), ctx.clone());
                 if val.error.is_some() {
                     return val;
                 }
@@ -231,27 +216,129 @@ impl Interpreter {
                 cases, else_case, ..
             } => {
                 for (condition, expression) in cases {
-                    let condition_val = res
-                        .clone()
-                        .register(Self::interpret_node(condition, ctx.clone()));
+                    let condition_val = Self::interpret_node(condition, ctx.clone());
                     if condition_val.clone().error.is_some() {
                         return condition_val;
                     }
 
                     if condition_val.clone().val.unwrap().is_true() {
-                        let expr_val = res
-                            .clone()
-                            .register(Self::interpret_node(expression, ctx.clone()));
+                        let expr_val = Self::interpret_node(expression, ctx.clone());
                         return expr_val;
                     }
                 }
                 if else_case.is_some() {
-                    let else_val = res
-                        .clone()
-                        .register(Self::interpret_node(else_case.unwrap(), ctx.clone()));
+                    let else_val = Self::interpret_node(else_case.unwrap(), ctx.clone());
                     return else_val;
                 }
                 res
+            }
+            Node::ForNode {
+                var_name_token,
+                start_value,
+                body_node,
+                step_value_node,
+                end_value,
+                pos_start,
+                pos_end,
+            } => {
+                let start = Self::interpret_node(*start_value.clone(), ctx.clone());
+                if start.error.is_some() {
+                    return start;
+                }
+
+                let end = Self::interpret_node(*end_value.clone(), ctx.clone());
+                if end.error.is_some() {
+                    return end;
+                }
+
+                let step_value;
+                if step_value_node.is_some() {
+                    step_value =
+                        Self::interpret_node(step_value_node.unwrap().clone(), ctx.clone())
+                            .val
+                            .unwrap_or(Type::Int {
+                                val: 1,
+                                pos_start,
+                                pos_end,
+                                ctx: ctx.clone(),
+                            });
+                } else {
+                    step_value = Type::Int {
+                        val: 1,
+                        pos_start,
+                        pos_end,
+                        ctx: ctx.clone(),
+                    };
+                }
+
+                let mut i = start.val.unwrap().get_int();
+
+                let condition;
+                if step_value.clone().get_int() >= 0 {
+                    condition = i < end.clone().val.unwrap().get_int();
+                } else {
+                    condition = i > end.clone().val.unwrap().get_int();
+                }
+
+                while condition {
+                    if i == end.clone().val.unwrap().get_int() {
+                        break;
+                    }
+                    ctx.symbol_table = ctx.clone().symbol_table.set(
+                        var_name_token.clone().value.into_string(),
+                        Symbol::new(
+                            Type::Int {
+                                val: i,
+                                pos_start,
+                                pos_end,
+                                ctx: ctx.clone(),
+                            },
+                            true,
+                        ),
+                    );
+
+                    i += step_value.clone().get_int();
+                    let body_eval = Self::interpret_node(*body_node.clone(), ctx.clone());
+                    if body_eval.error.is_some() {
+                        return body_eval;
+                    }
+                }
+
+                res.success(Type::Boolean {
+                    val: true,
+                    pos_start,
+                    pos_end,
+                    ctx: ctx.clone(),
+                })
+            }
+            Node::WhileNode {
+                condition_node,
+                body_node,
+                pos_start,
+                pos_end,
+            } => {
+                loop {
+                    let condition = Self::interpret_node(*condition_node.clone(), ctx.clone());
+                    if condition.error.is_some() {
+                        return condition;
+                    }
+
+                    if !condition.val.unwrap().is_true() {
+                        break;
+                    }
+
+                    let body_eval = Self::interpret_node(*body_node.clone(), ctx.clone());
+                    if body_eval.error.is_some() {
+                        return body_eval;
+                    }
+                }
+
+                res.success(Type::Boolean {
+                    val: true,
+                    pos_start,
+                    pos_end,
+                    ctx: ctx.clone(),
+                })
             }
             _ => {
                 panic!("Not implemented yet")

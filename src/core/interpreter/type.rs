@@ -39,6 +39,13 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn get_int(self) -> i64 {
+        match self {
+            Self::Int { val, .. } => val,
+            _ => panic!(),
+        }
+    }
+
     pub fn is_true(self) -> bool {
         match self.clone() {
             Self::Boolean { val, .. } => val,

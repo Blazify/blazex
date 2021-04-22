@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::utils::symbol::Symbol;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct SymbolTable {
@@ -27,8 +27,9 @@ impl SymbolTable {
         None
     }
 
-    pub fn set(mut self, name: String, val: Symbol) {
+    pub fn set(mut self, name: String, val: Symbol) -> Self {
         self.symbols.insert(name, val);
+        self
     }
 
     pub fn delete(mut self, name: String) {

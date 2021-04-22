@@ -24,13 +24,4 @@ impl RuntimeResult {
         self.error = Some(error);
         self
     }
-
-    pub fn register(mut self, res: Self) -> Self {
-        if res.error.is_some() {
-            self.error = res.error;
-        } else {
-            self.val = res.val;
-        }
-        self
-    }
 }
