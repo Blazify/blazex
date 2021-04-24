@@ -7,6 +7,7 @@ use crate::utils::{
     symbol_table::SymbolTable,
 };
 use std::convert::TryInto;
+use std::fmt::{Display, Error as E, Formatter};
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
@@ -477,5 +478,27 @@ impl Type {
             return result;
         }
         res.success(Type::Null)
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
+        match self {
+            Self::Int { val, .. } => write!(f, "Int: {}", val),
+            Self::Float { val, .. } => write!(f, "Float: {}", val),
+            Self::Char { val, .. } => write!(f, "Char: {}", val),
+            Self::String { val, .. } => write!(f, "String: {}", val),
+            Self::Boolean { val, .. } => write!(f, "Boolean: {}", val),
+            Self::Function { name, args, .. } => write!(
+                f,
+                "fun {} ({})",
+                name.clone().value.into_string(),
+                args.iter()
+                    .map(|x| x.clone().value.into_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+            Self::Null => write!(f, "Null"),
+        }
     }
 }

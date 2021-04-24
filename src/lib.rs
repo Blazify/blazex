@@ -33,19 +33,20 @@ pub mod utils {
     pub mod symbol_table;
 }
 
+use crate::core::interpreter::r#type::Type;
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
 use crate::utils::context::Context;
 
 pub trait Interpret {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<String, String>;
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, String>;
 
     fn from_source(
         name: &'static str,
         file_content: &'static str,
         ctx: &mut Context,
-    ) -> Result<String, String> {
+    ) -> Result<Type, String> {
         let lexed = Lexer::new(name, file_content).tokenize();
         if lexed.error.is_some() {
             return Err(lexed.error.unwrap().prettify());

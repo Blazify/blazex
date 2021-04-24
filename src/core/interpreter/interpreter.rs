@@ -16,14 +16,13 @@ use crate::{
 pub struct Interpreter {}
 
 impl Interpret for Interpreter {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<String, String> {
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, String> {
         let res = Self::interpret_node(node.clone(), ctx);
         if res.val.is_some() {
-            return Ok(format!("{:?}", res.val.unwrap()));
-        } else if res.error.is_some() {
-            return Ok(res.error.unwrap().prettify());
+            return Ok(res.val.unwrap());
+        } else {
+            return Err(res.error.unwrap().prettify());
         }
-        Ok("".to_string())
     }
 }
 
