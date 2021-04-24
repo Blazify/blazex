@@ -39,9 +39,13 @@ use crate::core::parser::parser::Parser;
 use crate::utils::context::Context;
 
 pub trait Interpret {
-    fn from_ast(node: &Node, ctx: Context) -> Result<String, String>;
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<String, String>;
 
-    fn from_source(name: &'static str, file_content: &'static str, ctx: Context) -> Result<String, String> {
+    fn from_source(
+        name: &'static str,
+        file_content: &'static str,
+        ctx: &mut Context,
+    ) -> Result<String, String> {
         let lexed = Lexer::new(name, file_content).tokenize();
         if lexed.error.is_some() {
             return Err(lexed.error.unwrap().prettify());

@@ -1,7 +1,12 @@
-use crate::core::interpreter::runtime_result::RuntimeResult;
+use crate::core::interpreter::{interpreter::Interpreter, runtime_result::RuntimeResult};
+use crate::core::parser::nodes::Node;
 use crate::core::token::Token;
 use crate::utils::constants::DynType;
-use crate::utils::{constants::Tokens, context::Context, error::Error, position::Position};
+use crate::utils::{
+    constants::Tokens, context::Context, error::Error, position::Position, symbol::Symbol,
+    symbol_table::SymbolTable,
+};
+use std::convert::TryInto;
 use std::ops::Neg;
 
 #[derive(Debug, Clone)]
@@ -36,6 +41,15 @@ pub enum Type {
         pos_end: Position,
         ctx: Context,
     },
+    Function {
+        name: Token,
+        body_node: Node,
+        args: Vec<Token>,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
+    Null,
 }
 
 impl Type {
@@ -62,6 +76,8 @@ impl Type {
             Type::String { pos_start, .. } => pos_start,
             Type::Char { pos_start, .. } => pos_start,
             Type::Boolean { pos_start, .. } => pos_start,
+            Type::Function { pos_start, .. } => pos_start,
+            _ => panic!(),
         }
     }
 
@@ -72,6 +88,8 @@ impl Type {
             Type::String { pos_end, .. } => pos_end,
             Type::Char { pos_end, .. } => pos_end,
             Type::Boolean { pos_end, .. } => pos_end,
+            Type::Function { pos_end, .. } => pos_end,
+            _ => panic!(),
         }
     }
 
@@ -82,6 +100,8 @@ impl Type {
             Type::String { ctx, .. } => ctx,
             Type::Char { ctx, .. } => ctx,
             Type::Boolean { ctx, .. } => ctx,
+            Type::Function { ctx, .. } => ctx,
+            _ => panic!(),
         }
     }
 
@@ -122,6 +142,12 @@ impl Type {
                             pos_start,
                             pos_end,
                         }),
+                        Tokens::Power => RuntimeResult::new().success(Type::Int {
+                            val: v.pow(v1.try_into().unwrap()),
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
                         Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
                             val: v == v1,
                             pos_start,
@@ -129,7 +155,7 @@ impl Type {
                             ctx,
                         }),
                         Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
-                            val: v == v1,
+                            val: v != v1,
                             pos_start,
                             pos_end,
                             ctx,
@@ -214,6 +240,12 @@ impl Type {
                             pos_start,
                             pos_end,
                         }),
+                        Tokens::Power => RuntimeResult::new().success(Type::Float {
+                            val: v.powf(v1),
+                            pos_start,
+                            pos_end,
+                            ctx,
+                        }),
                         Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
                             val: v == v1,
                             pos_start,
@@ -221,7 +253,7 @@ impl Type {
                             ctx,
                         }),
                         Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
-                            val: v == v1,
+                            val: v != v1,
                             pos_start,
                             pos_end,
                             ctx,
@@ -388,5 +420,62 @@ impl Type {
                 .set_ctx(self.clone().get_ctx()),
             ),
         }
+    }
+
+    pub fn execute(self, eval_args: Vec<Type>) -> RuntimeResult {
+        let res = RuntimeResult::new();
+        if let Self::Function {
+            args,
+            body_node,
+            name,
+            pos_start,
+            pos_end,
+            ctx,
+        } = self
+        {
+            let mut ctx = Context::new(
+                name.value.into_string(),
+                SymbolTable::new(Some(Box::new(ctx.clone().symbol_table))),
+                Box::new(Some(ctx.clone())),
+                Some(pos_start.clone()),
+            );
+
+            if args.len() > eval_args.len() {
+                return res.failure(
+                    Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "Too less args supplied!",
+                    )
+                    .set_ctx(ctx.clone()),
+                );
+            }
+
+            if args.len() < eval_args.len() {
+                return res.failure(
+                    Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "Too many args supplied!",
+                    )
+                    .set_ctx(ctx.clone()),
+                );
+            }
+
+            for x in 0..args.len() {
+                let name = &args[x];
+                let val = &eval_args[x];
+
+                ctx.symbol_table = ctx.clone().symbol_table.set(
+                    name.clone().value.into_string(),
+                    Symbol::new(val.clone(), true),
+                );
+            }
+            let result = Interpreter::interpret_node(body_node, &mut ctx);
+            return result;
+        }
+        res.success(Type::Null)
     }
 }
