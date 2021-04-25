@@ -1,5 +1,4 @@
-fun main(a, b) => {
-    var sum = a + b;
-    return sum;
+fun main() => {
+    return "Functions Work!!";
 };
-main(2, 2)
+main()

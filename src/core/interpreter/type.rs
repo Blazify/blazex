@@ -502,7 +502,7 @@ impl Display for Type {
             Self::Boolean { val, .. } => write!(f, "Boolean: {}", val),
             Self::Function { name, args, .. } => write!(
                 f,
-                "fun {} ({})",
+                "fun {}({})",
                 name.clone().value.into_string(),
                 args.iter()
                     .map(|x| x.clone().value.into_string())

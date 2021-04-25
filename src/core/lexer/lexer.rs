@@ -53,13 +53,14 @@ impl Lexer {
             }
 
             if ['\n', ';'].contains(&self.current_char.unwrap()) {
+                let pos_start = self.position.clone();
+                self.advance();
                 tokens.push(Token::new(
                     Tokens::Newline,
-                    self.position,
-                    self.position.advance(';'),
+                    pos_start,
+                    self.position.clone(),
                     DynType::None,
                 ));
-                self.advance();
                 continue;
             }
 
@@ -234,6 +235,8 @@ impl Lexer {
             escape = false;
         }
 
+        self.advance();
+
         Token::new(
             Tokens::String,
             start,
@@ -260,6 +263,8 @@ impl Lexer {
                 )),
             );
         }
+
+        self.advance();
 
         LexerMethodResult::new(
             Some(Token::new(

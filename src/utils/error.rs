@@ -77,10 +77,9 @@ impl Error {
                 .split("\n")
                 .collect::<Vec<&str>>()
                 .get(self.pos_start.line as usize)
-                .unwrap_or(&"")
-                .replace("\t", ""),
-            " ".repeat((self.pos_start.column) as usize)
-                + &*"^".repeat((self.pos_end.column - self.pos_start.column + 1) as usize)
+                .unwrap_or(&""),
+            " ".repeat((self.pos_end.index - self.pos_start.index) as usize)
+                + &*"^".repeat((self.pos_end.column - self.pos_start.column) as usize)
         )
     }
 }

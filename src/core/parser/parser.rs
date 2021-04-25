@@ -23,9 +23,7 @@ impl Parser {
 
     pub fn advance(&mut self) -> Token {
         self.token_index += 1;
-        if self.token_index < self.tokens.len() {
-            self.current_token = self.tokens.clone()[self.clone().token_index].clone();
-        };
+        self.update_current_token();
         self.current_token.clone()
     }
 
@@ -37,7 +35,6 @@ impl Parser {
 
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
-        self.advance();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
             return res.failure(Error::new(
                 "Invalid Syntax",
@@ -69,9 +66,7 @@ impl Parser {
         if res.error.is_some() {
             return res;
         };
-        if statement.is_some() {
-            statements.push(statement.unwrap());
-        }
+        statements.push(statement.unwrap());
         let mut more_statements = true;
 
         loop {
@@ -477,6 +472,8 @@ impl Parser {
                         "Expected ')' or ','",
                     ));
                 }
+                res.register_advancement();
+                self.advance();
             }
             return res.success(Node::CallNode {
                 node_to_call: Box::new(atom.clone().unwrap()),
@@ -567,6 +564,7 @@ impl Parser {
                 ));
             }
 
+            res.register_advancement();
             self.advance();
             return res.success(expr.unwrap());
         } else if token.r#type == Tokens::LeftSquareBraces {
@@ -674,6 +672,9 @@ impl Parser {
                 ));
             }
         }
+
+        res.register_advancement();
+        self.advance();
 
         res.success(Node::ArrayNode {
             element_nodes,
@@ -910,6 +911,9 @@ impl Parser {
             ));
         }
 
+        res.register_advancement();
+        self.advance();
+
         res.success(Node::WhileNode {
             condition_node: Box::new(condition_node.clone().unwrap()),
             body_node: Box::new(body_node.clone().unwrap()),
@@ -1037,6 +1041,7 @@ impl Parser {
             ));
         }
 
+        res.register_advancement();
         self.advance();
 
         res.success(Node::ForNode {
