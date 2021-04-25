@@ -6,9 +6,11 @@ edition = "2018"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/BlazifyOrg/blazescript"
+homepage = "https://blazify.rocks/"
 
 [dependencies]
 rustyline = "8.0.0"
+structopt = "0.3.13"
 
 [lib]
 path = "src/lib.rs"

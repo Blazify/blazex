@@ -61,10 +61,11 @@ impl Error {
                     ctx = None
                 }
             }
+            format!("Traceback (most recent call last):\n{}\n", res);
         }
 
         format!(
-            "Traceback (most recent call last):\n{}\n\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",
+            "{}\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",
             res,
             self.name,
             self.description,
@@ -74,7 +75,9 @@ impl Error {
                 .file_content
                 .to_string()
                 .split("\n")
-                .collect::<Vec<&str>>()[self.pos_start.line as usize]
+                .collect::<Vec<&str>>()
+                .get(self.pos_start.line as usize)
+                .unwrap_or(&"")
                 .replace("\t", ""),
             " ".repeat((self.pos_start.column) as usize)
                 + &*"^".repeat((self.pos_end.column - self.pos_start.column + 1) as usize)

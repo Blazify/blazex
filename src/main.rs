@@ -3,22 +3,26 @@ use blazescript::utils::context::Context;
 use blazescript::utils::symbol_table::SymbolTable;
 use blazescript::{core::interpreter::interpreter::Interpreter, Interpret};
 use rustyline::{error::ReadlineError, Editor};
-use std::env::args;
 use std::process::exit;
+use structopt::StructOpt;
+
+#[derive(StructOpt)]
+struct Cli {
+    #[structopt(parse(from_os_str))]
+    path: Option<std::path::PathBuf>,
+}
 
 fn main() {
     let global = SymbolTable::new(None);
     let mut ctx = Context::new("<Main>".to_string(), global, Box::new(None), None);
-    if Some("--no-repl".to_string()) == args().nth(1) {
+
+    let args = Cli::from_args();
+    if args.path.is_some() {
+        let content = std::fs::read_to_string(&args.path.expect("no path specified"))
+            .expect("could not read file");
         let result = Interpreter::from_source(
             "CLI",
-            Box::leak(
-                args()
-                    .nth(2)
-                    .expect("no code given")
-                    .to_owned()
-                    .into_boxed_str(),
-            ),
+            Box::leak(content.to_owned().into_boxed_str()),
             &mut ctx,
         );
 

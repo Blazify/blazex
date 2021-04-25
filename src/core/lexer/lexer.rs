@@ -47,7 +47,18 @@ impl Lexer {
             let mut end = self.position.clone();
             end.advance(self.current_char.unwrap());
 
-            if [' ', '\n', '\t'].contains(&self.current_char.unwrap()) {
+            if [' ', '\t'].contains(&self.current_char.unwrap()) {
+                self.advance();
+                continue;
+            }
+
+            if ['\n', ';'].contains(&self.current_char.unwrap()) {
+                tokens.push(Token::new(
+                    Tokens::Newline,
+                    self.position,
+                    self.position.advance(';'),
+                    DynType::None,
+                ));
                 self.advance();
                 continue;
             }
@@ -61,6 +72,8 @@ impl Lexer {
                 ')' => Tokens::RightParenthesis,
                 '{' => Tokens::LeftCurlyBraces,
                 '}' => Tokens::RightCurlyBraces,
+                '[' => Tokens::LeftSquareBraces,
+                ']' => Tokens::RightSquareBraces,
                 '^' => Tokens::Power,
                 ':' => Tokens::Colon,
                 ',' => Tokens::Comma,

@@ -49,7 +49,8 @@ cargo install --path ./ --bin blazescript
 
 # TODO
 
-- [ ] **MULTI-LINE SUPPORT**
+- [x] **MULTI-LINE SUPPORT**
+- [x] Reading from file
 - [x] Tokens
 - [x] Parser
 - [x] Interpreter
@@ -64,6 +65,7 @@ cargo install --path ./ --bin blazescript
 - [x] Strings
 - [x] Chars
 - [x] Functions
+- [x] Arrays
 - [ ] Classes
 - [ ] Objects
 - [ ] Standard Library

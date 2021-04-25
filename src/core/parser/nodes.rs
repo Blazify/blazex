@@ -88,4 +88,14 @@ pub enum Node {
         pos_start: Position,
         pos_end: Position,
     },
+    ArrayNode {
+        element_nodes: Vec<Node>,
+        pos_start: Position,
+        pos_end: Position,
+    },
+    ReturnNode {
+        value: Box<Option<Node>>,
+        pos_start: Position,
+        pos_end: Position,
+    },
 }

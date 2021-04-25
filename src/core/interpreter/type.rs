@@ -50,6 +50,12 @@ pub enum Type {
         pos_end: Position,
         ctx: Context,
     },
+    Array {
+        elements: Vec<Type>,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
     Null,
 }
 
@@ -78,6 +84,7 @@ impl Type {
             Type::Char { pos_start, .. } => pos_start,
             Type::Boolean { pos_start, .. } => pos_start,
             Type::Function { pos_start, .. } => pos_start,
+            Type::Array { pos_start, .. } => pos_start,
             _ => panic!(),
         }
     }
@@ -90,6 +97,7 @@ impl Type {
             Type::Char { pos_end, .. } => pos_end,
             Type::Boolean { pos_end, .. } => pos_end,
             Type::Function { pos_end, .. } => pos_end,
+            Type::Array { pos_end, .. } => pos_end,
             _ => panic!(),
         }
     }
@@ -102,6 +110,7 @@ impl Type {
             Type::Char { ctx, .. } => ctx,
             Type::Boolean { ctx, .. } => ctx,
             Type::Function { ctx, .. } => ctx,
+            Type::Array { ctx, .. } => ctx,
             _ => panic!(),
         }
     }
@@ -475,7 +484,9 @@ impl Type {
                 );
             }
             let result = Interpreter::interpret_node(body_node, &mut ctx);
-            return result;
+            if result.clone().should_return() {
+                return result;
+            }
         }
         res.success(Type::Null)
     }
@@ -495,6 +506,15 @@ impl Display for Type {
                 name.clone().value.into_string(),
                 args.iter()
                     .map(|x| x.clone().value.into_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+            Self::Array { elements, .. } => write!(
+                f,
+                "[{}]",
+                elements
+                    .iter()
+                    .map(|x| format!("{}", x))
                     .collect::<Vec<String>>()
                     .join(", ")
             ),

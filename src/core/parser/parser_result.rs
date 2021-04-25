@@ -6,6 +6,7 @@ pub struct ParseResult {
     pub node: Option<Node>,
     pub error: Option<Error>,
     pub advance_count: i64,
+    pub to_reverse_count: i64,
 }
 
 impl ParseResult {
@@ -14,6 +15,7 @@ impl ParseResult {
             node: None,
             error: None,
             advance_count: 0,
+            to_reverse_count: 0,
         }
     }
 
@@ -23,6 +25,14 @@ impl ParseResult {
             self.error = res.error.clone();
         };
         res.node
+    }
+
+    pub fn try_register(&mut self, res: ParseResult) -> Option<Node> {
+        if res.error.is_some() {
+            self.to_reverse_count = res.advance_count;
+            return None;
+        };
+        self.register(res)
     }
 
     pub fn register_advancement(&mut self) {

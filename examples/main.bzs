@@ -1,0 +1,5 @@
+fun main(a, b) => {
+    var sum = a + b;
+    return sum;
+};
+main(2, 2)

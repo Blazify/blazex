@@ -24,22 +24,13 @@ impl Position {
         }
     }
 
-    pub fn advance(&mut self, character: char) {
+    pub fn advance(&mut self, character: char) -> Self {
         self.index += 1;
         self.column += 1;
         if character == '\n' {
             self.line += 1;
             self.column += 1;
         }
-    }
-
-    pub fn clone(&mut self) -> Position {
-        Position {
-            index: self.index,
-            line: self.index,
-            column: self.column,
-            file_name: self.file_name.clone(),
-            file_content: self.file_content.clone(),
-        }
+        self.clone()
     }
 }

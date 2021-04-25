@@ -16,6 +16,8 @@ pub enum Tokens {
     RightParenthesis,
     LeftCurlyBraces,
     RightCurlyBraces,
+    LeftSquareBraces,
+    RightSquareBraces,
     Power,
     Keyword,
     Identifier,
@@ -26,6 +28,7 @@ pub enum Tokens {
     LessThanEquals,
     GreaterThan,
     GreaterThanEquals,
+    Newline,
     EOF,
     Unknown,
 }
@@ -44,6 +47,7 @@ pub fn get_keywords() -> Vec<String> {
         string("step"),
         string("while"),
         string("fun"),
+        string("return"),
     ]
 }
 
