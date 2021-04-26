@@ -12,6 +12,7 @@ use crate::{
     },
     Interpret,
 };
+use std::collections::HashMap;
 
 pub struct Interpreter {}
 
@@ -19,7 +20,11 @@ impl Interpret for Interpreter {
     fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, String> {
         let res = Self::interpret_node(node.clone(), ctx);
         return if res.val.is_some() {
-            Ok(res.val.unwrap())
+            return if res.clone().should_return() {
+                Ok(res.val.unwrap())
+            } else {
+                Ok(Type::Null)
+            };
         } else {
             Err(res.error.unwrap().prettify())
         };
@@ -410,10 +415,60 @@ impl Interpreter {
                 }
 
                 res.success_return(val)
+            }
+            Node::ObjectDefNode {
+                properties,
+                pos_start,
+                pos_end,
+            } => {
+                let mut hash_props = HashMap::new();
+
+                for (k, v) in properties {
+                    let e_v = Self::interpret_node(v, ctx);
+                    if e_v.clone().should_return() {
+                        return e_v;
+                    }
+
+                    if hash_props.contains_key(&k.clone().value.into_string()) {
+                        return res.failure(Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Key already exits",
+                        ));
+                    }
+                    hash_props.insert(k.value.into_string(), e_v.val.unwrap());
+                }
+
+                res.success(Type::Object {
+                    properties: hash_props,
+                    pos_start,
+                    pos_end,
+                    ctx: ctx.clone(),
+                })
+            }
+            Node::ObjectPropAccess {
+                object, property, ..
+            } => {
+                let obj = Self::interpret_node(*object.clone(), ctx);
+                if obj.clone().should_return() {
+                    return obj;
+                }
+
+                let prop = obj
+                    .val
+                    .unwrap()
+                    .get_obj_prop_val(property.value.into_string());
+                if prop.clone().should_return() {
+                    return prop;
+                }
+
+                res.success(prop.val.unwrap())
             } /*
               _ => {
                   panic!("Not implemented yet")
-              }*/
+              }
+              */
         }
     }
 }

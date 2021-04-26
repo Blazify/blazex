@@ -98,4 +98,15 @@ pub enum Node {
         pos_start: Position,
         pos_end: Position,
     },
+    ObjectDefNode {
+        properties: Vec<(Token, Node)>,
+        pos_start: Position,
+        pos_end: Position,
+    },
+    ObjectPropAccess {
+        object: Box<Node>,
+        property: Token,
+        pos_start: Position,
+        pos_end: Position,
+    },
 }

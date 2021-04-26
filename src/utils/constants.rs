@@ -7,6 +7,7 @@ pub enum Tokens {
     Char,
     Colon,
     Comma,
+    Dot,
     Arrow,
     Plus,
     Minus,

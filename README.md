@@ -6,7 +6,7 @@
 - **2. Clone this repository by the below given command**
 
 ```console
-git clone git@github.com:RoMeAh/blazescript.git
+git clone git@github.com:BlazifyOrg/blazescript.git
 ```
 
 - **3. Go to the Directory, Compile it**
@@ -43,9 +43,10 @@ cargo install --path ./ --bin blazescript
 - ┣ 📜lib
 - ┗ 📜main
 
-# Dependencies
+# External Dependencies
 
-- Rustyline for the REPL
+- rustyline for the REPL
+- structopt for Argument parsing
 
 # TODO
 
@@ -66,7 +67,7 @@ cargo install --path ./ --bin blazescript
 - [x] Chars
 - [x] Functions
 - [x] Arrays
-- [ ] Classes
+- [x] Classes
 - [ ] Objects
 - [ ] Standard Library
 

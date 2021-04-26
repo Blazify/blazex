@@ -1,4 +1,7 @@
-fun main() => {
-    return "Functions Work!!";
-};
-main()
+var obj = { 
+    "lol": 0,
+    "o": 9,
+    "mooo": 0
+}
+
+return obj.lol + obj.o + obj.mooo;

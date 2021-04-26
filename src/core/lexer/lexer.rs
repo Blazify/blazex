@@ -78,6 +78,7 @@ impl Lexer {
                 '^' => Tokens::Power,
                 ':' => Tokens::Colon,
                 ',' => Tokens::Comma,
+                '.' => Tokens::Dot,
                 _ => Tokens::Unknown,
             };
 

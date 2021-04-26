@@ -6,9 +6,9 @@ use crate::utils::{
     constants::Tokens, context::Context, error::Error, position::Position, symbol::Symbol,
     symbol_table::SymbolTable,
 };
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::{Display, Error as E, Formatter};
-use std::ops::Neg;
 
 #[derive(Debug, Clone)]
 pub enum Type {
@@ -56,6 +56,12 @@ pub enum Type {
         pos_end: Position,
         ctx: Context,
     },
+    Object {
+        properties: HashMap<String, Type>,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
     Null,
 }
 
@@ -76,28 +82,30 @@ impl Type {
         }
     }
 
-    pub fn get_pos_start(self) -> Position {
+    pub fn get_pos_start(&self) -> Position {
         match self {
-            Type::Int { pos_start, .. } => pos_start,
-            Type::Float { pos_start, .. } => pos_start,
-            Type::String { pos_start, .. } => pos_start,
-            Type::Char { pos_start, .. } => pos_start,
-            Type::Boolean { pos_start, .. } => pos_start,
-            Type::Function { pos_start, .. } => pos_start,
-            Type::Array { pos_start, .. } => pos_start,
+            Type::Int { pos_start, .. } => *pos_start,
+            Type::Float { pos_start, .. } => *pos_start,
+            Type::String { pos_start, .. } => *pos_start,
+            Type::Char { pos_start, .. } => *pos_start,
+            Type::Boolean { pos_start, .. } => *pos_start,
+            Type::Function { pos_start, .. } => *pos_start,
+            Type::Array { pos_start, .. } => *pos_start,
+            Type::Object { pos_start, .. } => *pos_start,
             _ => panic!(),
         }
     }
 
-    pub fn get_pos_end(self) -> Position {
+    pub fn get_pos_end(&self) -> Position {
         match self {
-            Type::Int { pos_end, .. } => pos_end,
-            Type::Float { pos_end, .. } => pos_end,
-            Type::String { pos_end, .. } => pos_end,
-            Type::Char { pos_end, .. } => pos_end,
-            Type::Boolean { pos_end, .. } => pos_end,
-            Type::Function { pos_end, .. } => pos_end,
-            Type::Array { pos_end, .. } => pos_end,
+            Type::Int { pos_end, .. } => *pos_end,
+            Type::Float { pos_end, .. } => *pos_end,
+            Type::String { pos_end, .. } => *pos_end,
+            Type::Char { pos_end, .. } => *pos_end,
+            Type::Boolean { pos_end, .. } => *pos_end,
+            Type::Function { pos_end, .. } => *pos_end,
+            Type::Array { pos_end, .. } => *pos_end,
+            Type::Object { pos_end, .. } => *pos_end,
             _ => panic!(),
         }
     }
@@ -111,6 +119,7 @@ impl Type {
             Type::Boolean { ctx, .. } => ctx,
             Type::Function { ctx, .. } => ctx,
             Type::Array { ctx, .. } => ctx,
+            Type::Object { ctx, .. } => ctx,
             _ => panic!(),
         }
     }
@@ -401,14 +410,14 @@ impl Type {
             } => {
                 if let Tokens::Minus = u {
                     return RuntimeResult::new().success(Type::Int {
-                        val: val.neg(),
+                        val: val * (-1),
                         ctx,
                         pos_end,
                         pos_start,
                     });
                 } else if let Tokens::Plus = u {
                     return RuntimeResult::new().success(Type::Int {
-                        val: val.abs(),
+                        val: val * (1),
                         ctx,
                         pos_end,
                         pos_start,
@@ -490,6 +499,36 @@ impl Type {
         }
         res.success(Type::Null)
     }
+
+    pub fn get_obj_prop_val(self, k: String) -> RuntimeResult {
+        let res = RuntimeResult::new();
+        match self {
+            Self::Object {
+                properties,
+                pos_start,
+                pos_end,
+                ctx,
+            } => {
+                if !properties.contains_key(&k) {
+                    return res.failure(
+                        Error::new("Runtime Error", pos_start, pos_end, "No value found!")
+                            .set_ctx(ctx.clone()),
+                    );
+                };
+
+                res.success(properties.get(&k).unwrap().clone())
+            }
+            _ => res.failure(
+                Error::new(
+                    "Runtime Error",
+                    self.get_pos_start(),
+                    self.get_pos_end(),
+                    "Not a object!",
+                )
+                .set_ctx(self.get_ctx().clone()),
+            ),
+        }
+    }
 }
 
 impl Display for Type {
@@ -517,6 +556,17 @@ impl Display for Type {
                     .map(|x| format!("{}", x))
                     .collect::<Vec<String>>()
                     .join(", ")
+            ),
+            Self::Object { properties, .. } => write!(
+                f,
+                "{}{}{}",
+                "{\n",
+                properties
+                    .iter()
+                    .map(|(k, v)| format!("     {}: {}", k, v))
+                    .collect::<Vec<String>>()
+                    .join(",\n"),
+                "\n}"
             ),
             Self::Null => write!(f, "Null"),
         }

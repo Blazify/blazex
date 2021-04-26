@@ -36,6 +36,7 @@ impl Parser {
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
+            println!("{:?}", self.current_token.r#type);
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -481,6 +482,58 @@ impl Parser {
                 pos_start: pos_start.clone(),
                 pos_end: self.current_token.clone().pos_end,
             });
+        } else if self.current_token.r#type == Tokens::Dot {
+            self.advance();
+            res.register_advancement();
+
+            if self.current_token.r#type != Tokens::Identifier {
+                return res.failure(Error::new(
+                    "Invalid Syntax",
+                    self.current_token.pos_start.clone(),
+                    self.current_token.pos_end.clone(),
+                    "Expected identifier",
+                ));
+            }
+
+            let mut id = self.current_token.clone();
+
+            res.register_advancement();
+            self.advance();
+
+            let mut l = Node::ObjectPropAccess {
+                object: Box::new(atom.clone().unwrap()),
+                property: id,
+                pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            };
+
+            while self.current_token.r#type == Tokens::Dot {
+                self.advance();
+                res.register_advancement();
+
+                if self.current_token.r#type != Tokens::Identifier {
+                    return res.failure(Error::new(
+                        "Invalid Syntax",
+                        self.current_token.pos_start.clone(),
+                        self.current_token.pos_end.clone(),
+                        "Expected identifier",
+                    ));
+                }
+
+                id = self.current_token.clone();
+
+                res.register_advancement();
+                self.advance();
+
+                l = Node::ObjectPropAccess {
+                    object: Box::new(l),
+                    property: id,
+                    pos_start,
+                    pos_end: self.current_token.clone().pos_end,
+                };
+            }
+
+            return res.success(l);
         }
 
         res.success(atom.unwrap())
@@ -573,6 +626,12 @@ impl Parser {
                 return res;
             }
             return res.success(array_expr.unwrap());
+        } else if token.r#type == Tokens::LeftCurlyBraces {
+            let obj_expr = res.register(self.obj_expr());
+            if res.error.is_some() {
+                return res;
+            }
+            return res.success(obj_expr.unwrap());
         } else if token
             .clone()
             .matches(Tokens::Keyword, DynType::String("if".to_string()))
@@ -617,6 +676,148 @@ impl Parser {
             token.pos_end,
             "A Int, Float, String, Char, Keyword, Identifier, '+', '-', '(', etc was Expected",
         ))
+    }
+
+    pub fn obj_expr(&mut self) -> ParseResult {
+        let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
+        let mut properties: Vec<(Token, Node)> = vec![];
+
+        if self.current_token.r#type != Tokens::LeftCurlyBraces {
+            return res.failure(Error::new(
+                "Invalid syntax",
+                pos_start,
+                self.current_token.clone().pos_end,
+                "'{' was expected.",
+            ));
+        }
+
+        self.advance();
+        res.register_advancement();
+
+        if self.current_token.r#type == Tokens::Newline {
+            res.register_advancement();
+            self.advance();
+        }
+
+        if self.current_token.r#type == Tokens::RightCurlyBraces {
+            res.register_advancement();
+            self.advance();
+        } else {
+            let mut expr = res.register(self.expr());
+            if res.error.is_some() {
+                return res.failure(Error::new(
+                    "Invalid syntax",
+                    pos_start,
+                    self.current_token.pos_end,
+                    "'}', 'key' was expected.",
+                ));
+            }
+
+            let mut tok;
+            if let Node::StringNode { token, .. } = expr.unwrap() {
+                tok = token;
+            } else {
+                return res.failure(Error::new(
+                    "Invalid syntax",
+                    pos_start,
+                    self.current_token.clone().pos_end,
+                    "string was expected.",
+                ));
+            }
+
+            if self.current_token.r#type != Tokens::Colon {
+                return res.failure(Error::new(
+                    "Invalid syntax",
+                    pos_start,
+                    self.current_token.clone().pos_end,
+                    "':' was expected.",
+                ));
+            }
+
+            res.register_advancement();
+            self.advance();
+
+            expr = res.register(self.expr());
+            if res.error.is_some() {
+                return res;
+            }
+
+            properties.push((tok, expr.unwrap()));
+
+            while self.current_token.r#type == Tokens::Comma {
+                self.advance();
+                res.register_advancement();
+
+                if self.current_token.r#type == Tokens::Newline {
+                    res.register_advancement();
+                    self.advance();
+                }
+
+                expr = res.register(self.expr());
+                if res.error.is_some() {
+                    return res.failure(Error::new(
+                        "Invalid syntax",
+                        pos_start,
+                        self.current_token.pos_end,
+                        "'}' ',', 'key' was expected.",
+                    ));
+                }
+
+                if let Node::StringNode { token, .. } = expr.unwrap() {
+                    tok = token;
+                } else {
+                    return res.failure(Error::new(
+                        "Invalid syntax",
+                        pos_start,
+                        self.current_token.clone().pos_end,
+                        "string was expected.",
+                    ));
+                }
+
+                if self.current_token.r#type != Tokens::Colon {
+                    return res.failure(Error::new(
+                        "Invalid syntax",
+                        pos_start,
+                        self.current_token.clone().pos_end,
+                        "':' was expected.",
+                    ));
+                }
+
+                res.register_advancement();
+                self.advance();
+
+                expr = res.register(self.expr());
+                if res.error.is_some() {
+                    return res;
+                }
+
+                properties.push((tok, expr.unwrap()));
+            }
+
+            if self.current_token.r#type == Tokens::Newline {
+                self.advance();
+                res.register_advancement()
+            }
+
+            if self.current_token.r#type != Tokens::RightCurlyBraces {
+                return res.failure(Error::new(
+                    "Invalid syntax",
+                    pos_start,
+                    self.current_token.clone().pos_end,
+                    "'}', ',' was expected.",
+                ));
+            }
+        }
+
+        res.register_advancement();
+        self.advance();
+
+        res.success(Node::ObjectDefNode {
+            properties,
+            pos_start,
+            pos_end: self.current_token.clone().pos_end,
+        })
     }
 
     pub fn array_expr(&mut self) -> ParseResult {
@@ -671,10 +872,9 @@ impl Parser {
                     "Expected ']' or ','.",
                 ));
             }
+            res.register_advancement();
+            self.advance();
         }
-
-        res.register_advancement();
-        self.advance();
 
         res.success(Node::ArrayNode {
             element_nodes,
