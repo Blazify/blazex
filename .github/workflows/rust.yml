@@ -26,7 +26,7 @@ jobs:
         run: |
           cargo build --release --verbose
           ./target/release/blazescript examples/main.bzs
-      build:
+    build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
