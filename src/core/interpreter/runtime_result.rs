@@ -24,15 +24,15 @@ impl RuntimeResult {
         self.clone()
     }
 
-    pub fn success(mut self, val: Type) -> Self {
+    pub fn success(&mut self, val: Type) -> Self {
+        self.reset();
         self.val = Some(val);
-        self
+        self.clone()
     }
 
     pub fn success_return(&mut self, val: Type) -> Self {
         self.reset();
         self.return_val = true;
-        self.error = None;
         self.val = Some(val);
         self.clone()
     }

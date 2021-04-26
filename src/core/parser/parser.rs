@@ -424,7 +424,7 @@ impl Parser {
     pub fn call(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
-        let atom = res.register(self.atom());
+        let obj_expr = res.register(self.obj_prop_expr());
         if res.error.is_some() {
             return res;
         }
@@ -477,12 +477,24 @@ impl Parser {
                 self.advance();
             }
             return res.success(Node::CallNode {
-                node_to_call: Box::new(atom.clone().unwrap()),
+                node_to_call: Box::new(obj_expr.clone().unwrap()),
                 args: arg_nodes,
                 pos_start: pos_start.clone(),
                 pos_end: self.current_token.clone().pos_end,
             });
-        } else if self.current_token.r#type == Tokens::Dot {
+        }
+        res.success(obj_expr.unwrap())
+    }
+
+    pub fn obj_prop_expr(&mut self) -> ParseResult {
+        let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
+        let atom = res.register(self.atom());
+        if res.error.is_some() {
+            return res;
+        }
+
+        if self.current_token.r#type == Tokens::Dot {
             self.advance();
             res.register_advancement();
 
@@ -532,7 +544,6 @@ impl Parser {
                     pos_end: self.current_token.clone().pos_end,
                 };
             }
-
             return res.success(l);
         }
 
@@ -819,7 +830,6 @@ impl Parser {
             pos_end: self.current_token.clone().pos_end,
         })
     }
-
     pub fn array_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut element_nodes: Vec<Node> = vec![];

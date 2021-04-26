@@ -442,7 +442,7 @@ impl Type {
     }
 
     pub fn execute(self, eval_args: Vec<Type>) -> RuntimeResult {
-        let res = RuntimeResult::new();
+        let mut res = RuntimeResult::new();
         if let Self::Function {
             args,
             body_node,
@@ -496,12 +496,13 @@ impl Type {
             if result.clone().should_return() {
                 return result;
             }
+            return res.success(result.val.unwrap());
         }
         res.success(Type::Null)
     }
 
     pub fn get_obj_prop_val(self, k: String) -> RuntimeResult {
-        let res = RuntimeResult::new();
+        let mut res = RuntimeResult::new();
         match self {
             Self::Object {
                 properties,

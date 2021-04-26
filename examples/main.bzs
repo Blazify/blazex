@@ -1,7 +1,11 @@
-var obj = { 
-    "lol": 0,
-    "o": 9,
-    "mooo": 0
+
+fun main() => {
+    var obj = { 
+        "lol": 0,
+        "o": 9,
+        "mooo": 0
+    }
+    return obj
 }
 
-return obj.lol + obj.o + obj.mooo;
+main();
