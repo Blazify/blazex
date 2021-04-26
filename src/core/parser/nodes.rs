@@ -109,4 +109,18 @@ pub enum Node {
         pos_start: Position,
         pos_end: Position,
     },
+    ClassDefNode {
+        name: Token,
+        constructor: Box<Option<Node>>,
+        properties: Vec<Node>,
+        methods: Vec<Node>,
+        pos_start: Position,
+        pos_end: Position,
+    },
+    ClassInitNode {
+        name: Token,
+        constructor_params: Vec<Node>,
+        pos_start: Position,
+        pos_end: Position,
+    },
 }

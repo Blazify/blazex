@@ -49,6 +49,9 @@ pub fn get_keywords() -> Vec<String> {
         string("while"),
         string("fun"),
         string("return"),
+        string("class"),
+        string("new"),
+        string("soul"),
     ]
 }
 

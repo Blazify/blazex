@@ -1,4 +1,4 @@
-name: Rust
+name: Blazescript
 
 on:
   push:
@@ -18,3 +18,19 @@ jobs:
         run: |
           cargo build --release --verbose
           ./target/release/blazescript examples/main.bzs
+    build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cargo build --release --verbose
+          ./target/release/blazescript examples/main.bzs
+      build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cargo build --release --verbose
+          ./target/release/blazescript.exe examples/main.bzs

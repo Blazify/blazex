@@ -8,4 +8,4 @@ fun main() => {
     return obj
 }
 
-main();
+return main();

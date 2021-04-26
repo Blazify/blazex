@@ -464,11 +464,10 @@ impl Interpreter {
                 }
 
                 res.success(prop.val.unwrap())
-            } /*
-              _ => {
-                  panic!("Not implemented yet")
-              }
-              */
+            }
+            _ => {
+                panic!("Not implemented yet")
+            }
         }
     }
 }
