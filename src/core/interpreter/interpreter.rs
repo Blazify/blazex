@@ -10,14 +10,14 @@ use crate::{
         error::Error,
         symbol::Symbol,
     },
-    Interpret,
+    LanguageServer,
 };
 use std::collections::HashMap;
 
 pub struct Interpreter {}
 
-impl Interpret for Interpreter {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, String> {
+impl LanguageServer for Interpreter {
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, Error> {
         let res = Self::interpret_node(node.clone(), ctx);
         return if res.val.is_some() {
             return if res.clone().should_return() {
@@ -26,7 +26,7 @@ impl Interpret for Interpreter {
                 Ok(Type::Null)
             };
         } else {
-            Err(res.error.unwrap().prettify())
+            Err(res.error.unwrap())
         };
     }
 }
@@ -377,8 +377,8 @@ impl Interpreter {
                     eval_args.push(eval_arg.val.unwrap());
                 }
 
-                let val = val_to_call.val.unwrap().execute(eval_args);
-                val
+                let mut val = val_to_call.val.unwrap().execute(eval_args);
+                val.success(val.clone().val.unwrap())
             }
             Node::ArrayNode {
                 element_nodes,

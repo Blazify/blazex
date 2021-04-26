@@ -30,7 +30,7 @@ impl Error {
         self
     }
 
-    pub fn prettify(&mut self) -> String {
+    pub fn prettify(&self) -> String {
         let mut res = String::new();
 
         if self.ctx.is_some() {

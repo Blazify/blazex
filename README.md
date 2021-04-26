@@ -67,8 +67,8 @@ cargo install --path ./ --bin blazescript
 - [x] Chars
 - [x] Functions
 - [x] Arrays
-- [x] Classes
-- [ ] Objects
+- [x] Objects
+- [ ] Classes
 - [ ] Standard Library
 
 ## Note

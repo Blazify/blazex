@@ -21,13 +21,13 @@ impl Parser {
         }
     }
 
-    pub fn advance(&mut self) -> Token {
+    fn advance(&mut self) -> Token {
         self.token_index += 1;
         self.update_current_token();
         self.current_token.clone()
     }
 
-    pub fn update_current_token(&mut self) {
+    fn update_current_token(&mut self) {
         if self.token_index >= 0 as usize && self.token_index < self.tokens.len() {
             self.current_token = self.tokens.clone()[self.clone().token_index].clone();
         }
@@ -47,14 +47,14 @@ impl Parser {
         res
     }
 
-    pub fn reverse(&mut self, cnt: usize) -> Token {
+    fn reverse(&mut self, cnt: usize) -> Token {
         self.token_index -= cnt;
         self.update_current_token();
 
         self.clone().current_token
     }
 
-    pub fn statements(&mut self) -> ParseResult {
+    fn statements(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut statements: Vec<Node> = vec![];
 
@@ -100,7 +100,7 @@ impl Parser {
         })
     }
 
-    pub fn statement(&mut self) -> ParseResult {
+    fn statement(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
 
@@ -136,7 +136,7 @@ impl Parser {
         res.success(expr.unwrap())
     }
 
-    pub fn expr(&mut self) -> ParseResult {
+    fn expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if self
             .current_token
@@ -239,7 +239,7 @@ impl Parser {
         res.success(left.unwrap())
     }
 
-    pub fn comp_expr(&mut self) -> ParseResult {
+    fn comp_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
         if self
@@ -308,7 +308,7 @@ impl Parser {
         res.success(left.unwrap())
     }
 
-    pub fn arith_expr(&mut self) -> ParseResult {
+    fn arith_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
         let pos_start = self.current_token.clone().pos_start;
@@ -339,7 +339,7 @@ impl Parser {
         res.success(left.unwrap())
     }
 
-    pub fn term(&mut self) -> ParseResult {
+    fn term(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
         let pos_start = self.current_token.clone().pos_start;
@@ -370,7 +370,7 @@ impl Parser {
         res.success(left.unwrap())
     }
 
-    pub fn factor(&mut self) -> ParseResult {
+    fn factor(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
 
@@ -391,7 +391,7 @@ impl Parser {
         self.power()
     }
 
-    pub fn power(&mut self) -> ParseResult {
+    fn power(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.call());
@@ -421,10 +421,10 @@ impl Parser {
         res.success(left.unwrap())
     }
 
-    pub fn call(&mut self) -> ParseResult {
+    fn call(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
-        let obj_expr = res.register(self.obj_prop_expr());
+        let atom = res.register(self.obj_prop_expr());
         if res.error.is_some() {
             return res;
         }
@@ -477,16 +477,68 @@ impl Parser {
                 self.advance();
             }
             return res.success(Node::CallNode {
-                node_to_call: Box::new(obj_expr.clone().unwrap()),
+                node_to_call: Box::new(atom.clone().unwrap()),
                 args: arg_nodes,
                 pos_start: pos_start.clone(),
                 pos_end: self.current_token.clone().pos_end,
             });
+        } else if self.current_token.r#type == Tokens::Dot {
+            self.advance();
+            res.register_advancement();
+
+            if self.current_token.r#type != Tokens::Identifier {
+                return res.failure(Error::new(
+                    "Invalid Syntax",
+                    self.current_token.pos_start.clone(),
+                    self.current_token.pos_end.clone(),
+                    "Expected identifier",
+                ));
+            }
+
+            let mut id = self.current_token.clone();
+
+            res.register_advancement();
+            self.advance();
+
+            let mut l = Node::ObjectPropAccess {
+                object: Box::new(atom.clone().unwrap()),
+                property: id,
+                pos_start,
+                pos_end: self.current_token.clone().pos_end,
+            };
+
+            while self.current_token.r#type == Tokens::Dot {
+                self.advance();
+                res.register_advancement();
+
+                if self.current_token.r#type != Tokens::Identifier {
+                    return res.failure(Error::new(
+                        "Invalid Syntax",
+                        self.current_token.pos_start.clone(),
+                        self.current_token.pos_end.clone(),
+                        "Expected identifier",
+                    ));
+                }
+
+                id = self.current_token.clone();
+
+                res.register_advancement();
+                self.advance();
+
+                l = Node::ObjectPropAccess {
+                    object: Box::new(l),
+                    property: id,
+                    pos_start,
+                    pos_end: self.current_token.clone().pos_end,
+                };
+            }
+            return res.success(l);
         }
-        res.success(obj_expr.unwrap())
+
+        res.success(atom.unwrap())
     }
 
-    pub fn obj_prop_expr(&mut self) -> ParseResult {
+    fn obj_prop_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
         let atom = res.register(self.atom());
@@ -545,12 +597,65 @@ impl Parser {
                 };
             }
             return res.success(l);
+        } else if self.current_token.r#type == Tokens::LeftParenthesis {
+            let mut arg_nodes: Vec<Node> = vec![];
+            res.register_advancement();
+            self.advance();
+
+            if self.current_token.r#type == Tokens::RightParenthesis {
+                res.register_advancement();
+                self.advance();
+            } else {
+                let expr = res.register(self.expr());
+                if res.error.is_some() {
+                    return res.failure(Error::new(
+                        "Invalid Syntax",
+                        self.current_token.pos_start.clone(),
+                        self.current_token.pos_end.clone(),
+                        "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                    ));
+                }
+                arg_nodes.push(expr.unwrap());
+
+                while self.current_token.r#type == Tokens::Comma {
+                    res.register_advancement();
+                    self.advance();
+
+                    let expr = res.register(self.expr());
+                    if res.error.is_some() {
+                        return res.failure(Error::new(
+                            "Invalid Syntax",
+                            self.current_token.pos_start.clone(),
+                            self.current_token.pos_end.clone(),
+                            "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                        ));
+                    }
+                    arg_nodes.push(expr.unwrap());
+                }
+
+                if self.current_token.r#type != Tokens::RightParenthesis {
+                    return res.failure(Error::new(
+                        "Invalid Syntax",
+                        self.current_token.pos_start.clone(),
+                        self.current_token.pos_end.clone(),
+                        "Expected ')' or ','",
+                    ));
+                }
+                res.register_advancement();
+                self.advance();
+            }
+            return res.success(Node::CallNode {
+                node_to_call: Box::new(atom.clone().unwrap()),
+                args: arg_nodes,
+                pos_start: pos_start.clone(),
+                pos_end: self.current_token.clone().pos_end,
+            });
         }
 
         res.success(atom.unwrap())
     }
 
-    pub fn atom(&mut self) -> ParseResult {
+    fn atom(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
 
@@ -689,7 +794,7 @@ impl Parser {
         ))
     }
 
-    pub fn obj_expr(&mut self) -> ParseResult {
+    fn obj_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
         let mut properties: Vec<(Token, Node)> = vec![];
@@ -830,7 +935,8 @@ impl Parser {
             pos_end: self.current_token.clone().pos_end,
         })
     }
-    pub fn array_expr(&mut self) -> ParseResult {
+
+    fn array_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut element_nodes: Vec<Node> = vec![];
         let token = self.current_token.clone();
@@ -893,7 +999,7 @@ impl Parser {
         })
     }
 
-    pub fn if_expr(&mut self) -> ParseResult {
+    fn if_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self
             .current_token
@@ -1063,7 +1169,7 @@ impl Parser {
         })
     }
 
-    pub fn while_expr(&mut self) -> ParseResult {
+    fn while_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
         if !self
@@ -1132,7 +1238,7 @@ impl Parser {
         })
     }
 
-    pub fn for_expr(&mut self) -> ParseResult {
+    fn for_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self
             .current_token
@@ -1265,7 +1371,7 @@ impl Parser {
         })
     }
 
-    pub fn fun_def(&mut self) -> ParseResult {
+    fn fun_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
         if !self

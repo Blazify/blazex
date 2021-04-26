@@ -1,7 +1,7 @@
 #![allow(unused_must_use)]
 use blazescript::utils::context::Context;
 use blazescript::utils::symbol_table::SymbolTable;
-use blazescript::{core::interpreter::interpreter::Interpreter, Interpret};
+use blazescript::{core::interpreter::interpreter::Interpreter, LanguageServer};
 use rustyline::{error::ReadlineError, Editor};
 use std::process::exit;
 use structopt::StructOpt;
@@ -32,7 +32,7 @@ fn main() {
                 exit(0);
             }
             Err(e) => {
-                println!("{}", e);
+                println!("{}", e.prettify());
                 exit(1)
             }
         }
@@ -53,7 +53,7 @@ fn main() {
                 );
                 match result {
                     Ok(n) => println!("{}", n),
-                    Err(e) => println!("{}", e),
+                    Err(e) => println!("{}", e.prettify()),
                 }
             }
             Err(ReadlineError::Interrupted) => {

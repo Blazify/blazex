@@ -38,23 +38,24 @@ use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
 use crate::utils::context::Context;
+use crate::utils::error::Error;
 
-pub trait Interpret {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, String>;
+pub trait LanguageServer {
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, Error>;
 
     fn from_source(
         name: &'static str,
         file_content: &'static str,
         ctx: &mut Context,
-    ) -> Result<Type, String> {
+    ) -> Result<Type, Error> {
         let lexed = Lexer::new(name, file_content).tokenize();
         if lexed.error.is_some() {
-            return Err(lexed.error.unwrap().prettify());
+            return Err(lexed.error.unwrap());
         }
 
         let parsed = Parser::new(lexed.tokens.clone()).parse();
         if parsed.error.is_some() || parsed.node.is_none() {
-            return Err(parsed.error.unwrap().prettify());
+            return Err(parsed.error.unwrap());
         }
 
         Self::from_ast(&parsed.node.unwrap(), ctx)
