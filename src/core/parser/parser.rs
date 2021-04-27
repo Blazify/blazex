@@ -36,7 +36,6 @@ impl Parser {
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
-            println!("{:?}", self.current_token.r#type);
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -1091,11 +1090,16 @@ impl Parser {
                 return res;
             }
 
+            while self.current_token.r#type == Tokens::Newline {
+                res.register_advancement();
+                self.advance();
+            }
+
             let expr_ = expr.clone().unwrap().clone();
 
             match expr_.clone() {
                 Node::FunDef { name, .. } => {
-                    if name.is_some() {
+                    if name.is_none() {
                         if constructor.is_some() {
                             return res.failure(Error::new(
                                 "Invalid Syntax",

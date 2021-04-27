@@ -377,7 +377,7 @@ impl Interpreter {
                     eval_args.push(eval_arg.val.unwrap());
                 }
 
-                let mut val = val_to_call.val.unwrap().execute(eval_args);
+                let mut val = val_to_call.val.unwrap().execute(eval_args, None);
                 val.success(val.clone().val.unwrap())
             }
             Node::ArrayNode {

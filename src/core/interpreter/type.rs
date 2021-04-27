@@ -62,6 +62,15 @@ pub enum Type {
         pos_end: Position,
         ctx: Context,
     },
+    Class {
+        name: String,
+        constructor: Box<Type>,
+        properties: HashMap<String, Type>,
+        methods: HashMap<String, Type>,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
     Null,
 }
 
@@ -92,6 +101,7 @@ impl Type {
             Type::Function { pos_start, .. } => *pos_start,
             Type::Array { pos_start, .. } => *pos_start,
             Type::Object { pos_start, .. } => *pos_start,
+            Type::Class { pos_start, .. } => *pos_start,
             _ => panic!(),
         }
     }
@@ -106,6 +116,7 @@ impl Type {
             Type::Function { pos_end, .. } => *pos_end,
             Type::Array { pos_end, .. } => *pos_end,
             Type::Object { pos_end, .. } => *pos_end,
+            Type::Class { pos_end, .. } => *pos_end,
             _ => panic!(),
         }
     }
@@ -120,6 +131,7 @@ impl Type {
             Type::Function { ctx, .. } => ctx,
             Type::Array { ctx, .. } => ctx,
             Type::Object { ctx, .. } => ctx,
+            Type::Class { ctx, .. } => ctx,
             _ => panic!(),
         }
     }
@@ -441,7 +453,7 @@ impl Type {
         }
     }
 
-    pub fn execute(self, eval_args: Vec<Type>) -> RuntimeResult {
+    pub fn execute(self, eval_args: Vec<Type>, opt_ctx: Option<Context>) -> RuntimeResult {
         let mut res = RuntimeResult::new();
         if let Self::Function {
             args,
@@ -449,13 +461,18 @@ impl Type {
             name,
             pos_start,
             pos_end,
-            ctx,
+            ctx: ctx_,
         } = self
         {
+            let parent = if opt_ctx.is_some() {
+                opt_ctx.unwrap()
+            } else {
+                ctx_
+            };
             let mut ctx = Context::new(
                 name.value.into_string(),
-                SymbolTable::new(Some(Box::new(ctx.clone().symbol_table))),
-                Box::new(Some(ctx.clone())),
+                SymbolTable::new(Some(Box::new(parent.clone().symbol_table))),
+                Box::new(Some(parent.clone())),
                 Some(pos_start.clone()),
             );
 
@@ -563,6 +580,28 @@ impl Display for Type {
                 "{}{}{}",
                 "{\n",
                 properties
+                    .iter()
+                    .map(|(k, v)| format!("     {}: {}", k, v))
+                    .collect::<Vec<String>>()
+                    .join(",\n"),
+                "\n}"
+            ),
+            Self::Class {
+                name,
+                properties,
+                methods,
+                ..
+            } => write!(
+                f,
+                "class {} {}{}{}{}",
+                name,
+                "{\n",
+                properties
+                    .iter()
+                    .map(|(k, v)| format!("     {}: {}", k, v))
+                    .collect::<Vec<String>>()
+                    .join(",\n"),
+                methods
                     .iter()
                     .map(|(k, v)| format!("     {}: {}", k, v))
                     .collect::<Vec<String>>()
