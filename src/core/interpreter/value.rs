@@ -11,7 +11,7 @@ use std::convert::TryInto;
 use std::fmt::{Display, Error as E, Formatter};
 
 #[derive(Debug, Clone)]
-pub enum Type {
+pub enum Value {
     Int {
         val: i64,
         pos_start: Position,
@@ -51,22 +51,22 @@ pub enum Type {
         ctx: Context,
     },
     Array {
-        elements: Vec<Type>,
+        elements: Vec<Value>,
         pos_start: Position,
         pos_end: Position,
         ctx: Context,
     },
     Object {
-        properties: HashMap<String, Type>,
+        properties: HashMap<String, Value>,
         pos_start: Position,
         pos_end: Position,
         ctx: Context,
     },
     Class {
         name: String,
-        constructor: Box<Type>,
-        properties: HashMap<String, Type>,
-        methods: HashMap<String, Type>,
+        constructor: Box<Option<Value>>,
+        properties: HashMap<String, Value>,
+        methods: HashMap<String, Value>,
         pos_start: Position,
         pos_end: Position,
         ctx: Context,
@@ -74,7 +74,7 @@ pub enum Type {
     Null,
 }
 
-impl Type {
+impl Value {
     pub fn get_int(self) -> i64 {
         match self {
             Self::Int { val, .. } => val,
@@ -93,123 +93,123 @@ impl Type {
 
     pub fn get_pos_start(&self) -> Position {
         match self {
-            Type::Int { pos_start, .. } => *pos_start,
-            Type::Float { pos_start, .. } => *pos_start,
-            Type::String { pos_start, .. } => *pos_start,
-            Type::Char { pos_start, .. } => *pos_start,
-            Type::Boolean { pos_start, .. } => *pos_start,
-            Type::Function { pos_start, .. } => *pos_start,
-            Type::Array { pos_start, .. } => *pos_start,
-            Type::Object { pos_start, .. } => *pos_start,
-            Type::Class { pos_start, .. } => *pos_start,
+            Value::Int { pos_start, .. } => *pos_start,
+            Value::Float { pos_start, .. } => *pos_start,
+            Value::String { pos_start, .. } => *pos_start,
+            Value::Char { pos_start, .. } => *pos_start,
+            Value::Boolean { pos_start, .. } => *pos_start,
+            Value::Function { pos_start, .. } => *pos_start,
+            Value::Array { pos_start, .. } => *pos_start,
+            Value::Object { pos_start, .. } => *pos_start,
+            Value::Class { pos_start, .. } => *pos_start,
             _ => panic!(),
         }
     }
 
     pub fn get_pos_end(&self) -> Position {
         match self {
-            Type::Int { pos_end, .. } => *pos_end,
-            Type::Float { pos_end, .. } => *pos_end,
-            Type::String { pos_end, .. } => *pos_end,
-            Type::Char { pos_end, .. } => *pos_end,
-            Type::Boolean { pos_end, .. } => *pos_end,
-            Type::Function { pos_end, .. } => *pos_end,
-            Type::Array { pos_end, .. } => *pos_end,
-            Type::Object { pos_end, .. } => *pos_end,
-            Type::Class { pos_end, .. } => *pos_end,
+            Value::Int { pos_end, .. } => *pos_end,
+            Value::Float { pos_end, .. } => *pos_end,
+            Value::String { pos_end, .. } => *pos_end,
+            Value::Char { pos_end, .. } => *pos_end,
+            Value::Boolean { pos_end, .. } => *pos_end,
+            Value::Function { pos_end, .. } => *pos_end,
+            Value::Array { pos_end, .. } => *pos_end,
+            Value::Object { pos_end, .. } => *pos_end,
+            Value::Class { pos_end, .. } => *pos_end,
             _ => panic!(),
         }
     }
 
     pub fn get_ctx(self) -> Context {
         match self {
-            Type::Int { ctx, .. } => ctx,
-            Type::Float { ctx, .. } => ctx,
-            Type::String { ctx, .. } => ctx,
-            Type::Char { ctx, .. } => ctx,
-            Type::Boolean { ctx, .. } => ctx,
-            Type::Function { ctx, .. } => ctx,
-            Type::Array { ctx, .. } => ctx,
-            Type::Object { ctx, .. } => ctx,
-            Type::Class { ctx, .. } => ctx,
+            Value::Int { ctx, .. } => ctx,
+            Value::Float { ctx, .. } => ctx,
+            Value::String { ctx, .. } => ctx,
+            Value::Char { ctx, .. } => ctx,
+            Value::Boolean { ctx, .. } => ctx,
+            Value::Function { ctx, .. } => ctx,
+            Value::Array { ctx, .. } => ctx,
+            Value::Object { ctx, .. } => ctx,
+            Value::Class { ctx, .. } => ctx,
             _ => panic!(),
         }
     }
 
-    pub fn op(self, n: Type, op: Token) -> RuntimeResult {
+    pub fn op(self, n: Value, op: Token) -> RuntimeResult {
         match self.clone() {
-            Type::Int {
+            Value::Int {
                 val: v,
                 pos_start,
                 ctx,
                 ..
             } => {
-                if let Type::Int {
+                if let Value::Int {
                     val: v1, pos_end, ..
                 } = n
                 {
                     return match op.r#type {
-                        Tokens::Plus => RuntimeResult::new().success(Type::Int {
+                        Tokens::Plus => RuntimeResult::new().success(Value::Int {
                             val: v + v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Minus => RuntimeResult::new().success(Type::Int {
+                        Tokens::Minus => RuntimeResult::new().success(Value::Int {
                             val: v - v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Multiply => RuntimeResult::new().success(Type::Int {
+                        Tokens::Multiply => RuntimeResult::new().success(Value::Int {
                             val: v * v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Divide => RuntimeResult::new().success(Type::Int {
+                        Tokens::Divide => RuntimeResult::new().success(Value::Int {
                             val: v / v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Power => RuntimeResult::new().success(Type::Int {
+                        Tokens::Power => RuntimeResult::new().success(Value::Int {
                             val: v.pow(v1.try_into().unwrap()),
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v == v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v != v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::LessThan => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::LessThan => RuntimeResult::new().success(Value::Boolean {
                             val: v < v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::LessThanEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::LessThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v <= v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::GreaterThan => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::GreaterThan => RuntimeResult::new().success(Value::Boolean {
                             val: v > v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v >= v1,
                             pos_start,
                             pos_end,
@@ -236,78 +236,78 @@ impl Type {
                     .set_ctx(ctx),
                 )
             }
-            Type::Float {
+            Value::Float {
                 val: v,
                 pos_start,
                 ctx,
                 ..
             } => {
-                if let Type::Float {
+                if let Value::Float {
                     val: v1, pos_end, ..
                 } = n
                 {
                     return match op.r#type {
-                        Tokens::Plus => RuntimeResult::new().success(Type::Float {
+                        Tokens::Plus => RuntimeResult::new().success(Value::Float {
                             val: v + v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Minus => RuntimeResult::new().success(Type::Float {
+                        Tokens::Minus => RuntimeResult::new().success(Value::Float {
                             val: v - v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Multiply => RuntimeResult::new().success(Type::Float {
+                        Tokens::Multiply => RuntimeResult::new().success(Value::Float {
                             val: v * v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Divide => RuntimeResult::new().success(Type::Float {
+                        Tokens::Divide => RuntimeResult::new().success(Value::Float {
                             val: v / v1,
                             ctx,
                             pos_start,
                             pos_end,
                         }),
-                        Tokens::Power => RuntimeResult::new().success(Type::Float {
+                        Tokens::Power => RuntimeResult::new().success(Value::Float {
                             val: v.powf(v1),
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v == v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v != v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::LessThan => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::LessThan => RuntimeResult::new().success(Value::Boolean {
                             val: v < v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::LessThanEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::LessThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v <= v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::GreaterThan => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::GreaterThan => RuntimeResult::new().success(Value::Boolean {
                             val: v > v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::GreaterThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v >= v1,
                             pos_start,
                             pos_end,
@@ -334,13 +334,13 @@ impl Type {
                     .set_ctx(ctx),
                 )
             }
-            Type::Boolean {
+            Value::Boolean {
                 val,
                 ctx,
                 pos_start,
                 ..
             } => {
-                if let Type::Boolean {
+                if let Value::Boolean {
                     val: v1, pos_end, ..
                 } = n
                 {
@@ -348,7 +348,7 @@ impl Type {
                         .clone()
                         .matches(Tokens::Keyword, DynType::String("and".to_string()))
                     {
-                        return RuntimeResult::new().success(Type::Boolean {
+                        return RuntimeResult::new().success(Value::Boolean {
                             val: val && v1,
                             pos_start,
                             pos_end,
@@ -358,7 +358,7 @@ impl Type {
                         .clone()
                         .matches(Tokens::Keyword, DynType::String("or".to_string()))
                     {
-                        return RuntimeResult::new().success(Type::Boolean {
+                        return RuntimeResult::new().success(Value::Boolean {
                             val: val || v1,
                             pos_start,
                             pos_end,
@@ -367,13 +367,13 @@ impl Type {
                     }
 
                     match op.r#type {
-                        Tokens::DoubleEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::DoubleEquals => RuntimeResult::new().success(Value::Boolean {
                             val: val == v1,
                             pos_start,
                             pos_end,
                             ctx,
                         }),
-                        Tokens::NotEquals => RuntimeResult::new().success(Type::Boolean {
+                        Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: val == v1,
                             pos_start,
                             pos_end,
@@ -421,14 +421,14 @@ impl Type {
                 pos_start,
             } => {
                 if let Tokens::Minus = u {
-                    return RuntimeResult::new().success(Type::Int {
+                    return RuntimeResult::new().success(Value::Int {
                         val: val * (-1),
                         ctx,
                         pos_end,
                         pos_start,
                     });
                 } else if let Tokens::Plus = u {
-                    return RuntimeResult::new().success(Type::Int {
+                    return RuntimeResult::new().success(Value::Int {
                         val: val * (1),
                         ctx,
                         pos_end,
@@ -453,7 +453,7 @@ impl Type {
         }
     }
 
-    pub fn execute(self, eval_args: Vec<Type>, opt_ctx: Option<Context>) -> RuntimeResult {
+    pub fn execute(self, eval_args: Vec<Value>) -> RuntimeResult {
         let mut res = RuntimeResult::new();
         if let Self::Function {
             args,
@@ -464,11 +464,7 @@ impl Type {
             ctx: ctx_,
         } = self
         {
-            let parent = if opt_ctx.is_some() {
-                opt_ctx.unwrap()
-            } else {
-                ctx_
-            };
+            let parent = ctx_;
             let mut ctx = Context::new(
                 name.value.into_string(),
                 SymbolTable::new(Some(Box::new(parent.clone().symbol_table))),
@@ -515,7 +511,7 @@ impl Type {
             }
             return res.success(result.val.unwrap());
         }
-        res.success(Type::Null)
+        res.success(Value::Null)
     }
 
     pub fn get_obj_prop_val(self, k: String) -> RuntimeResult {
@@ -547,9 +543,42 @@ impl Type {
             ),
         }
     }
+
+    pub fn init_class(self, constructor_params_e: Vec<Value>) -> RuntimeResult {
+        let mut res = RuntimeResult::new();
+        return if let Self::Class {
+            constructor,
+            methods,
+            properties: prop,
+            ref mut ctx,
+            pos_start,
+            pos_end,
+            ..
+        } = self.clone()
+        {
+            if constructor.is_some() {
+                let e_c = constructor.unwrap().execute(constructor_params_e);
+                if e_c.clone().should_return() && e_c.return_val != true {
+                    return e_c;
+                }
+            }
+            let mut properties = prop.clone();
+            properties.extend(methods);
+            let soul = Self::Object {
+                ctx: ctx.clone(),
+                pos_start,
+                pos_end,
+                properties,
+            };
+
+            res.success(soul)
+        } else {
+            res.success(Value::Null)
+        };
+    }
 }
 
-impl Display for Type {
+impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         match self {
             Self::Int { val, .. } => write!(f, "Int: {}", val),
@@ -590,12 +619,18 @@ impl Display for Type {
                 name,
                 properties,
                 methods,
+                constructor,
                 ..
             } => write!(
                 f,
-                "class {} {}{}{}{}",
+                "class {} {}constructor: {}\n{}{}{}",
                 name,
-                "{\n",
+                "{\n     ",
+                if constructor.is_some() {
+                    constructor.as_ref().as_ref().unwrap()
+                } else {
+                    &Value::Null
+                },
                 properties
                     .iter()
                     .map(|(k, v)| format!("     {}: {}", k, v))

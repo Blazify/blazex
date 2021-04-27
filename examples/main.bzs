@@ -1,11 +1,16 @@
+class LoL {
+    var a = 9;
 
-fun main() => {
-    var obj = { 
-        "lol": 0,
-        "o": 9,
-        "mooo": 0
+    fun() => {
+        a = a + 10;
     }
-    return obj
+
+    fun sumToA(int) => {
+        a = a + int;
+        return a;
+    }
 }
 
-return main();
+var lolo = new LoL();
+return lolo.sumToA(91);
+

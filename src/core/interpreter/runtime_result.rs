@@ -1,11 +1,11 @@
-use crate::core::interpreter::r#type::Type;
+use crate::core::interpreter::value::Value;
 use crate::utils::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct RuntimeResult {
-    pub val: Option<Type>,
+    pub val: Option<Value>,
     pub error: Option<Error>,
-    return_val: bool,
+    pub return_val: bool,
 }
 
 impl RuntimeResult {
@@ -24,13 +24,13 @@ impl RuntimeResult {
         self.clone()
     }
 
-    pub fn success(&mut self, val: Type) -> Self {
+    pub fn success(&mut self, val: Value) -> Self {
         self.reset();
         self.val = Some(val);
         self.clone()
     }
 
-    pub fn success_return(&mut self, val: Type) -> Self {
+    pub fn success_return(&mut self, val: Value) -> Self {
         self.reset();
         self.return_val = true;
         self.val = Some(val);

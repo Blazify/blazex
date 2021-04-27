@@ -112,8 +112,8 @@ pub enum Node {
     ClassDefNode {
         name: Token,
         constructor: Box<Option<Node>>,
-        properties: Vec<Node>,
-        methods: Vec<Node>,
+        properties: Vec<(Token, Node)>,
+        methods: Vec<(Token, Node)>,
         pos_start: Position,
         pos_end: Position,
     },

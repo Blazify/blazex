@@ -1,13 +1,13 @@
-use crate::core::interpreter::r#type::Type;
+use crate::core::interpreter::value::Value;
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
-    pub value: Type,
+    pub value: Value,
     pub reassignable: bool,
 }
 
 impl Symbol {
-    pub fn new(value: Type, reassignable: bool) -> Self {
+    pub fn new(value: Value, reassignable: bool) -> Self {
         Self {
             value,
             reassignable,

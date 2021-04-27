@@ -15,7 +15,7 @@ impl SymbolTable {
         }
     }
 
-    pub fn get(&mut self, name: String) -> Option<&Symbol> {
+    pub fn get(&self, name: String) -> Option<&Symbol> {
         if self.symbols.contains_key(&name) {
             return self.symbols.get(&name);
         }

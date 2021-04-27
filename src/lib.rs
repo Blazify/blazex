@@ -19,7 +19,7 @@ pub mod core {
     pub mod interpreter {
         pub mod interpreter;
         pub mod runtime_result;
-        pub mod r#type;
+        pub mod value;
     }
 }
 
@@ -33,7 +33,7 @@ pub mod utils {
     pub mod symbol_table;
 }
 
-use crate::core::interpreter::r#type::Type;
+use crate::core::interpreter::value::Value;
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
@@ -41,13 +41,13 @@ use crate::utils::context::Context;
 use crate::utils::error::Error;
 
 pub trait LanguageServer {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, Error>;
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Value, Error>;
 
     fn from_source(
         name: &'static str,
         file_content: &'static str,
         ctx: &mut Context,
-    ) -> Result<Type, Error> {
+    ) -> Result<Value, Error> {
         let lexed = Lexer::new(name, file_content).tokenize();
         if lexed.error.is_some() {
             return Err(lexed.error.unwrap());

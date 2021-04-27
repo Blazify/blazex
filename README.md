@@ -23,7 +23,7 @@ cargo install --path ./ --bin blazescript
 - ┃ ┣ 📂interpreter
 - ┃ ┃ ┣ 📜interpreter
 - ┃ ┃ ┣ 📜runtime_result
-- ┃ ┃ ┗ 📜type
+- ┃ ┃ ┗ 📜value
 - ┃ ┣ 📂lexer
 - ┃ ┃ ┣ 📜lexer
 - ┃ ┃ ┣ 📜lexer_method_result
@@ -68,7 +68,7 @@ cargo install --path ./ --bin blazescript
 - [x] Functions
 - [x] Arrays
 - [x] Objects
-- [ ] Classes
+- [x] Classes
 - [ ] Standard Library
 
 ## Note

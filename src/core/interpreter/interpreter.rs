@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        interpreter::{r#type::Type, runtime_result::RuntimeResult},
+        interpreter::{runtime_result::RuntimeResult, value::Value},
         parser::nodes::Node,
         token::Token,
     },
@@ -9,6 +9,7 @@ use crate::{
         context::Context,
         error::Error,
         symbol::Symbol,
+        symbol_table::SymbolTable,
     },
     LanguageServer,
 };
@@ -17,13 +18,13 @@ use std::collections::HashMap;
 pub struct Interpreter {}
 
 impl LanguageServer for Interpreter {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Type, Error> {
+    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Value, Error> {
         let res = Self::interpret_node(node.clone(), ctx);
         return if res.val.is_some() {
             return if res.clone().should_return() {
                 Ok(res.val.unwrap())
             } else {
-                Ok(Type::Null)
+                Ok(Value::Null)
             };
         } else {
             Err(res.error.unwrap())
@@ -41,14 +42,14 @@ impl Interpreter {
                 pos_end,
             } => {
                 if let DynType::Int(_) = token.value {
-                    res.success(Type::Int {
+                    res.success(Value::Int {
                         val: token.value.into_int(),
                         ctx: ctx.clone(),
                         pos_start,
                         pos_end,
                     })
                 } else {
-                    res.success(Type::Float {
+                    res.success(Value::Float {
                         val: token.value.into_float(),
                         ctx: ctx.clone(),
                         pos_start,
@@ -60,7 +61,7 @@ impl Interpreter {
                 token,
                 pos_start,
                 pos_end,
-            } => res.success(Type::String {
+            } => res.success(Value::String {
                 val: token.value.into_string(),
                 ctx: ctx.clone(),
                 pos_start,
@@ -70,7 +71,7 @@ impl Interpreter {
                 token,
                 pos_start,
                 pos_end,
-            } => res.success(Type::Char {
+            } => res.success(Value::Char {
                 val: token.value.into_char(),
                 ctx: ctx.clone(),
                 pos_start,
@@ -108,7 +109,7 @@ impl Interpreter {
                 token,
                 pos_start,
                 pos_end,
-            } => res.success(Type::Boolean {
+            } => res.success(Value::Boolean {
                 val: token.value.into_boolean(),
                 pos_start,
                 pos_end,
@@ -228,7 +229,7 @@ impl Interpreter {
                         return else_val;
                     }
                 }
-                res.success(Type::Null)
+                res.success(Value::Null)
             }
             Node::ForNode {
                 var_name_token,
@@ -253,14 +254,14 @@ impl Interpreter {
                 if step_value_node.is_some() {
                     step_value = Self::interpret_node(step_value_node.unwrap().clone(), ctx)
                         .val
-                        .unwrap_or(Type::Int {
+                        .unwrap_or(Value::Int {
                             val: 1,
                             pos_start,
                             pos_end,
                             ctx: ctx.clone(),
                         });
                 } else {
-                    step_value = Type::Int {
+                    step_value = Value::Int {
                         val: 1,
                         pos_start,
                         pos_end,
@@ -284,7 +285,7 @@ impl Interpreter {
                     ctx.symbol_table = ctx.clone().symbol_table.set(
                         var_name_token.clone().value.into_string(),
                         Symbol::new(
-                            Type::Int {
+                            Value::Int {
                                 val: i,
                                 pos_start,
                                 pos_end,
@@ -301,7 +302,7 @@ impl Interpreter {
                     }
                 }
 
-                res.success(Type::Null)
+                res.success(Value::Null)
             }
             Node::WhileNode {
                 condition_node,
@@ -324,7 +325,7 @@ impl Interpreter {
                     }
                 }
 
-                res.success(Type::Null)
+                res.success(Value::Null)
             }
             Node::FunDef {
                 name,
@@ -340,7 +341,7 @@ impl Interpreter {
                     DynType::String("anonymous".to_string()),
                 ));
 
-                let val = Type::Function {
+                let val = Value::Function {
                     name: func_name.clone(),
                     body_node: *body_node.clone(),
                     args: arg_tokens,
@@ -361,7 +362,7 @@ impl Interpreter {
             Node::CallNode {
                 node_to_call, args, ..
             } => {
-                let mut eval_args: Vec<Type> = vec![];
+                let mut eval_args: Vec<Value> = vec![];
                 let val_to_call = Self::interpret_node(*node_to_call.clone(), ctx);
 
                 if val_to_call.error.is_some() {
@@ -377,7 +378,7 @@ impl Interpreter {
                     eval_args.push(eval_arg.val.unwrap());
                 }
 
-                let mut val = val_to_call.val.unwrap().execute(eval_args, None);
+                let mut val = val_to_call.val.unwrap().execute(eval_args);
                 val.success(val.clone().val.unwrap())
             }
             Node::ArrayNode {
@@ -385,7 +386,7 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let mut elements: Vec<Type> = vec![];
+                let mut elements: Vec<Value> = vec![];
 
                 for node in element_nodes {
                     let element = Self::interpret_node(node, ctx);
@@ -395,7 +396,7 @@ impl Interpreter {
                     elements.push(element.val.unwrap());
                 }
 
-                res.success(Type::Array {
+                res.success(Value::Array {
                     elements,
                     pos_start,
                     pos_end,
@@ -411,7 +412,7 @@ impl Interpreter {
                     }
                     val = eval_val.val.unwrap();
                 } else {
-                    val = Type::Null;
+                    val = Value::Null;
                 }
 
                 res.success_return(val)
@@ -440,7 +441,7 @@ impl Interpreter {
                     hash_props.insert(k.value.into_string(), e_v.val.unwrap());
                 }
 
-                res.success(Type::Object {
+                res.success(Value::Object {
                     properties: hash_props,
                     pos_start,
                     pos_end,
@@ -465,8 +466,110 @@ impl Interpreter {
 
                 res.success(prop.val.unwrap())
             }
-            _ => {
-                panic!("Not implemented yet")
+            Node::ClassDefNode {
+                name,
+                constructor,
+                methods,
+                properties,
+                pos_start,
+                pos_end,
+            } => {
+                let mut constructor_e = None;
+                let mut methods_e: HashMap<String, Value> = HashMap::new();
+                let mut properties_e: HashMap<String, Value> = HashMap::new();
+
+                let mut ctx_ = Context::new(
+                    name.clone().value.into_string(),
+                    SymbolTable::new(Some(Box::new(ctx.symbol_table.clone()))),
+                    Box::new(Some(ctx.clone())),
+                    Some(pos_start.clone()),
+                );
+
+                for (k, v) in properties {
+                    let e_v = Self::interpret_node(v, &mut ctx_);
+                    if e_v.clone().should_return() {
+                        return e_v;
+                    }
+
+                    if properties_e.contains_key(&k.clone().value.into_string()) {
+                        return res.failure(Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Key already exits",
+                        ));
+                    }
+                    properties_e.insert(k.value.into_string(), e_v.val.unwrap());
+                }
+                for (k, v) in methods {
+                    let e_v = Self::interpret_node(v, &mut ctx_);
+                    if e_v.clone().should_return() {
+                        return e_v;
+                    }
+                    if methods_e.contains_key(&k.clone().value.into_string()) {
+                        return res.failure(Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            pos_end,
+                            "Key already exits",
+                        ));
+                    }
+                    methods_e.insert(k.value.into_string(), e_v.val.unwrap());
+                }
+                if constructor.is_some() {
+                    let cons_ = Self::interpret_node(constructor.unwrap(), &mut ctx_);
+                    if cons_.clone().should_return() {
+                        return cons_;
+                    }
+
+                    constructor_e = cons_.val;
+                }
+
+                let class = Value::Class {
+                    ctx: ctx_.clone(),
+                    pos_start,
+                    pos_end,
+                    name: name.clone().value.into_string(),
+                    constructor: Box::new(constructor_e),
+                    methods: methods_e,
+                    properties: properties_e,
+                };
+
+                ctx.symbol_table = ctx.clone().symbol_table.set(
+                    name.clone().value.into_string(),
+                    Symbol::new(class.clone(), false),
+                );
+
+                res.success(class)
+            }
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+                pos_start,
+                pos_end,
+            } => {
+                let mut constructor_params_e: Vec<Value> = vec![];
+                let class = ctx.symbol_table.get(name.value.into_string()).clone();
+                if class.clone().is_none() {
+                    return res.failure(
+                        Error::new("Runtime Error", pos_start, pos_end, "Unknown Class")
+                            .set_ctx(ctx.clone()),
+                    );
+                }
+
+                for param in constructor_params {
+                    let param_e = Self::interpret_node(param, &mut ctx.clone());
+                    if param_e.clone().should_return() {
+                        return param_e;
+                    }
+
+                    constructor_params_e.push(param_e.val.unwrap());
+                }
+
+                (*class.clone().unwrap())
+                    .value
+                    .clone()
+                    .init_class(constructor_params_e)
             }
         }
     }

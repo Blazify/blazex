@@ -801,18 +801,6 @@ impl Parser {
                 return res;
             }
             return res.success(class_init.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("soul".to_string()))
-        {
-            self.advance();
-            res.register_advancement();
-
-            return res.success(Node::VarAccessNode {
-                token: token.clone(),
-                pos_start: token.clone().pos_start,
-                pos_end: token.clone().pos_end,
-            });
         }
 
         res.failure(Error::new(
@@ -1031,8 +1019,8 @@ impl Parser {
     fn class_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
-        let mut methods: Vec<Node> = vec![];
-        let mut properties: Vec<Node> = vec![];
+        let mut methods: Vec<(Token, Node)> = vec![];
+        let mut properties: Vec<(Token, Node)> = vec![];
         let mut constructor: Option<Node> = None;
 
         if !self
@@ -1110,10 +1098,10 @@ impl Parser {
                         }
                         constructor = Some(expr_);
                     } else {
-                        methods.push(expr_)
+                        methods.push((name.unwrap(), expr_))
                     }
                 }
-                Node::VarAssignNode { .. } => properties.push(expr_),
+                Node::VarAssignNode { name, .. } => properties.push((name, expr_)),
                 _ => {
                     return res.failure(Error::new(
                         "Invalid Syntax",
