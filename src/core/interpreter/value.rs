@@ -461,14 +461,13 @@ impl Value {
             name,
             pos_start,
             pos_end,
-            ctx: ctx_,
-        } = self
+            ctx: parent,
+        } = self.clone()
         {
-            let parent = ctx_;
             let mut ctx = Context::new(
                 name.value.into_string(),
-                SymbolTable::new(Some(Box::new(parent.clone().symbol_table))),
-                Box::new(Some(parent.clone())),
+                SymbolTable::new(Some(Box::new(parent.symbol_table))),
+                Box::new(Some(self.get_ctx())),
                 Some(pos_start.clone()),
             );
 
@@ -500,7 +499,7 @@ impl Value {
                 let name = &args[x];
                 let val = &eval_args[x];
 
-                ctx.symbol_table = ctx.clone().symbol_table.set(
+                ctx.symbol_table.set(
                     name.clone().value.into_string(),
                     Symbol::new(val.clone(), true),
                 );
@@ -550,7 +549,7 @@ impl Value {
             constructor,
             methods,
             properties: prop,
-            ref mut ctx,
+            ctx,
             pos_start,
             pos_end,
             ..

@@ -15,24 +15,41 @@ impl SymbolTable {
         }
     }
 
+    pub fn get_exact(&self, name: String) -> Option<&Symbol> {
+        self.symbols.get(&name)
+    }
+
     pub fn get(&self, name: String) -> Option<&Symbol> {
         if self.symbols.contains_key(&name) {
             return self.symbols.get(&name);
         }
 
         if self.parent.clone().is_some() {
-            return self.parent.as_ref().unwrap().symbols.get(&name);
+            return self.parent.as_ref().unwrap().get(name);
         }
 
         None
     }
 
-    pub fn set(mut self, name: String, val: Symbol) -> Self {
-        self.symbols.insert(name, val);
-        self
+    pub fn get_and_set(&mut self, name: String, new_symbol: Symbol) -> Self {
+        if self.symbols.contains_key(&name) {
+            self.symbols.insert(name, new_symbol);
+            return self.clone();
+        }
+
+        if let Some(parent) = &mut self.parent {
+            parent.get_and_set(name, new_symbol);
+        }
+
+        self.clone()
     }
 
-    pub fn delete(mut self, name: String) {
+    pub fn set(&mut self, name: String, val: Symbol) -> Self {
+        self.symbols.insert(name, val);
+        self.clone()
+    }
+
+    pub fn delete(&mut self, name: String) {
         self.symbols.remove(&name);
     }
 }

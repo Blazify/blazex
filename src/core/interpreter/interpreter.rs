@@ -13,8 +13,8 @@ use crate::{
     },
     LanguageServer,
 };
-use std::collections::HashMap;
 
+use std::collections::HashMap;
 pub struct Interpreter {}
 
 impl LanguageServer for Interpreter {
@@ -144,7 +144,7 @@ impl Interpreter {
                     );
                 }
 
-                ctx.symbol_table = ctx.clone().symbol_table.set(
+                ctx.symbol_table.set(
                     name.value.into_string(),
                     Symbol::new(val.clone().val.unwrap(), reassignable),
                 );
@@ -163,7 +163,7 @@ impl Interpreter {
                             "Runtime Error",
                             pos_start,
                             pos_end,
-                            "Variable not reassignable",
+                            "Variable not found to be reassigned",
                         )
                         .set_ctx(ctx.clone()),
                     );
@@ -185,10 +185,12 @@ impl Interpreter {
                 if val.clone().should_return() {
                     return val;
                 }
-                ctx.symbol_table = ctx.clone().symbol_table.set(
+
+                ctx.symbol_table.get_and_set(
                     name.value.into_string(),
                     Symbol::new(val.clone().val.unwrap(), true),
                 );
+
                 res.success(val.clone().val.unwrap())
             }
             Node::VarAccessNode {
@@ -282,7 +284,7 @@ impl Interpreter {
                     if i == end.clone().val.unwrap().get_int() {
                         break;
                     }
-                    ctx.symbol_table = ctx.clone().symbol_table.set(
+                    ctx.symbol_table.set(
                         var_name_token.clone().value.into_string(),
                         Symbol::new(
                             Value::Int {
@@ -351,7 +353,7 @@ impl Interpreter {
                 };
 
                 if func_name.clone().value.into_string() != "anonymous" {
-                    ctx.symbol_table = ctx.clone().symbol_table.set(
+                    ctx.symbol_table.set(
                         func_name.clone().value.into_string(),
                         Symbol::new(val.clone(), true),
                     );
@@ -535,7 +537,7 @@ impl Interpreter {
                     properties: properties_e,
                 };
 
-                ctx.symbol_table = ctx.clone().symbol_table.set(
+                ctx.symbol_table.set(
                     name.clone().value.into_string(),
                     Symbol::new(class.clone(), false),
                 );
