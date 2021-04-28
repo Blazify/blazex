@@ -31,17 +31,12 @@ impl SymbolTable {
         None
     }
 
-    pub fn get_and_set(&mut self, name: String, new_symbol: Symbol) -> Self {
+    pub fn get_and_set(&mut self, name: String, new_symbol: Symbol) {
         if self.symbols.contains_key(&name) {
-            self.symbols.insert(name, new_symbol);
-            return self.clone();
-        }
-
-        if let Some(parent) = &mut self.parent {
+            self.symbols.insert(name.clone(), new_symbol);
+        } else if let Some(parent) = &mut self.parent {
             parent.get_and_set(name, new_symbol);
         }
-
-        self.clone()
     }
 
     pub fn set(&mut self, name: String, val: Symbol) -> Self {

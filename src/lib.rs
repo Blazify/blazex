@@ -44,6 +44,7 @@ use crate::core::parser::parser::Parser;
 use crate::std::lib::init_std;
 use crate::utils::context::Context;
 use crate::utils::error::Error;
+use crate::utils::symbol_table::SymbolTable;
 
 pub trait LanguageServer {
     fn from_ast(node: &Node, ctx: &mut Context) -> Result<Value, Error>;
@@ -64,7 +65,9 @@ pub trait LanguageServer {
         }
 
         init_std(ctx);
+        let sym = SymbolTable::new(Some(Box::new(ctx.symbol_table.clone())));
+        let mut ctx_ = Context::new(name.to_string(), sym, Box::new(Some(ctx.clone())), None);
 
-        Self::from_ast(&parsed.node.unwrap(), ctx)
+        Self::from_ast(&parsed.node.unwrap(), &mut ctx_)
     }
 }

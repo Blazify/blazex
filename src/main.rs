@@ -17,14 +17,22 @@ struct Cli {
 
 fn main() {
     let global = SymbolTable::new(None);
-    let mut ctx = Context::new("<Main>".to_string(), global, Box::new(None), None);
+    let mut ctx = Context::new("Global".to_string(), global, Box::new(None), None);
 
     let args = Cli::from_args();
     if args.path.is_some() {
-        let content = std::fs::read_to_string(&args.path.expect("no path specified"))
+        let content = std::fs::read_to_string(&args.path.clone().expect("no path specified"))
             .expect("could not read file");
         let result = Interpreter::from_source(
-            "CLI",
+            Box::leak(
+                args.path
+                    .unwrap()
+                    .into_os_string()
+                    .into_string()
+                    .unwrap()
+                    .to_owned()
+                    .into_boxed_str(),
+            ),
             Box::leak(content.to_owned().into_boxed_str()),
             &mut ctx,
         );

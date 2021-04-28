@@ -90,6 +90,13 @@ impl Value {
         }
     }
 
+    pub fn get_string(self) -> String {
+        match self {
+            Self::String { val, .. } => val,
+            _ => panic!(),
+        }
+    }
+
     pub fn is_true(self) -> bool {
         match self.clone() {
             Self::Boolean { val, .. } => val,

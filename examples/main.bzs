@@ -1,11 +1,11 @@
-var a = 9;
-fun sumToA(int) => {
-    a = a + int;
-    return a;
+var a = 0;
+fun edit_a() => {
+    a = a + 1;
+    return a
 }
-
 
 @ this will return false as it sets a to the nearest symbol_table and returns that,
 @ whereas we are using the ctx in the parent symbol_table
-println(sumToA(a));
+
+println(edit_a());
 println(a);
