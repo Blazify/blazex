@@ -508,6 +508,7 @@ impl Value {
             if result.clone().should_return() {
                 return result;
             }
+
             return res.success(result.val.unwrap());
         }
         res.success(Value::Null)

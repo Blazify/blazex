@@ -16,6 +16,11 @@ cd blazescript/
 cargo install --path ./ --bin blazescript
 ```
 
+# Known bugs
+
+- Unusual behaviour in windows
+- In `VarAccessNode`, regardless of what SymbolTable it came from it always sets to the nearest one
+
 # Project Tree
 
 - 📦src
@@ -63,6 +68,7 @@ cargo install --path ./ --bin blazescript
 - [x] Comparisons
 - [x] If-Else Statements
 - [x] For, When Loops
+- [x] Comments
 - [x] Strings
 - [x] Chars
 - [x] Functions

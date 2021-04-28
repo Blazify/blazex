@@ -1,7 +1,0 @@
-class lol {
-    prop;
-    constructor;
-    method;
-}
-
-interpret -> soul -> obj(new lol(params)), (prop -> soul.prop), (method -> soul.prop)

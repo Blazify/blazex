@@ -1,16 +1,10 @@
-class LoL {
-    var a = 9;
-
-    fun() => {
-        a = a + 10;
-    }
-
-    fun sumToA(int) => {
-        a = a + int;
-        return a;
-    }
+var a = 9;
+fun sumToA(int) => {
+    a = a + int;
+    return a;
 }
 
-var lolo = new LoL();
-return lolo.sumToA(91);
 
+# this will return false as it sets a to the nearest symbol_table and returns that,
+# whereas we are using the ctx in the parent symbol_table
+return sumToA(91) == a;
