@@ -33,10 +33,15 @@ pub mod utils {
     pub mod symbol_table;
 }
 
+pub mod std {
+    pub mod lib;
+}
+
 use crate::core::interpreter::value::Value;
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
+use crate::std::lib::init_std;
 use crate::utils::context::Context;
 use crate::utils::error::Error;
 
@@ -57,6 +62,8 @@ pub trait LanguageServer {
         if parsed.error.is_some() || parsed.node.is_none() {
             return Err(parsed.error.unwrap());
         }
+
+        init_std(ctx);
 
         Self::from_ast(&parsed.node.unwrap(), ctx)
     }

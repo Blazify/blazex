@@ -1,6 +1,6 @@
 use crate::utils::{position::Position, symbol_table::SymbolTable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Context {
     pub display_name: String,
     pub symbol_table: SymbolTable,

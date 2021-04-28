@@ -5,6 +5,7 @@ fun sumToA(int) => {
 }
 
 
-# this will return false as it sets a to the nearest symbol_table and returns that,
-# whereas we are using the ctx in the parent symbol_table
-return sumToA(91) == a;
+@ this will return false as it sets a to the nearest symbol_table and returns that,
+@ whereas we are using the ctx in the parent symbol_table
+println(sumToA(a));
+println(a);

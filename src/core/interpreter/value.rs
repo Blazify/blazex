@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::{Display, Error as E, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Int {
         val: i64,
@@ -67,6 +67,14 @@ pub enum Value {
         constructor: Box<Option<Value>>,
         properties: HashMap<String, Value>,
         methods: HashMap<String, Value>,
+        pos_start: Position,
+        pos_end: Position,
+        ctx: Context,
+    },
+    InBuiltFunction {
+        name: String,
+        fun: fn(Vec<Value>) -> Value,
+        args_len: usize,
         pos_start: Position,
         pos_end: Position,
         ctx: Context,
@@ -510,6 +518,40 @@ impl Value {
             }
 
             return res.success(result.val.unwrap());
+        } else if let Self::InBuiltFunction {
+            args_len,
+            fun,
+            pos_start,
+            pos_end,
+            ctx,
+            ..
+        } = self
+        {
+            if args_len > eval_args.len() {
+                return res.failure(
+                    Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "Too less args supplied!",
+                    )
+                    .set_ctx(ctx.clone()),
+                );
+            }
+
+            if args_len < eval_args.len() {
+                return res.failure(
+                    Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "Too many args supplied!",
+                    )
+                    .set_ctx(ctx.clone()),
+                );
+            }
+
+            return res.success(fun(eval_args));
         }
         res.success(Value::Null)
     }
@@ -581,11 +623,11 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         match self {
-            Self::Int { val, .. } => write!(f, "Int: {}", val),
-            Self::Float { val, .. } => write!(f, "Float: {}", val),
-            Self::Char { val, .. } => write!(f, "Char: {}", val),
-            Self::String { val, .. } => write!(f, "String: {}", val),
-            Self::Boolean { val, .. } => write!(f, "Boolean: {}", val),
+            Self::Int { val, .. } => write!(f, "{}", val),
+            Self::Float { val, .. } => write!(f, "{}", val),
+            Self::Char { val, .. } => write!(f, "{}", val),
+            Self::String { val, .. } => write!(f, "{}", val),
+            Self::Boolean { val, .. } => write!(f, "{}", val),
             Self::Function { name, args, .. } => write!(
                 f,
                 "fun {}({})",
@@ -595,6 +637,7 @@ impl Display for Value {
                     .collect::<Vec<String>>()
                     .join(", ")
             ),
+            Self::InBuiltFunction { name, .. } => write!(f, "fun <std.{}>", name),
             Self::Array { elements, .. } => write!(
                 f,
                 "[{}]",

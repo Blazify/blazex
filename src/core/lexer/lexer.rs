@@ -86,7 +86,7 @@ impl Lexer {
             if token == Tokens::Unknown {
                 let mut res = LexerResult::new(None, None);
                 match self.current_char.unwrap() {
-                    '#' => self.skip_comment(),
+                    '@' => self.skip_comment(),
                     '"' => tokens.push(self.make_string()),
                     '!' => tokens.push(self.make_not()),
                     '<' => tokens.push(self.make_less_than()),

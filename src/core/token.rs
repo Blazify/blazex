@@ -1,7 +1,7 @@
 use crate::utils::{constants::DynType, constants::Tokens, position::Position};
 use std::fmt::{Display, Error, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub r#type: Tokens,
     pub value: DynType,

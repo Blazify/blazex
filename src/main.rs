@@ -1,7 +1,10 @@
 #![allow(unused_must_use)]
 use blazescript::utils::context::Context;
 use blazescript::utils::symbol_table::SymbolTable;
-use blazescript::{core::interpreter::interpreter::Interpreter, LanguageServer};
+use blazescript::{
+    core::interpreter::{interpreter::Interpreter, value::Value},
+    LanguageServer,
+};
 use rustyline::{error::ReadlineError, Editor};
 use std::process::exit;
 use structopt::StructOpt;
@@ -28,6 +31,9 @@ fn main() {
 
         match result {
             Ok(n) => {
+                if n == Value::Null {
+                    exit(0);
+                }
                 println!("{}", n);
                 exit(0);
             }
@@ -52,7 +58,11 @@ fn main() {
                     &mut ctx,
                 );
                 match result {
-                    Ok(n) => println!("{}", n),
+                    Ok(n) => {
+                        if n != Value::Null {
+                            println!("{}", n)
+                        }
+                    }
                     Err(e) => println!("{}", e.prettify()),
                 }
             }

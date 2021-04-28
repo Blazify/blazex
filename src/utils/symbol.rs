@@ -1,6 +1,6 @@
 use crate::core::interpreter::value::Value;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Symbol {
     pub value: Value,
     pub reassignable: bool,

@@ -1,7 +1,7 @@
 use crate::utils::symbol::Symbol;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SymbolTable {
     pub symbols: HashMap<String, Symbol>,
     pub parent: Option<Box<SymbolTable>>,

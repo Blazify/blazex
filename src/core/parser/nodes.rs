@@ -1,7 +1,7 @@
 use crate::core::token::Token;
 use crate::utils::position::Position;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     WhileNode {
         condition_node: Box<Node>,
