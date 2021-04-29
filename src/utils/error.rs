@@ -6,7 +6,7 @@ pub struct Error {
     pub pos_start: Position,
     pub pos_end: Position,
     pub description: &'static str,
-    pub ctx: Option<Context>,
+    pub ctx: Option<Vec<Context>>,
 }
 
 impl Error {
@@ -25,14 +25,14 @@ impl Error {
         }
     }
 
-    pub fn set_ctx(mut self, ctx: Context) -> Self {
+    pub fn set_ctx(mut self, ctx: Vec<Context>) -> Self {
         self.ctx = Some(ctx);
         self
     }
 
     pub fn prettify(&self) -> String {
-        let mut res = String::new();
-
+        let res = String::new();
+        /*
         if self.ctx.is_some() {
             let mut pos = Some(self.pos_start);
             let mut ctx = self.ctx.as_ref();
@@ -63,6 +63,7 @@ impl Error {
             }
             format!("Traceback (most recent call last):\n{}\n", res);
         }
+        */
 
         format!(
             "{}\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",

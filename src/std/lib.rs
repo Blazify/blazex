@@ -59,12 +59,11 @@ fn std_add_func(
     pos: Position,
     ctx: &mut Context,
 ) {
-    ctx.symbol_table.set(
+    ctx.symbols.insert(
         name.to_string(),
         Symbol::new(
             Value::InBuiltFunction {
                 name: name.to_string(),
-                ctx: ctx.clone(),
                 pos_start: pos,
                 pos_end: pos,
                 args_len,

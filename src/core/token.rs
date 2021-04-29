@@ -38,7 +38,7 @@ impl Token {
         }
     }
 
-    pub fn matches(self, r#type: Tokens, value: DynType) -> bool {
+    pub fn matches(&self, r#type: Tokens, value: DynType) -> bool {
         return self.r#type == r#type && self.value == value;
     }
 }

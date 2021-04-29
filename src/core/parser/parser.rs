@@ -716,6 +716,15 @@ impl Parser {
                 pos_start: token.clone().pos_start,
                 pos_end: token.clone().pos_end,
             });
+        } else if token.matches(Tokens::Keyword, DynType::String("soul".to_string())) {
+            res.register_advancement();
+            self.advance();
+
+            return res.success(Node::VarAccessNode {
+                token: token.clone(),
+                pos_start: token.clone().pos_start,
+                pos_end: token.clone().pos_end,
+            });
         } else if token.r#type == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();

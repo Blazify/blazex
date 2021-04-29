@@ -9,17 +9,24 @@ use crate::{
         context::Context,
         error::Error,
         symbol::Symbol,
-        symbol_table::SymbolTable,
     },
     LanguageServer,
 };
 
+use crate::std::lib::init_std;
 use std::collections::HashMap;
-pub struct Interpreter {}
+
+pub struct Interpreter {
+    pub ctx: Vec<Context>,
+}
 
 impl LanguageServer for Interpreter {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Value, Error> {
-        let res = Self::interpret_node(node.clone(), ctx);
+    fn from_ast(name: &'static str, node: &Node, ctx: &mut Context) -> Result<Value, Error> {
+        init_std(ctx);
+        let ctx_ = Context::new(name.to_string());
+        let vec_ctx = vec![ctx_, ctx.clone()];
+
+        let res = Self::new(vec_ctx).interpret_node(node.clone());
         return if res.val.is_some() {
             return if res.clone().should_return() {
                 Ok(res.val.unwrap())
@@ -33,7 +40,11 @@ impl LanguageServer for Interpreter {
 }
 
 impl Interpreter {
-    pub fn interpret_node(node: Node, ctx: &mut Context) -> RuntimeResult {
+    pub fn new(ctx: Vec<Context>) -> Interpreter {
+        Self { ctx }
+    }
+
+    pub fn interpret_node(&mut self, node: Node) -> RuntimeResult {
         let mut res = RuntimeResult::new();
         match node {
             Node::NumberNode {
@@ -44,14 +55,12 @@ impl Interpreter {
                 if let DynType::Int(_) = token.value {
                     res.success(Value::Int {
                         val: token.value.into_int(),
-                        ctx: ctx.clone(),
                         pos_start,
                         pos_end,
                     })
                 } else {
                     res.success(Value::Float {
                         val: token.value.into_float(),
-                        ctx: ctx.clone(),
                         pos_start,
                         pos_end,
                     })
@@ -63,7 +72,6 @@ impl Interpreter {
                 pos_end,
             } => res.success(Value::String {
                 val: token.value.into_string(),
-                ctx: ctx.clone(),
                 pos_start,
                 pos_end,
             }),
@@ -73,7 +81,6 @@ impl Interpreter {
                 pos_end,
             } => res.success(Value::Char {
                 val: token.value.into_char(),
-                ctx: ctx.clone(),
                 pos_start,
                 pos_end,
             }),
@@ -83,12 +90,12 @@ impl Interpreter {
                 op_token,
                 ..
             } => {
-                let left_built = Self::interpret_node(*left.clone(), ctx);
+                let left_built = self.interpret_node(*left);
                 if left_built.clone().should_return() {
                     return left_built;
                 }
 
-                let right_built = Self::interpret_node(*right.clone(), ctx);
+                let right_built = self.interpret_node(*right);
                 if right_built.clone().should_return() {
                     return right_built;
                 }
@@ -98,7 +105,7 @@ impl Interpreter {
                     .op(right_built.val.unwrap(), op_token)
             }
             Node::UnaryNode { node, op_token, .. } => {
-                let built = Self::interpret_node(*node.clone(), ctx);
+                let built = self.interpret_node(*node);
                 if built.clone().should_return() {
                     return built;
                 }
@@ -113,7 +120,6 @@ impl Interpreter {
                 val: token.value.into_boolean(),
                 pos_start,
                 pos_end,
-                ctx: ctx.clone(),
             }),
             Node::VarAssignNode {
                 name,
@@ -122,15 +128,13 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let val = Self::interpret_node(*value.clone(), ctx);
+                let val = self.interpret_node(*value);
                 if val.clone().should_return() {
                     return val;
                 }
 
-                if ctx
-                    .symbol_table
-                    .clone()
-                    .get(name.clone().value.into_string())
+                if self
+                    .get_from_ctx(name.clone().value.into_string())
                     .is_some()
                 {
                     return res.failure(
@@ -140,11 +144,11 @@ impl Interpreter {
                             pos_end,
                             "Variable Declared Twice",
                         )
-                        .set_ctx(ctx.clone()),
+                        .set_ctx(self.ctx.clone()),
                     );
                 }
 
-                ctx.symbol_table.set(
+                self.ctx.last_mut().unwrap().symbols.insert(
                     name.value.into_string(),
                     Symbol::new(val.clone().val.unwrap(), reassignable),
                 );
@@ -156,7 +160,7 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let result = ctx.symbol_table.get(name.clone().value.into_string());
+                let result = self.get_from_ctx(name.clone().value.into_string());
                 if result.clone().is_none() {
                     return res.failure(
                         Error::new(
@@ -165,7 +169,7 @@ impl Interpreter {
                             pos_end,
                             "Variable not found to be reassigned",
                         )
-                        .set_ctx(ctx.clone()),
+                        .set_ctx(self.ctx.clone()),
                     );
                 }
 
@@ -177,16 +181,16 @@ impl Interpreter {
                             pos_end,
                             "Variable not reassignable",
                         )
-                        .set_ctx(ctx.clone()),
+                        .set_ctx(self.ctx.clone()),
                     );
                 }
 
-                let val = Self::interpret_node(*value.clone(), ctx);
+                let val = self.interpret_node(*value);
                 if val.clone().should_return() {
                     return val;
                 }
 
-                ctx.symbol_table.get_and_set(
+                self.get_and_set_ctx(
                     name.value.into_string(),
                     Symbol::new(val.clone().val.unwrap(), true),
                 );
@@ -198,12 +202,12 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let result = ctx.symbol_table.get(token.clone().value.into_string());
+                let result = self.get_from_ctx(token.clone().value.into_string());
 
                 if result.clone().is_none() {
                     return res.failure(
                         Error::new("Runtime Error", pos_start, pos_end, "Variable not found")
-                            .set_ctx(ctx.clone()),
+                            .set_ctx(self.ctx.clone()),
                     );
                 }
 
@@ -213,20 +217,20 @@ impl Interpreter {
                 cases, else_case, ..
             } => {
                 for (condition, expression) in cases {
-                    let condition_val = Self::interpret_node(condition, ctx);
+                    let condition_val = self.interpret_node(condition);
                     if condition_val.clone().should_return() {
                         return condition_val;
                     }
 
                     if condition_val.clone().val.unwrap().is_true() {
-                        let expr_val = Self::interpret_node(expression, ctx);
+                        let expr_val = self.interpret_node(expression);
                         if expr_val.clone().should_return() {
                             return expr_val;
                         }
                     }
                 }
                 if else_case.is_some() {
-                    let else_val = Self::interpret_node(else_case.unwrap(), ctx);
+                    let else_val = self.interpret_node(else_case.unwrap());
                     if else_val.clone().should_return() {
                         return else_val;
                     }
@@ -242,32 +246,31 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let start = Self::interpret_node(*start_value.clone(), ctx);
+                let start = self.interpret_node(*start_value.clone());
                 if start.clone().should_return() {
                     return start;
                 }
 
-                let end = Self::interpret_node(*end_value.clone(), ctx);
+                let end = self.interpret_node(*end_value.clone());
                 if end.clone().should_return() {
                     return end;
                 }
 
                 let step_value;
                 if step_value_node.is_some() {
-                    step_value = Self::interpret_node(step_value_node.unwrap().clone(), ctx)
+                    step_value = self
+                        .interpret_node(step_value_node.unwrap().clone())
                         .val
                         .unwrap_or(Value::Int {
                             val: 1,
                             pos_start,
                             pos_end,
-                            ctx: ctx.clone(),
                         });
                 } else {
                     step_value = Value::Int {
                         val: 1,
                         pos_start,
                         pos_end,
-                        ctx: ctx.clone(),
                     };
                 }
 
@@ -284,21 +287,20 @@ impl Interpreter {
                     if i == end.clone().val.unwrap().get_int() {
                         break;
                     }
-                    ctx.symbol_table.set(
+                    self.ctx.last_mut().unwrap().symbols.insert(
                         var_name_token.clone().value.into_string(),
                         Symbol::new(
                             Value::Int {
                                 val: i,
                                 pos_start,
                                 pos_end,
-                                ctx: ctx.clone(),
                             },
                             true,
                         ),
                     );
 
                     i += step_value.clone().get_int();
-                    let body_eval = Self::interpret_node(*body_node.clone(), ctx);
+                    let body_eval = self.interpret_node(*body_node.clone());
                     if body_eval.clone().should_return() {
                         return body_eval;
                     }
@@ -312,7 +314,7 @@ impl Interpreter {
                 ..
             } => {
                 loop {
-                    let condition = Self::interpret_node(*condition_node.clone(), ctx);
+                    let condition = self.interpret_node(*condition_node.clone());
                     if condition.clone().should_return() {
                         return condition;
                     }
@@ -321,7 +323,7 @@ impl Interpreter {
                         break;
                     }
 
-                    let body_eval = Self::interpret_node(*body_node.clone(), ctx);
+                    let body_eval = self.interpret_node(*body_node.clone());
                     if body_eval.clone().should_return() {
                         return body_eval;
                     }
@@ -349,11 +351,10 @@ impl Interpreter {
                     args: arg_tokens,
                     pos_start,
                     pos_end,
-                    ctx: ctx.clone(),
                 };
 
                 if func_name.clone().value.into_string() != "anonymous" {
-                    ctx.symbol_table.set(
+                    self.ctx.last_mut().unwrap().symbols.insert(
                         func_name.clone().value.into_string(),
                         Symbol::new(val.clone(), true),
                     );
@@ -365,14 +366,14 @@ impl Interpreter {
                 node_to_call, args, ..
             } => {
                 let mut eval_args: Vec<Value> = vec![];
-                let val_to_call = Self::interpret_node(*node_to_call.clone(), ctx);
+                let val_to_call = self.interpret_node(*node_to_call.clone());
 
                 if val_to_call.error.is_some() {
                     return val_to_call;
                 }
 
                 for arg in args {
-                    let eval_arg = Self::interpret_node(arg, ctx);
+                    let eval_arg = self.interpret_node(arg);
                     if eval_arg.error.is_some() {
                         return eval_arg;
                     }
@@ -380,8 +381,11 @@ impl Interpreter {
                     eval_args.push(eval_arg.val.unwrap());
                 }
 
-                let mut val = val_to_call.val.unwrap().execute(eval_args);
-                val.success(val.clone().val.unwrap())
+                let val = val_to_call.val.unwrap().execute(eval_args, self);
+                if val.error.is_some() {
+                    return val;
+                }
+                res.success(val.clone().val.unwrap())
             }
             Node::ArrayNode {
                 element_nodes,
@@ -391,7 +395,7 @@ impl Interpreter {
                 let mut elements: Vec<Value> = vec![];
 
                 for node in element_nodes {
-                    let element = Self::interpret_node(node, ctx);
+                    let element = self.interpret_node(node);
                     if element.clone().should_return() {
                         return element;
                     }
@@ -402,13 +406,12 @@ impl Interpreter {
                     elements,
                     pos_start,
                     pos_end,
-                    ctx: ctx.clone(),
                 })
             }
             Node::ReturnNode { value, .. } => {
                 let val;
                 if value.is_some() {
-                    let eval_val = Self::interpret_node(value.unwrap().clone(), ctx);
+                    let eval_val = self.interpret_node(value.unwrap().clone());
                     if eval_val.clone().should_return() {
                         return eval_val;
                     }
@@ -427,7 +430,7 @@ impl Interpreter {
                 let mut hash_props = HashMap::new();
 
                 for (k, v) in properties {
-                    let e_v = Self::interpret_node(v, ctx);
+                    let e_v = self.interpret_node(v);
                     if e_v.clone().should_return() {
                         return e_v;
                     }
@@ -447,13 +450,12 @@ impl Interpreter {
                     properties: hash_props,
                     pos_start,
                     pos_end,
-                    ctx: ctx.clone(),
                 })
             }
             Node::ObjectPropAccess {
                 object, property, ..
             } => {
-                let obj = Self::interpret_node(*object.clone(), ctx);
+                let obj = self.interpret_node(*object.clone());
                 if obj.clone().should_return() {
                     return obj;
                 }
@@ -476,23 +478,10 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let mut constructor_e = None;
-                let mut methods_e: HashMap<String, Value> = HashMap::new();
-                let mut properties_e: HashMap<String, Value> = HashMap::new();
-
-                let mut ctx_ = Context::new(
-                    name.clone().value.into_string(),
-                    SymbolTable::new(Some(Box::new(ctx.symbol_table.clone()))),
-                    Box::new(Some(ctx.clone())),
-                    Some(pos_start.clone()),
-                );
+                let mut methods_e: HashMap<String, Node> = HashMap::new();
+                let mut properties_e: HashMap<String, Node> = HashMap::new();
 
                 for (k, v) in properties {
-                    let e_v = Self::interpret_node(v, &mut ctx_);
-                    if e_v.clone().should_return() {
-                        return e_v;
-                    }
-
                     if properties_e.contains_key(&k.clone().value.into_string()) {
                         return res.failure(Error::new(
                             "Runtime Error",
@@ -501,13 +490,9 @@ impl Interpreter {
                             "Key already exits",
                         ));
                     }
-                    properties_e.insert(k.value.into_string(), e_v.val.unwrap());
+                    properties_e.insert(k.value.into_string(), v);
                 }
                 for (k, v) in methods {
-                    let e_v = Self::interpret_node(v, &mut ctx_);
-                    if e_v.clone().should_return() {
-                        return e_v;
-                    }
                     if methods_e.contains_key(&k.clone().value.into_string()) {
                         return res.failure(Error::new(
                             "Runtime Error",
@@ -516,28 +501,19 @@ impl Interpreter {
                             "Key already exits",
                         ));
                     }
-                    methods_e.insert(k.value.into_string(), e_v.val.unwrap());
-                }
-                if constructor.is_some() {
-                    let cons_ = Self::interpret_node(constructor.unwrap(), &mut ctx_);
-                    if cons_.clone().should_return() {
-                        return cons_;
-                    }
-
-                    constructor_e = cons_.val;
+                    methods_e.insert(k.value.into_string(), v);
                 }
 
                 let class = Value::Class {
-                    ctx: ctx_.clone(),
                     pos_start,
                     pos_end,
                     name: name.clone().value.into_string(),
-                    constructor: Box::new(constructor_e),
+                    constructor: *constructor.clone(),
                     methods: methods_e,
                     properties: properties_e,
                 };
 
-                ctx.symbol_table.set(
+                self.ctx.last_mut().unwrap().symbols.insert(
                     name.clone().value.into_string(),
                     Symbol::new(class.clone(), false),
                 );
@@ -551,16 +527,16 @@ impl Interpreter {
                 pos_end,
             } => {
                 let mut constructor_params_e: Vec<Value> = vec![];
-                let class = ctx.symbol_table.get(name.value.into_string()).clone();
+                let class = self.get_from_ctx(name.value.into_string()).clone();
                 if class.clone().is_none() {
                     return res.failure(
                         Error::new("Runtime Error", pos_start, pos_end, "Unknown Class")
-                            .set_ctx(ctx.clone()),
+                            .set_ctx(self.ctx.clone()),
                     );
                 }
 
                 for param in constructor_params {
-                    let param_e = Self::interpret_node(param, &mut ctx.clone());
+                    let param_e = self.interpret_node(param);
                     if param_e.clone().should_return() {
                         return param_e;
                     }
@@ -568,10 +544,30 @@ impl Interpreter {
                     constructor_params_e.push(param_e.val.unwrap());
                 }
 
-                (*class.clone().unwrap())
+                (class.clone().unwrap())
                     .value
                     .clone()
-                    .init_class(constructor_params_e)
+                    .init_class(constructor_params_e, self)
+            }
+        }
+    }
+
+    pub fn get_from_ctx(&self, k: String) -> Option<Symbol> {
+        for idx in (0..self.ctx.len()).rev() {
+            let sym = self.ctx.get(idx).unwrap().symbols.get(&k);
+            if sym.is_some() {
+                return Some(sym.unwrap().clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_and_set_ctx(&mut self, k: String, n: Symbol) {
+        for idx in (0..self.ctx.len()).rev() {
+            let sym = self.ctx.get(idx).unwrap().symbols.get(&k.clone());
+            if sym.is_some() {
+                self.ctx.get_mut(idx).unwrap().symbols.insert(k, n);
+                break;
             }
         }
     }

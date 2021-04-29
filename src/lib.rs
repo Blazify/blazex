@@ -30,7 +30,6 @@ pub mod utils {
     pub mod error;
     pub mod position;
     pub mod symbol;
-    pub mod symbol_table;
 }
 
 pub mod std {
@@ -41,13 +40,11 @@ use crate::core::interpreter::value::Value;
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
-use crate::std::lib::init_std;
 use crate::utils::context::Context;
 use crate::utils::error::Error;
-use crate::utils::symbol_table::SymbolTable;
 
 pub trait LanguageServer {
-    fn from_ast(node: &Node, ctx: &mut Context) -> Result<Value, Error>;
+    fn from_ast(name: &'static str, node: &Node, ctx: &mut Context) -> Result<Value, Error>;
 
     fn from_source(
         name: &'static str,
@@ -64,10 +61,6 @@ pub trait LanguageServer {
             return Err(parsed.error.unwrap());
         }
 
-        init_std(ctx);
-        let sym = SymbolTable::new(Some(Box::new(ctx.symbol_table.clone())));
-        let mut ctx_ = Context::new(name.to_string(), sym, Box::new(Some(ctx.clone())), None);
-
-        Self::from_ast(&parsed.node.unwrap(), &mut ctx_)
+        Self::from_ast(name, &parsed.node.unwrap(), ctx)
     }
 }

@@ -2,10 +2,8 @@ use crate::core::interpreter::{interpreter::Interpreter, runtime_result::Runtime
 use crate::core::parser::nodes::Node;
 use crate::core::token::Token;
 use crate::utils::constants::DynType;
-use crate::utils::{
-    constants::Tokens, context::Context, error::Error, position::Position, symbol::Symbol,
-    symbol_table::SymbolTable,
-};
+use crate::utils::{constants::Tokens, error::Error, position::Position};
+use crate::utils::{context::Context, symbol::Symbol};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::{Display, Error as E, Formatter};
@@ -16,31 +14,26 @@ pub enum Value {
         val: i64,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Float {
         val: f32,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     String {
         val: String,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Char {
         val: char,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Boolean {
         val: bool,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Function {
         name: Token,
@@ -48,28 +41,24 @@ pub enum Value {
         args: Vec<Token>,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Array {
         elements: Vec<Value>,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Object {
         properties: HashMap<String, Value>,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Class {
         name: String,
-        constructor: Box<Option<Value>>,
-        properties: HashMap<String, Value>,
-        methods: HashMap<String, Value>,
+        constructor: Option<Node>,
+        properties: HashMap<String, Node>,
+        methods: HashMap<String, Node>,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     InBuiltFunction {
         name: String,
@@ -77,7 +66,6 @@ pub enum Value {
         args_len: usize,
         pos_start: Position,
         pos_end: Position,
-        ctx: Context,
     },
     Null,
 }
@@ -136,28 +124,10 @@ impl Value {
         }
     }
 
-    pub fn get_ctx(self) -> Context {
-        match self {
-            Value::Int { ctx, .. } => ctx,
-            Value::Float { ctx, .. } => ctx,
-            Value::String { ctx, .. } => ctx,
-            Value::Char { ctx, .. } => ctx,
-            Value::Boolean { ctx, .. } => ctx,
-            Value::Function { ctx, .. } => ctx,
-            Value::Array { ctx, .. } => ctx,
-            Value::Object { ctx, .. } => ctx,
-            Value::Class { ctx, .. } => ctx,
-            _ => panic!(),
-        }
-    }
-
     pub fn op(self, n: Value, op: Token) -> RuntimeResult {
         match self.clone() {
             Value::Int {
-                val: v,
-                pos_start,
-                ctx,
-                ..
+                val: v, pos_start, ..
             } => {
                 if let Value::Int {
                     val: v1, pos_end, ..
@@ -166,25 +136,21 @@ impl Value {
                     return match op.r#type {
                         Tokens::Plus => RuntimeResult::new().success(Value::Int {
                             val: v + v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Minus => RuntimeResult::new().success(Value::Int {
                             val: v - v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Multiply => RuntimeResult::new().success(Value::Int {
                             val: v * v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Divide => RuntimeResult::new().success(Value::Int {
                             val: v / v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
@@ -192,70 +158,54 @@ impl Value {
                             val: v.pow(v1.try_into().unwrap()),
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::DoubleEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v == v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v != v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::LessThan => RuntimeResult::new().success(Value::Boolean {
                             val: v < v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::LessThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v <= v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::GreaterThan => RuntimeResult::new().success(Value::Boolean {
                             val: v > v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::GreaterThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v >= v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
-                        _ => RuntimeResult::new().failure(
-                            Error::new(
-                                "Runtime Error",
-                                pos_start,
-                                self.clone().get_pos_end(),
-                                "Unexpected token",
-                            )
-                            .set_ctx(ctx),
-                        ),
+                        _ => RuntimeResult::new().failure(Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            self.clone().get_pos_end(),
+                            "Unexpected token",
+                        )),
                     };
                 }
-                RuntimeResult::new().failure(
-                    Error::new(
-                        "Runtime Error",
-                        pos_start,
-                        self.clone().get_pos_end(),
-                        "Unexpected type",
-                    )
-                    .set_ctx(ctx),
-                )
+                RuntimeResult::new().failure(Error::new(
+                    "Runtime Error",
+                    pos_start,
+                    self.clone().get_pos_end(),
+                    "Unexpected type",
+                ))
             }
             Value::Float {
-                val: v,
-                pos_start,
-                ctx,
-                ..
+                val: v, pos_start, ..
             } => {
                 if let Value::Float {
                     val: v1, pos_end, ..
@@ -264,25 +214,21 @@ impl Value {
                     return match op.r#type {
                         Tokens::Plus => RuntimeResult::new().success(Value::Float {
                             val: v + v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Minus => RuntimeResult::new().success(Value::Float {
                             val: v - v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Multiply => RuntimeResult::new().success(Value::Float {
                             val: v * v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
                         Tokens::Divide => RuntimeResult::new().success(Value::Float {
                             val: v / v1,
-                            ctx,
                             pos_start,
                             pos_end,
                         }),
@@ -290,71 +236,53 @@ impl Value {
                             val: v.powf(v1),
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::DoubleEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v == v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v != v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::LessThan => RuntimeResult::new().success(Value::Boolean {
                             val: v < v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::LessThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v <= v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::GreaterThan => RuntimeResult::new().success(Value::Boolean {
                             val: v > v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::GreaterThanEquals => RuntimeResult::new().success(Value::Boolean {
                             val: v >= v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
-                        _ => RuntimeResult::new().failure(
-                            Error::new(
-                                "Runtime Error",
-                                pos_start,
-                                self.clone().get_pos_end(),
-                                "Unexpected token",
-                            )
-                            .set_ctx(ctx),
-                        ),
+                        _ => RuntimeResult::new().failure(Error::new(
+                            "Runtime Error",
+                            pos_start,
+                            self.clone().get_pos_end(),
+                            "Unexpected token",
+                        )),
                     };
                 }
-                RuntimeResult::new().failure(
-                    Error::new(
-                        "Runtime Error",
-                        pos_start,
-                        self.clone().get_pos_end(),
-                        "Unexpected type",
-                    )
-                    .set_ctx(ctx),
-                )
+                RuntimeResult::new().failure(Error::new(
+                    "Runtime Error",
+                    pos_start,
+                    self.clone().get_pos_end(),
+                    "Unexpected type",
+                ))
             }
-            Value::Boolean {
-                val,
-                ctx,
-                pos_start,
-                ..
-            } => {
+            Value::Boolean { val, pos_start, .. } => {
                 if let Value::Boolean {
                     val: v1, pos_end, ..
                 } = n
@@ -367,7 +295,6 @@ impl Value {
                             val: val && v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         });
                     } else if op
                         .clone()
@@ -377,7 +304,6 @@ impl Value {
                             val: val || v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         });
                     }
 
@@ -386,44 +312,33 @@ impl Value {
                             val: val == v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
                         Tokens::NotEquals => RuntimeResult::new().success(Value::Boolean {
                             val: val == v1,
                             pos_start,
                             pos_end,
-                            ctx,
                         }),
-                        _ => RuntimeResult::new().failure(
-                            Error::new(
-                                "Runtime Error",
-                                self.clone().get_pos_start(),
-                                self.clone().get_pos_end(),
-                                "Unexpected type",
-                            )
-                            .set_ctx(self.clone().get_ctx()),
-                        ),
+                        _ => RuntimeResult::new().failure(Error::new(
+                            "Runtime Error",
+                            self.clone().get_pos_start(),
+                            self.clone().get_pos_end(),
+                            "Unexpected type",
+                        )),
                     };
                 }
-                RuntimeResult::new().failure(
-                    Error::new(
-                        "Runtime Error",
-                        self.clone().get_pos_start(),
-                        self.clone().get_pos_end(),
-                        "Unexpected type",
-                    )
-                    .set_ctx(self.clone().get_ctx()),
-                )
-            }
-            _ => RuntimeResult::new().failure(
-                Error::new(
+                RuntimeResult::new().failure(Error::new(
                     "Runtime Error",
                     self.clone().get_pos_start(),
                     self.clone().get_pos_end(),
                     "Unexpected type",
-                )
-                .set_ctx(self.clone().get_ctx()),
-            ),
+                ))
+            }
+            _ => RuntimeResult::new().failure(Error::new(
+                "Runtime Error",
+                self.clone().get_pos_start(),
+                self.clone().get_pos_end(),
+                "Unexpected type",
+            )),
         }
     }
 
@@ -431,44 +346,40 @@ impl Value {
         match self.clone() {
             Self::Int {
                 val,
-                ctx,
                 pos_end,
                 pos_start,
             } => {
                 if let Tokens::Minus = u {
                     return RuntimeResult::new().success(Value::Int {
                         val: val * (-1),
-                        ctx,
                         pos_end,
                         pos_start,
                     });
                 } else if let Tokens::Plus = u {
                     return RuntimeResult::new().success(Value::Int {
                         val: val * (1),
-                        ctx,
                         pos_end,
                         pos_start,
                     });
                 }
 
-                RuntimeResult::new().failure(
-                    Error::new("Runtime Error", pos_start, pos_end, "Unexpected token")
-                        .set_ctx(self.clone().get_ctx()),
-                )
-            }
-            _ => RuntimeResult::new().failure(
-                Error::new(
+                RuntimeResult::new().failure(Error::new(
                     "Runtime Error",
-                    self.clone().get_pos_start(),
-                    self.clone().get_pos_end(),
-                    "Unexpected type",
-                )
-                .set_ctx(self.clone().get_ctx()),
-            ),
+                    pos_start,
+                    pos_end,
+                    "Unexpected token",
+                ))
+            }
+            _ => RuntimeResult::new().failure(Error::new(
+                "Runtime Error",
+                self.clone().get_pos_start(),
+                self.clone().get_pos_end(),
+                "Unexpected type",
+            )),
         }
     }
 
-    pub fn execute(self, eval_args: Vec<Value>) -> RuntimeResult {
+    pub fn execute(self, eval_args: Vec<Value>, inter: &mut Interpreter) -> RuntimeResult {
         let mut res = RuntimeResult::new();
         if let Self::Function {
             args,
@@ -476,15 +387,10 @@ impl Value {
             name,
             pos_start,
             pos_end,
-            ctx: parent,
         } = self.clone()
         {
-            let mut ctx = Context::new(
-                name.value.into_string(),
-                SymbolTable::new(Some(Box::new(parent.symbol_table))),
-                Box::new(Some(self.get_ctx())),
-                Some(pos_start.clone()),
-            );
+            let ctx = Context::new(name.value.into_string());
+            inter.ctx.push(ctx);
 
             if args.len() > eval_args.len() {
                 return res.failure(
@@ -494,7 +400,7 @@ impl Value {
                         pos_end,
                         "Too less args supplied!",
                     )
-                    .set_ctx(ctx.clone()),
+                    .set_ctx(inter.ctx.clone()),
                 );
             }
 
@@ -506,7 +412,7 @@ impl Value {
                         pos_end,
                         "Too many args supplied!",
                     )
-                    .set_ctx(ctx.clone()),
+                    .set_ctx(inter.ctx.clone()),
                 );
             }
 
@@ -514,15 +420,17 @@ impl Value {
                 let name = &args[x];
                 let val = &eval_args[x];
 
-                ctx.symbol_table.set(
+                inter.ctx.last_mut().unwrap().symbols.insert(
                     name.clone().value.into_string(),
                     Symbol::new(val.clone(), true),
                 );
             }
-            let result = Interpreter::interpret_node(body_node, &mut ctx);
+            let result = inter.interpret_node(body_node);
             if result.clone().should_return() {
                 return result;
             }
+
+            inter.ctx.pop();
 
             return res.success(result.val.unwrap());
         } else if let Self::InBuiltFunction {
@@ -530,32 +438,25 @@ impl Value {
             fun,
             pos_start,
             pos_end,
-            ctx,
             ..
         } = self
         {
             if args_len > eval_args.len() {
-                return res.failure(
-                    Error::new(
-                        "Runtime Error",
-                        pos_start,
-                        pos_end,
-                        "Too less args supplied!",
-                    )
-                    .set_ctx(ctx.clone()),
-                );
+                return res.failure(Error::new(
+                    "Runtime Error",
+                    pos_start,
+                    pos_end,
+                    "Too less args supplied!",
+                ));
             }
 
             if args_len < eval_args.len() {
-                return res.failure(
-                    Error::new(
-                        "Runtime Error",
-                        pos_start,
-                        pos_end,
-                        "Too many args supplied!",
-                    )
-                    .set_ctx(ctx.clone()),
-                );
+                return res.failure(Error::new(
+                    "Runtime Error",
+                    pos_start,
+                    pos_end,
+                    "Too many args supplied!",
+                ));
             }
 
             return res.success(fun(eval_args));
@@ -570,55 +471,90 @@ impl Value {
                 properties,
                 pos_start,
                 pos_end,
-                ctx,
             } => {
                 if !properties.contains_key(&k) {
-                    return res.failure(
-                        Error::new("Runtime Error", pos_start, pos_end, "No value found!")
-                            .set_ctx(ctx.clone()),
-                    );
+                    return res.failure(Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "No value found!",
+                    ));
                 };
 
                 res.success(properties.get(&k).unwrap().clone())
             }
-            _ => res.failure(
-                Error::new(
-                    "Runtime Error",
-                    self.get_pos_start(),
-                    self.get_pos_end(),
-                    "Not a object!",
-                )
-                .set_ctx(self.get_ctx().clone()),
-            ),
+            _ => res.failure(Error::new(
+                "Runtime Error",
+                self.get_pos_start(),
+                self.get_pos_end(),
+                "Not a object!",
+            )),
         }
     }
 
-    pub fn init_class(self, constructor_params_e: Vec<Value>) -> RuntimeResult {
+    pub fn init_class(
+        self,
+        constructor_params_e: Vec<Value>,
+        inter: &mut Interpreter,
+    ) -> RuntimeResult {
         let mut res = RuntimeResult::new();
         return if let Self::Class {
             constructor,
             methods,
-            properties: prop,
-            ctx,
+            properties,
             pos_start,
             pos_end,
-            ..
+            name,
         } = self.clone()
         {
-            if constructor.is_some() {
-                let e_c = constructor.unwrap().execute(constructor_params_e);
-                if e_c.clone().should_return() && e_c.return_val != true {
-                    return e_c;
+            let ctx = Context::new(name);
+            inter.ctx.push(ctx);
+
+            let mut properties_e: HashMap<String, Value> = HashMap::new();
+
+            for (k, v) in &properties {
+                let e_v = inter.interpret_node(v.clone());
+                if e_v.clone().should_return() {
+                    return e_v;
                 }
+                properties_e.insert(k.to_string(), e_v.val.unwrap());
             }
-            let mut properties = prop.clone();
-            properties.extend(methods);
+
+            let mut methods_e: HashMap<String, Value> = HashMap::new();
+
+            for (k, v) in &methods {
+                let e_v = inter.interpret_node(v.clone());
+                if e_v.clone().should_return() {
+                    return e_v;
+                }
+                methods_e.insert(k.to_string(), e_v.val.unwrap());
+            }
+
+            let mut props = properties_e.clone();
+            props.extend(methods_e);
             let soul = Self::Object {
-                ctx: ctx.clone(),
                 pos_start,
                 pos_end,
-                properties,
+                properties: props,
             };
+
+            inter
+                .ctx
+                .last_mut()
+                .unwrap()
+                .symbols
+                .insert("soul".to_string(), Symbol::new(soul.clone(), false));
+
+            if constructor.is_some() {
+                let e_c = inter.interpret_node(constructor.unwrap());
+                if e_c.clone().should_return() {
+                    return e_c;
+                }
+
+                e_c.val.unwrap().execute(constructor_params_e, inter);
+            }
+
+            inter.ctx.pop();
 
             res.success(soul)
         } else {
@@ -665,34 +601,7 @@ impl Display for Value {
                     .join(",\n"),
                 "\n}"
             ),
-            Self::Class {
-                name,
-                properties,
-                methods,
-                constructor,
-                ..
-            } => write!(
-                f,
-                "class {} {}constructor: {}\n{}{}{}",
-                name,
-                "{\n     ",
-                if constructor.is_some() {
-                    constructor.as_ref().as_ref().unwrap()
-                } else {
-                    &Value::Null
-                },
-                properties
-                    .iter()
-                    .map(|(k, v)| format!("     {}: {}", k, v))
-                    .collect::<Vec<String>>()
-                    .join(",\n"),
-                methods
-                    .iter()
-                    .map(|(k, v)| format!("     {}: {}", k, v))
-                    .collect::<Vec<String>>()
-                    .join(",\n"),
-                "\n}"
-            ),
+            Self::Class { name, .. } => write!(f, "class {}", name),
             Self::Null => write!(f, "Null"),
         }
     }

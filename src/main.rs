@@ -1,6 +1,5 @@
 #![allow(unused_must_use)]
 use blazescript::utils::context::Context;
-use blazescript::utils::symbol_table::SymbolTable;
 use blazescript::{
     core::interpreter::{interpreter::Interpreter, value::Value},
     LanguageServer,
@@ -16,8 +15,7 @@ struct Cli {
 }
 
 fn main() {
-    let global = SymbolTable::new(None);
-    let mut ctx = Context::new("Global".to_string(), global, Box::new(None), None);
+    let mut ctx = Context::new("Global".to_string());
 
     let args = Cli::from_args();
     if args.path.is_some() {

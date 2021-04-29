@@ -1,25 +1,17 @@
-use crate::utils::{position::Position, symbol_table::SymbolTable};
+use crate::utils::symbol::Symbol;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Context {
     pub display_name: String,
-    pub symbol_table: SymbolTable,
-    pub parent: Box<Option<Context>>,
-    pub parent_position: Option<Position>,
+    pub symbols: HashMap<String, Symbol>,
 }
 
 impl Context {
-    pub fn new(
-        display_name: String,
-        symbol_table: SymbolTable,
-        parent: Box<Option<Context>>,
-        parent_position: Option<Position>,
-    ) -> Self {
+    pub fn new(display_name: String) -> Self {
         Self {
             display_name,
-            symbol_table,
-            parent,
-            parent_position,
+            symbols: HashMap::new(),
         }
     }
 }
