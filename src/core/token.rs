@@ -29,15 +29,6 @@ impl Token {
         }
     }
 
-    pub fn clone(&mut self) -> Token {
-        Token {
-            r#type: *&self.r#type,
-            value: self.value.clone(),
-            pos_start: self.pos_start.clone(),
-            pos_end: self.pos_end.clone(),
-        }
-    }
-
     pub fn matches(&self, r#type: Tokens, value: DynType) -> bool {
         return self.r#type == r#type && self.value == value;
     }

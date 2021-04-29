@@ -1,13 +1,19 @@
-class lol {
+class Main {
+    @ property
     var a = 0;
+
+    @ constructor
     fun() => { 
-        a = a + 1; 
-        println(a);
+        a = a + 1;
+        a_edit(5);
+    }
+
+    @ method
+    fun a_edit(new_a) => {
+    	a = new_a;
     }
 }
 
+var main_ins = new Main();
+println(main_ins);
 
-@ this will return false as it sets a to the nearest symbol_table and returns that,
-@ whereas we are using the ctx in the parent symbol_table
-
-println(new lol());

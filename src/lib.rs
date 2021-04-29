@@ -56,7 +56,7 @@ pub trait LanguageServer {
             return Err(lexed.error.unwrap());
         }
 
-        let parsed = Parser::new(lexed.tokens.clone()).parse();
+        let parsed = Parser::new(lexed.tokens).parse();
         if parsed.error.is_some() || parsed.node.is_none() {
             return Err(parsed.error.unwrap());
         }

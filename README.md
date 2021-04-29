@@ -19,7 +19,7 @@ cargo install --path ./ --bin blazescript
 # Known bugs
 
 - Unusual behaviour in windows
-- In `VarAccessNode`, regardless of what SymbolTable it came from it always sets to the nearest one
+- In Methods you can't access the class properties
 
 # Project Tree
 
@@ -48,11 +48,6 @@ cargo install --path ./ --bin blazescript
 - ┣ 📜lib
 - ┗ 📜main
 
-# External Dependencies
-
-- rustyline for the REPL
-- structopt for Argument parsing
-
 # TODO
 
 - [x] **MULTI-LINE SUPPORT**
@@ -75,7 +70,7 @@ cargo install --path ./ --bin blazescript
 - [x] Arrays
 - [x] Objects
 - [x] Classes
-- [ ] Standard Library
+- [x] Standard Library (A basic one)
 
 ## Note
 

@@ -31,56 +31,77 @@ impl Error {
     }
 
     pub fn prettify(&self) -> String {
-        let res = String::new();
-        /*
+        let mut res = String::new();
         if self.ctx.is_some() {
-            let mut pos = Some(self.pos_start);
-            let mut ctx = self.ctx.as_ref();
+            let mut r_ctx = self.ctx.clone().unwrap();
+            r_ctx.reverse();
+            r_ctx.pop();
 
-            while ctx.is_some() {
-                let file_name = if pos.is_none() {
-                    "Unknown"
-                } else {
-                    pos.unwrap().file_name
-                };
-
-                let line = if pos.is_none() { 0 } else { pos.unwrap().line };
-
-                res = format!(
-                    "File {}, line: {}, in {}\n{}",
-                    file_name,
-                    line,
-                    ctx.unwrap().display_name,
-                    res
-                );
-
-                pos = ctx.unwrap().parent_position;
-                if ctx.unwrap().parent.is_some() {
-                    ctx = ctx.unwrap().parent.as_ref().as_ref();
-                } else {
-                    ctx = None
-                }
+            for ctx in r_ctx {
+                res.push_str(format!("\n    at {}", ctx.display_name).as_str());
             }
-            format!("Traceback (most recent call last):\n{}\n", res);
+            res = format!("Traceback (most recent call last):{}\n", res);
         }
-        */
 
         format!(
-            "{}\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n {}\u{001b}[0m",
-            res,
+            "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n{}\u{001b}[0m",
             self.name,
             self.description,
             self.pos_start.file_name,
             self.pos_start.line + 1,
-            self.pos_start
-                .file_content
-                .to_string()
-                .split("\n")
-                .collect::<Vec<&str>>()
-                .get(self.pos_start.line as usize)
-                .unwrap_or(&""),
-            " ".repeat((self.pos_end.column - 1) as usize)
-                + &*"^".repeat((self.pos_end.column - self.pos_start.column) as usize)
+            self.string_with_arrows(),
+            res
         )
+    }
+
+    fn string_with_arrows(&self) -> String {
+        let mut res = String::new();
+        let text = self.pos_start.file_content.to_string().clone();
+
+        let mut idx_start = std::cmp::max(
+            text[0..self.pos_start.index as usize]
+                .rfind("\n")
+                .unwrap_or(0),
+            0,
+        );
+        let mut idx_end = text[(idx_start + 1)..(text.len() - 1)]
+            .find("\n")
+            .unwrap_or(0);
+        if idx_end < 0 as usize {
+            idx_end = text.len();
+        }
+        let line_count = self.pos_end.line - self.pos_start.line + 1;
+
+        for i in 0..line_count {
+            let line = &text[idx_start..(idx_end + idx_start)];
+
+            let mut col_start = 0;
+            if i == 0 {
+                col_start = self.pos_start.column;
+            }
+
+            let mut col_end = line.len() as i64 - 1;
+            if i == (line_count - 1) {
+                col_end = self.pos_end.column;
+            }
+
+            res.push_str(line);
+            res.push('\n');
+            res = format!(
+                "{}{}",
+                res,
+                " ".repeat((col_start) as usize) + &*"^".repeat((col_end - col_start) as usize)
+            );
+
+            idx_start = idx_end;
+            idx_end = text[(idx_start + 1)..(text.len() - 1)]
+                .find("\n")
+                .unwrap_or(0);
+            if idx_end < 0 as usize {
+                idx_end = text.len();
+            }
+        }
+
+        res.replacen("\t", "", res.len())
     }
 }

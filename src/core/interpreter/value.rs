@@ -84,7 +84,6 @@ impl Value {
             _ => panic!(),
         }
     }
-
     pub fn is_true(self) -> bool {
         match self.clone() {
             Self::Boolean { val, .. } => val,
@@ -389,7 +388,7 @@ impl Value {
             pos_end,
         } = self.clone()
         {
-            let ctx = Context::new(name.value.into_string());
+            let ctx = Context::new(format!("Function<{}>", name.value.into_string()));
             inter.ctx.push(ctx);
 
             if args.len() > eval_args.len() {
@@ -426,7 +425,7 @@ impl Value {
                 );
             }
             let result = inter.interpret_node(body_node);
-            if result.clone().should_return() {
+            if result.should_return() {
                 return result;
             }
 
@@ -507,24 +506,23 @@ impl Value {
             name,
         } = self.clone()
         {
-            let ctx = Context::new(name);
+            let ctx = Context::new(format!("Class<{}>", name));
             inter.ctx.push(ctx);
 
             let mut properties_e: HashMap<String, Value> = HashMap::new();
 
             for (k, v) in &properties {
                 let e_v = inter.interpret_node(v.clone());
-                if e_v.clone().should_return() {
+                if e_v.should_return() {
                     return e_v;
                 }
                 properties_e.insert(k.to_string(), e_v.val.unwrap());
             }
 
             let mut methods_e: HashMap<String, Value> = HashMap::new();
-
             for (k, v) in &methods {
                 let e_v = inter.interpret_node(v.clone());
-                if e_v.clone().should_return() {
+                if e_v.should_return() {
                     return e_v;
                 }
                 methods_e.insert(k.to_string(), e_v.val.unwrap());
@@ -535,11 +533,14 @@ impl Value {
 
             if constructor.is_some() {
                 let e_c = inter.interpret_node(constructor.unwrap());
-                if e_c.clone().should_return() {
+                if e_c.should_return() {
                     return e_c;
                 }
 
-                e_c.val.unwrap().execute(constructor_params_e, inter);
+                let exec = e_c.val.unwrap().execute(constructor_params_e, inter);
+                if exec.should_return() {
+                    return exec;
+                }
             }
 
             for (k, v) in props.clone() {
@@ -562,7 +563,6 @@ impl Value {
                 pos_end,
                 properties: props,
             };
-
             inter.ctx.pop();
 
             res.success(soul)

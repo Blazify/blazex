@@ -42,7 +42,7 @@ impl RuntimeResult {
         self
     }
 
-    pub fn should_return(self) -> bool {
+    pub fn should_return(&self) -> bool {
         self.error.is_some() || self.return_val
     }
 }

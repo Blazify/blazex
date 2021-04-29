@@ -56,6 +56,7 @@ impl Parser {
     fn statements(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut statements: Vec<Node> = vec![];
+        let pos_start = self.current_token.clone().pos_start;
 
         while self.current_token.r#type == Tokens::Newline {
             res.register_advancement();
@@ -94,7 +95,7 @@ impl Parser {
         }
         res.success(Node::ArrayNode {
             element_nodes: statements,
-            pos_start: self.current_token.pos_start,
+            pos_start: pos_start,
             pos_end: self.current_token.pos_end,
         })
     }
@@ -137,6 +138,8 @@ impl Parser {
 
     fn expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
+
         if self
             .current_token
             .clone()
@@ -190,12 +193,11 @@ impl Parser {
                 name: var_name.clone(),
                 value: Box::new(expr),
                 reassignable,
-                pos_start: var_name.pos_start,
+                pos_start,
                 pos_end: self.current_token.clone().pos_end,
             });
         }
 
-        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.comp_expr());
         if res.error.is_some() {
             return res;
@@ -221,7 +223,7 @@ impl Parser {
                 left: Box::new(left.clone().unwrap()),
                 right: Box::new(right.clone().unwrap()),
                 op_token,
-                pos_start: pos_start.clone(),
+                pos_start: pos_start,
                 pos_end: self.current_token.clone().pos_end,
             });
         }
@@ -229,7 +231,7 @@ impl Parser {
         if res.error.is_some() {
             return res.failure(Error::new(
                 "Invalid Syntax",
-                self.current_token.pos_start.clone(),
+                pos_start,
                 self.current_token.pos_end.clone(),
                 "Expected 'var', int, float, identifier, '+', '-' or '('",
             ));
@@ -240,6 +242,7 @@ impl Parser {
 
     fn comp_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
+        let pos_start = self.current_token.clone().pos_start;
 
         if self
             .current_token
@@ -258,12 +261,11 @@ impl Parser {
             return res.success(Node::UnaryNode {
                 node: Box::new(node.clone().unwrap()),
                 op_token: op_token.clone(),
-                pos_start: op_token.pos_start,
+                pos_start: pos_start,
                 pos_end: self.current_token.clone().pos_start,
             });
         }
 
-        let pos_start = self.current_token.clone().pos_start;
         let mut left = res.register(self.arith_expr());
         if res.error.is_some() {
             return res;
@@ -299,7 +301,7 @@ impl Parser {
         if res.error.is_some() {
             return res.failure(Error::new(
                 "Invalid Syntax",
-                self.current_token.pos_start.clone(),
+                pos_start,
                 self.current_token.pos_end.clone(),
                 "A Int or Float or Identifier, '+', '-', '(', 'not', '!' was Expected",
             ));
@@ -710,15 +712,6 @@ impl Parser {
                     pos_end: self.current_token.clone().pos_end,
                 });
             }
-
-            return res.success(Node::VarAccessNode {
-                token: token.clone(),
-                pos_start: token.clone().pos_start,
-                pos_end: token.clone().pos_end,
-            });
-        } else if token.matches(Tokens::Keyword, DynType::String("soul".to_string())) {
-            res.register_advancement();
-            self.advance();
 
             return res.success(Node::VarAccessNode {
                 token: token.clone(),

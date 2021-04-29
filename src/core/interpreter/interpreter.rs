@@ -18,17 +18,18 @@ use std::collections::HashMap;
 
 pub struct Interpreter {
     pub ctx: Vec<Context>,
+    pub classes: HashMap<String, Context>,
 }
 
 impl LanguageServer for Interpreter {
     fn from_ast(name: &'static str, node: &Node, ctx: &mut Context) -> Result<Value, Error> {
         init_std(ctx);
         let ctx_ = Context::new(name.to_string());
-        let vec_ctx = vec![ctx_, ctx.clone()];
+        let vec_ctx = vec![ctx.clone(), ctx_];
 
         let res = Self::new(vec_ctx).interpret_node(node.clone());
         return if res.val.is_some() {
-            return if res.clone().should_return() {
+            return if res.should_return() {
                 Ok(res.val.unwrap())
             } else {
                 Ok(Value::Null)
@@ -41,7 +42,10 @@ impl LanguageServer for Interpreter {
 
 impl Interpreter {
     pub fn new(ctx: Vec<Context>) -> Interpreter {
-        Self { ctx }
+        Self {
+            ctx,
+            classes: HashMap::new(),
+        }
     }
 
     pub fn interpret_node(&mut self, node: Node) -> RuntimeResult {
@@ -91,12 +95,12 @@ impl Interpreter {
                 ..
             } => {
                 let left_built = self.interpret_node(*left);
-                if left_built.clone().should_return() {
+                if left_built.should_return() {
                     return left_built;
                 }
 
                 let right_built = self.interpret_node(*right);
-                if right_built.clone().should_return() {
+                if right_built.should_return() {
                     return right_built;
                 }
                 left_built
@@ -106,7 +110,7 @@ impl Interpreter {
             }
             Node::UnaryNode { node, op_token, .. } => {
                 let built = self.interpret_node(*node);
-                if built.clone().should_return() {
+                if built.should_return() {
                     return built;
                 }
 
@@ -129,7 +133,7 @@ impl Interpreter {
                 pos_end,
             } => {
                 let val = self.interpret_node(*value);
-                if val.clone().should_return() {
+                if val.should_return() {
                     return val;
                 }
 
@@ -186,7 +190,7 @@ impl Interpreter {
                 }
 
                 let val = self.interpret_node(*value);
-                if val.clone().should_return() {
+                if val.should_return() {
                     return val;
                 }
 
@@ -218,20 +222,20 @@ impl Interpreter {
             } => {
                 for (condition, expression) in cases {
                     let condition_val = self.interpret_node(condition);
-                    if condition_val.clone().should_return() {
+                    if condition_val.should_return() {
                         return condition_val;
                     }
 
                     if condition_val.clone().val.unwrap().is_true() {
                         let expr_val = self.interpret_node(expression);
-                        if expr_val.clone().should_return() {
+                        if expr_val.should_return() {
                             return expr_val;
                         }
                     }
                 }
                 if else_case.is_some() {
                     let else_val = self.interpret_node(else_case.unwrap());
-                    if else_val.clone().should_return() {
+                    if else_val.should_return() {
                         return else_val;
                     }
                 }
@@ -247,12 +251,12 @@ impl Interpreter {
                 pos_end,
             } => {
                 let start = self.interpret_node(*start_value.clone());
-                if start.clone().should_return() {
+                if start.should_return() {
                     return start;
                 }
 
                 let end = self.interpret_node(*end_value.clone());
-                if end.clone().should_return() {
+                if end.should_return() {
                     return end;
                 }
 
@@ -301,7 +305,7 @@ impl Interpreter {
 
                     i += step_value.clone().get_int();
                     let body_eval = self.interpret_node(*body_node.clone());
-                    if body_eval.clone().should_return() {
+                    if body_eval.should_return() {
                         return body_eval;
                     }
                 }
@@ -315,7 +319,7 @@ impl Interpreter {
             } => {
                 loop {
                     let condition = self.interpret_node(*condition_node.clone());
-                    if condition.clone().should_return() {
+                    if condition.should_return() {
                         return condition;
                     }
 
@@ -324,7 +328,7 @@ impl Interpreter {
                     }
 
                     let body_eval = self.interpret_node(*body_node.clone());
-                    if body_eval.clone().should_return() {
+                    if body_eval.should_return() {
                         return body_eval;
                     }
                 }
@@ -338,12 +342,22 @@ impl Interpreter {
                 pos_start,
                 pos_end,
             } => {
-                let func_name = name.unwrap_or(Token::new(
+                let mut func_name = name.unwrap_or(Token::new(
                     Tokens::Identifier,
                     pos_start,
                     pos_end,
                     DynType::String("anonymous".to_string()),
                 ));
+                if self.ctx.last().unwrap().display_name.starts_with("Class") {
+                    if func_name.clone().value.into_string() == "anonymous".to_string() {
+                        func_name = Token::new(
+                            Tokens::Identifier,
+                            pos_start,
+                            pos_end,
+                            DynType::String("constructor".to_string()),
+                        );
+                    }
+                }
 
                 let val = Value::Function {
                     name: func_name.clone(),
@@ -353,7 +367,9 @@ impl Interpreter {
                     pos_end,
                 };
 
-                if func_name.clone().value.into_string() != "anonymous" {
+                if !["anonymous", "constructor"]
+                    .contains(&&func_name.clone().value.into_string().as_str())
+                {
                     self.ctx.last_mut().unwrap().symbols.insert(
                         func_name.clone().value.into_string(),
                         Symbol::new(val.clone(), true),
@@ -396,7 +412,7 @@ impl Interpreter {
 
                 for node in element_nodes {
                     let element = self.interpret_node(node);
-                    if element.clone().should_return() {
+                    if element.should_return() {
                         return element;
                     }
                     elements.push(element.val.unwrap());
@@ -412,7 +428,7 @@ impl Interpreter {
                 let val;
                 if value.is_some() {
                     let eval_val = self.interpret_node(value.unwrap().clone());
-                    if eval_val.clone().should_return() {
+                    if eval_val.should_return() {
                         return eval_val;
                     }
                     val = eval_val.val.unwrap();
@@ -430,7 +446,7 @@ impl Interpreter {
                 let mut hash_props = HashMap::new();
                 for (k, v) in properties {
                     let e_v = self.interpret_node(v);
-                    if e_v.clone().should_return() {
+                    if e_v.should_return() {
                         return e_v;
                     }
 
@@ -455,7 +471,7 @@ impl Interpreter {
                 object, property, ..
             } => {
                 let obj = self.interpret_node(*object.clone());
-                if obj.clone().should_return() {
+                if obj.should_return() {
                     return obj;
                 }
 
@@ -463,7 +479,7 @@ impl Interpreter {
                     .val
                     .unwrap()
                     .get_obj_prop_val(property.value.into_string());
-                if prop.clone().should_return() {
+                if prop.should_return() {
                     return prop;
                 }
 
@@ -536,7 +552,7 @@ impl Interpreter {
 
                 for param in constructor_params {
                     let param_e = self.interpret_node(param);
-                    if param_e.clone().should_return() {
+                    if param_e.should_return() {
                         return param_e;
                     }
 

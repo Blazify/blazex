@@ -47,7 +47,7 @@ impl Lexer {
             let mut end = self.position.clone();
             end.advance(self.current_char.unwrap());
 
-            if [' ', '\t'].contains(&self.current_char.unwrap()) {
+            if [' ', '\t', '\r'].contains(&self.current_char.unwrap()) {
                 self.advance();
                 continue;
             }
