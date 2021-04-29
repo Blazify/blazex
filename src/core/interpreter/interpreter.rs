@@ -428,7 +428,6 @@ impl Interpreter {
                 pos_end,
             } => {
                 let mut hash_props = HashMap::new();
-
                 for (k, v) in properties {
                     let e_v = self.interpret_node(v);
                     if e_v.clone().should_return() {
@@ -527,7 +526,7 @@ impl Interpreter {
                 pos_end,
             } => {
                 let mut constructor_params_e: Vec<Value> = vec![];
-                let class = self.get_from_ctx(name.value.into_string()).clone();
+                let class = self.get_from_ctx(name.value.into_string());
                 if class.clone().is_none() {
                     return res.failure(
                         Error::new("Runtime Error", pos_start, pos_end, "Unknown Class")
@@ -544,10 +543,7 @@ impl Interpreter {
                     constructor_params_e.push(param_e.val.unwrap());
                 }
 
-                (class.clone().unwrap())
-                    .value
-                    .clone()
-                    .init_class(constructor_params_e, self)
+                class.unwrap().value.init_class(constructor_params_e, self)
             }
         }
     }

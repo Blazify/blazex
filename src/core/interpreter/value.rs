@@ -532,18 +532,6 @@ impl Value {
 
             let mut props = properties_e.clone();
             props.extend(methods_e);
-            let soul = Self::Object {
-                pos_start,
-                pos_end,
-                properties: props,
-            };
-
-            inter
-                .ctx
-                .last_mut()
-                .unwrap()
-                .symbols
-                .insert("soul".to_string(), Symbol::new(soul.clone(), false));
 
             if constructor.is_some() {
                 let e_c = inter.interpret_node(constructor.unwrap());
@@ -553,6 +541,27 @@ impl Value {
 
                 e_c.val.unwrap().execute(constructor_params_e, inter);
             }
+
+            for (k, v) in props.clone() {
+                let n_v = inter
+                    .ctx
+                    .last_mut()
+                    .unwrap()
+                    .symbols
+                    .get(&k)
+                    .unwrap()
+                    .value
+                    .clone();
+                if v != n_v {
+                    props.insert(k.to_string(), n_v);
+                }
+            }
+
+            let soul = Self::Object {
+                pos_start,
+                pos_end,
+                properties: props,
+            };
 
             inter.ctx.pop();
 

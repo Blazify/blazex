@@ -1,11 +1,13 @@
-var a = 9;
-fun a_edit() => {
-    a = a ^ 3;
-    return a;
+class lol {
+    var a = 0;
+    fun() => { 
+        a = a + 1; 
+        println(a);
+    }
 }
+
 
 @ this will return false as it sets a to the nearest symbol_table and returns that,
 @ whereas we are using the ctx in the parent symbol_table
 
-println(a_edit());
-println(a);
+println(new lol());
