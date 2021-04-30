@@ -154,9 +154,9 @@ impl Interpreter {
 
                 self.ctx.last_mut().unwrap().symbols.insert(
                     name.value.into_string(),
-                    Symbol::new(val.clone().val.unwrap(), reassignable),
+                    Symbol::new(val.val.unwrap(), reassignable),
                 );
-                res.success(val.val.unwrap())
+                res.success(Value::Null)
             }
             Node::VarReassignNode {
                 value,
@@ -196,10 +196,10 @@ impl Interpreter {
 
                 self.get_and_set_ctx(
                     name.value.into_string(),
-                    Symbol::new(val.clone().val.unwrap(), true),
+                    Symbol::new(val.val.unwrap(), true),
                 );
 
-                res.success(val.clone().val.unwrap())
+                res.success(Value::Null)
             }
             Node::VarAccessNode {
                 token,
@@ -215,7 +215,7 @@ impl Interpreter {
                     );
                 }
 
-                res.success(result.unwrap().clone().value)
+                res.success(result.unwrap().value)
             }
             Node::IfNode {
                 cases, else_case, ..
@@ -369,19 +369,21 @@ impl Interpreter {
                     args: arg_tokens,
                     pos_start,
                     pos_end,
-                    object: Box::new(object)
+                    object: Box::new(object),
                 };
+
+                let v_cl = val.clone();
 
                 if !["anonymous", "constructor"]
                     .contains(&&func_name.clone().value.into_string().as_str())
                 {
                     self.ctx.last_mut().unwrap().symbols.insert(
                         func_name.clone().value.into_string(),
-                        Symbol::new(val.clone(), true),
+                        Symbol::new(val, true),
                     );
                 }
 
-                res.success(val)
+                res.success(v_cl)
             }
             Node::CallNode {
                 node_to_call, args, ..
@@ -490,7 +492,12 @@ impl Interpreter {
 
                 res.success(prop.val.unwrap())
             }
-            Node::ObjectPropEdit {new_val, property, object, .. } => {
+            Node::ObjectPropEdit {
+                new_val,
+                property,
+                object,
+                ..
+            } => {
                 let obj = self.interpret_node(*object.clone());
                 if obj.should_return() {
                     return obj;
@@ -554,10 +561,11 @@ impl Interpreter {
                     properties: properties_e,
                 };
 
-                self.ctx.last_mut().unwrap().symbols.insert(
-                    name.clone().value.into_string(),
-                    Symbol::new(class.clone(), false),
-                );
+                self.ctx
+                    .last_mut()
+                    .unwrap()
+                    .symbols
+                    .insert(name.clone().value.into_string(), Symbol::new(class, false));
 
                 res.success(class)
             }
@@ -594,7 +602,7 @@ impl Interpreter {
         for idx in (0..self.ctx.len()).rev() {
             let sym = self.ctx.get(idx).unwrap().symbols.get(&k);
             if sym.is_some() {
-                return Some(sym.unwrap().clone());
+                return Some(sym.unwrap());
             }
         }
         None

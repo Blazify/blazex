@@ -1,19 +1,7 @@
-class Main {
-    @ property
-    var a = 0;
+var obj = {
+    "lol": 69,
+    "weed": 420
+};
 
-    @ constructor
-    fun() => { 
-        a = a + 1;
-        a_edit(5);
-    }
-
-    @ method
-    fun a_edit(new_a) => {
-    	a = new_a;
-    }
-}
-
-var main_ins = new Main();
-println(main_ins);
-
+obj.lol = 9;
+println(obj.lol)

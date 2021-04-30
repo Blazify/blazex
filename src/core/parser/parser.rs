@@ -21,18 +21,6 @@ impl Parser {
         }
     }
 
-    fn advance(&mut self) -> Token {
-        self.token_index += 1;
-        self.update_current_token();
-        self.current_token.clone()
-    }
-
-    fn update_current_token(&mut self) {
-        if self.token_index >= 0 as usize && self.token_index < self.tokens.len() {
-            self.current_token = self.tokens.clone()[self.clone().token_index].clone();
-        }
-    }
-
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
@@ -44,6 +32,18 @@ impl Parser {
             ));
         }
         res
+    }
+
+    fn advance(&mut self) -> Token {
+        self.token_index += 1;
+        self.update_current_token();
+        self.current_token.clone()
+    }
+
+    fn update_current_token(&mut self) {
+        if self.token_index >= 0 as usize && self.token_index < self.tokens.len() {
+            self.current_token = self.tokens.clone()[self.clone().token_index].clone();
+        }
     }
 
     fn reverse(&mut self, cnt: usize) -> Token {
@@ -501,6 +501,24 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
+            if self.current_token.r#type == Tokens::Equals {
+                res.register_advancement();
+                self.advance();
+
+                let expr = res.register(self.expr());
+                if res.error.is_some() {
+                    return res;
+                }
+
+                return res.success(Node::ObjectPropEdit {
+                    object: Box::new(atom.clone().unwrap()),
+                    property: id,
+                    pos_start,
+                    pos_end: self.current_token.clone().pos_start,
+                    new_val: Box::new(expr.unwrap()),
+                });
+            }
+
             let mut l = Node::ObjectPropAccess {
                 object: Box::new(atom.clone().unwrap()),
                 property: id,
@@ -532,7 +550,7 @@ impl Parser {
 
                     let expr = res.register(self.expr());
                     if res.error.is_some() {
-                        return res
+                        return res;
                     }
 
                     return res.success(Node::ObjectPropEdit {
@@ -540,8 +558,8 @@ impl Parser {
                         property: id,
                         pos_start,
                         pos_end: self.current_token.clone().pos_start,
-                        new_val: Box::new(expr.unwrap())
-                    })
+                        new_val: Box::new(expr.unwrap()),
+                    });
                 }
 
                 l = Node::ObjectPropAccess {
@@ -583,6 +601,24 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
+            if self.current_token.r#type == Tokens::Equals {
+                res.register_advancement();
+                self.advance();
+
+                let expr = res.register(self.expr());
+                if res.error.is_some() {
+                    return res;
+                }
+
+                return res.success(Node::ObjectPropEdit {
+                    object: Box::new(atom.clone().unwrap()),
+                    property: id,
+                    pos_start,
+                    pos_end: self.current_token.clone().pos_start,
+                    new_val: Box::new(expr.unwrap()),
+                });
+            }
+
             let mut l = Node::ObjectPropAccess {
                 object: Box::new(atom.clone().unwrap()),
                 property: id,
@@ -607,6 +643,24 @@ impl Parser {
 
                 res.register_advancement();
                 self.advance();
+
+                if self.current_token.r#type == Tokens::Equals {
+                    res.register_advancement();
+                    self.advance();
+
+                    let expr = res.register(self.expr());
+                    if res.error.is_some() {
+                        return res;
+                    }
+
+                    return res.success(Node::ObjectPropEdit {
+                        object: Box::new(l),
+                        property: id,
+                        pos_start,
+                        pos_end: self.current_token.clone().pos_start,
+                        new_val: Box::new(expr.unwrap()),
+                    });
+                }
 
                 l = Node::ObjectPropAccess {
                     object: Box::new(l),

@@ -41,7 +41,7 @@ pub enum Value {
         args: Vec<Token>,
         pos_start: Position,
         pos_end: Position,
-        object: Box<Option<Symbol>>
+        object: Box<Option<Symbol>>,
     },
     Array {
         elements: Vec<Value>,
@@ -387,13 +387,18 @@ impl Value {
             name,
             pos_start,
             pos_end,
-            object
+            object,
         } = self.clone()
         {
             let ctx = Context::new(format!("Function<{}>", name.value.into_string()));
             inter.ctx.push(ctx);
             if object.is_some() {
-                inter.ctx.last_mut().unwrap().symbols.insert("soul".to_string(), object.unwrap());
+                inter
+                    .ctx
+                    .last_mut()
+                    .unwrap()
+                    .symbols
+                    .insert("soul".to_string(), object.unwrap());
             }
 
             if args.len() > eval_args.len() {
@@ -547,17 +552,18 @@ impl Value {
 
             let mut properties_e: HashMap<String, Value> = HashMap::new();
 
-            inter.ctx.last_mut().unwrap().symbols.insert(
-                "soul".to_string(),
-                Symbol::new(
-                    Self::Object {
-                        pos_start,
-                        pos_end,
-                        properties: properties_e,
-                    },
-                    false,
-                ),
-            );
+            let soul = Self::Object {
+                pos_start,
+                pos_end,
+                properties: properties_e,
+            };
+
+            inter
+                .ctx
+                .last_mut()
+                .unwrap()
+                .symbols
+                .insert("soul".to_string(), Symbol::new(soul, false));
 
             for (k, v) in &properties {
                 let e_v = inter.interpret_node(v.clone());
