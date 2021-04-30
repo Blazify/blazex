@@ -431,7 +431,7 @@ impl Value {
 
                 inter.ctx.last_mut().unwrap().symbols.insert(
                     name.clone().value.into_string(),
-                    Symbol::new(val.clone(), true),
+                    Symbol::new(&val, true),
                 );
             }
             let result = inter.interpret_node(body_node);
@@ -552,19 +552,6 @@ impl Value {
 
             let mut properties_e: HashMap<String, Value> = HashMap::new();
 
-            let soul = Self::Object {
-                pos_start,
-                pos_end,
-                properties: properties_e,
-            };
-
-            inter
-                .ctx
-                .last_mut()
-                .unwrap()
-                .symbols
-                .insert("soul".to_string(), Symbol::new(soul, false));
-
             for (k, v) in &properties {
                 let e_v = inter.interpret_node(v.clone());
                 if e_v.should_return() {
@@ -584,9 +571,22 @@ impl Value {
 
             properties_e.extend(methods_e);
 
+            let soul = Self::Object {
+                pos_start,
+                pos_end,
+                properties: properties_e,
+            };
+
+            inter
+                .ctx
+                .last_mut()
+                .unwrap()
+                .symbols
+                .insert("soul".to_string(), Symbol::new(&soul, false));
+
             let mut popped = false;
 
-            let soul = inter.ctx.last().unwrap().symbols.get("soul").unwrap().value;
+            let soul = inter.ctx.last().unwrap().symbols.get("soul").unwrap().value.clone();
 
             if constructor.is_some() {
                 let e_c = inter.interpret_node(constructor.unwrap());

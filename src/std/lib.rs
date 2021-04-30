@@ -62,7 +62,7 @@ fn std_add_func(
     ctx.symbols.insert(
         name.to_string(),
         Symbol::new(
-            Value::InBuiltFunction {
+            &Value::InBuiltFunction {
                 name: name.to_string(),
                 pos_start: pos,
                 pos_end: pos,
