@@ -109,6 +109,13 @@ pub enum Node {
         pos_start: Position,
         pos_end: Position,
     },
+    ObjectPropEdit {
+        object: Box<Node>,
+        property: Token,
+        new_val: Box<Node>,
+        pos_start: Position,
+        pos_end: Position,
+    },
     ClassDefNode {
         name: Token,
         constructor: Box<Option<Node>>,

@@ -348,6 +348,8 @@ impl Interpreter {
                     pos_end,
                     DynType::String("anonymous".to_string()),
                 ));
+
+                let mut object = None;
                 if self.ctx.last().unwrap().display_name.starts_with("Class") {
                     if func_name.clone().value.into_string() == "anonymous".to_string() {
                         func_name = Token::new(
@@ -357,6 +359,8 @@ impl Interpreter {
                             DynType::String("constructor".to_string()),
                         );
                     }
+
+                    object = Some(*self.ctx.last().unwrap().symbols.get("soul").unwrap());
                 }
 
                 let val = Value::Function {
@@ -365,6 +369,7 @@ impl Interpreter {
                     args: arg_tokens,
                     pos_start,
                     pos_end,
+                    object: Box::new(object)
                 };
 
                 if !["anonymous", "constructor"]
@@ -479,6 +484,27 @@ impl Interpreter {
                     .val
                     .unwrap()
                     .get_obj_prop_val(property.value.into_string());
+                if prop.should_return() {
+                    return prop;
+                }
+
+                res.success(prop.val.unwrap())
+            }
+            Node::ObjectPropEdit {new_val, property, object, .. } => {
+                let obj = self.interpret_node(*object.clone());
+                if obj.should_return() {
+                    return obj;
+                }
+
+                let new_val_e = self.interpret_node(*new_val.clone());
+                if new_val_e.should_return() {
+                    return new_val_e;
+                }
+
+                let prop = obj
+                    .val
+                    .unwrap()
+                    .set_obj_prop_val(property.value.into_string(), new_val_e.val.unwrap());
                 if prop.should_return() {
                     return prop;
                 }

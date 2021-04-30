@@ -526,6 +526,24 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
+                if self.current_token.r#type == Tokens::Equals {
+                    res.register_advancement();
+                    self.advance();
+
+                    let expr = res.register(self.expr());
+                    if res.error.is_some() {
+                        return res
+                    }
+
+                    return res.success(Node::ObjectPropEdit {
+                        object: Box::new(l),
+                        property: id,
+                        pos_start,
+                        pos_end: self.current_token.clone().pos_start,
+                        new_val: Box::new(expr.unwrap())
+                    })
+                }
+
                 l = Node::ObjectPropAccess {
                     object: Box::new(l),
                     property: id,

@@ -41,6 +41,7 @@ pub enum Value {
         args: Vec<Token>,
         pos_start: Position,
         pos_end: Position,
+        object: Box<Option<Symbol>>
     },
     Array {
         elements: Vec<Value>,
@@ -386,10 +387,14 @@ impl Value {
             name,
             pos_start,
             pos_end,
+            object
         } = self.clone()
         {
             let ctx = Context::new(format!("Function<{}>", name.value.into_string()));
             inter.ctx.push(ctx);
+            if object.is_some() {
+                inter.ctx.last_mut().unwrap().symbols.insert("soul".to_string(), object.unwrap());
+            }
 
             if args.len() > eval_args.len() {
                 return res.failure(
@@ -491,6 +496,37 @@ impl Value {
         }
     }
 
+    pub fn set_obj_prop_val(self, k: String, new_val: Value) -> RuntimeResult {
+        let mut res = RuntimeResult::new();
+
+        match self {
+            Self::Object {
+                mut properties,
+                pos_start,
+                pos_end,
+            } => {
+                if !properties.contains_key(&k) {
+                    return res.failure(Error::new(
+                        "Runtime Error",
+                        pos_start,
+                        pos_end,
+                        "No value found!",
+                    ));
+                };
+
+                properties.insert(k, new_val.clone());
+
+                res.success(new_val)
+            }
+            _ => res.failure(Error::new(
+                "Runtime Error",
+                self.get_pos_start(),
+                self.get_pos_end(),
+                "Not a object!",
+            )),
+        }
+    }
+
     pub fn init_class(
         self,
         constructor_params_e: Vec<Value>,
@@ -511,6 +547,18 @@ impl Value {
 
             let mut properties_e: HashMap<String, Value> = HashMap::new();
 
+            inter.ctx.last_mut().unwrap().symbols.insert(
+                "soul".to_string(),
+                Symbol::new(
+                    Self::Object {
+                        pos_start,
+                        pos_end,
+                        properties: properties_e,
+                    },
+                    false,
+                ),
+            );
+
             for (k, v) in &properties {
                 let e_v = inter.interpret_node(v.clone());
                 if e_v.should_return() {
@@ -528,8 +576,11 @@ impl Value {
                 methods_e.insert(k.to_string(), e_v.val.unwrap());
             }
 
-            let mut props = properties_e.clone();
-            props.extend(methods_e);
+            properties_e.extend(methods_e);
+
+            let mut popped = false;
+
+            let soul = inter.ctx.last().unwrap().symbols.get("soul").unwrap().value;
 
             if constructor.is_some() {
                 let e_c = inter.interpret_node(constructor.unwrap());
@@ -537,33 +588,18 @@ impl Value {
                     return e_c;
                 }
 
+                inter.ctx.pop();
+                popped = true;
+
                 let exec = e_c.val.unwrap().execute(constructor_params_e, inter);
                 if exec.should_return() {
                     return exec;
                 }
             }
 
-            for (k, v) in props.clone() {
-                let n_v = inter
-                    .ctx
-                    .last_mut()
-                    .unwrap()
-                    .symbols
-                    .get(&k)
-                    .unwrap()
-                    .value
-                    .clone();
-                if v != n_v {
-                    props.insert(k.to_string(), n_v);
-                }
+            if !popped {
+                inter.ctx.pop();
             }
-
-            let soul = Self::Object {
-                pos_start,
-                pos_end,
-                properties: props,
-            };
-            inter.ctx.pop();
 
             res.success(soul)
         } else {

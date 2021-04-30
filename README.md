@@ -18,8 +18,7 @@ cargo install --path ./ --bin blazescript
 
 # Known bugs
 
-- Unusual behaviour in windows
-- In Methods you can't access the class properties
+- In Methods, you can't access the class properties
 
 # Project Tree
 
