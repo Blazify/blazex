@@ -63,7 +63,7 @@ class Main {
 
     @ this is a method
     fun sum_to_a(b) => {
-        soul.a = soul.a + soul.b;
+        soul.a = soul.a + b;
         return soul;
     }
 }
