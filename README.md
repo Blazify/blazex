@@ -16,6 +16,64 @@ cd blazescript/
 cargo install --path ./ --bin blazescript
 ```
 
+## Example
+
+Note: '@' means comments
+
+- Printing the famous "Hello World"
+
+```bzs
+println("Hello World!") @ yep as simple as that
+```
+
+- Creating and calling functions
+
+```bzs
+fun sum(a, b) => {
+    var c = a + b;
+    return c;
+}
+
+println(sum(2, 2));
+```
+
+- Working around with objects
+
+```bzs
+var obj = {
+    "prop": 5 @ properties should be of String type or there will be Invalid Syntax Error
+}
+
+println(obj.prop); @ accessing object property
+
+obj.prop = 10; @ editing object property value
+println(obj.prop) @ 10
+```
+
+- Classes
+
+```bzs
+class Main {
+    var a = 10; @ this is a property
+
+    @ this is constructor
+    fun() {
+        soul.a = 5; @ soul is the current object it's operating on
+    }
+
+    @ this is a method
+    fun sum_to_a(b) => {
+        soul.a = soul.a + soul.b;
+        return soul;
+    }
+}
+
+var ins = new Main(); @ creating/initializing a class, returns a object with the properties
+println(ins);
+
+println(ins.sum_to_a(5));
+```
+
 # Known bugs
 
 - [In Methods, you can't access the class properties](https://github.com/BlazifyOrg/blazescript/issues/2)
