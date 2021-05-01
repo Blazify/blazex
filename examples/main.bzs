@@ -1,1 +1,3 @@
-"length" / 5
+var lol = 10;
+lol = 90;
+lol;

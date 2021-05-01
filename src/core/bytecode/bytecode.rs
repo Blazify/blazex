@@ -11,6 +11,7 @@ pub enum Constants {
     String(String),
     Char(char),
     Boolean(bool),
+    Identifier(String),
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +64,12 @@ impl ByteCodeGen {
 
     fn interpret_node(&mut self, node: Node) {
         match node {
+            Node::Statements { statements, .. } => {
+                for node in statements {
+                    self.interpret_node(node);
+                    self.add_instruction(OpCode::OpPop);
+                }
+            }
             Node::NumberNode { token, .. } => {
                 if token.r#type == Tokens::Int {
                     let idx = self.add_constant(Constants::Int(token.value.into_int()));
@@ -127,11 +134,29 @@ impl ByteCodeGen {
                     self.add_instruction(OpCode::OpNot);
                 }
             }
-            Node::Statements { statements, .. } => {
-                for node in statements {
-                    self.interpret_node(node);
-                    self.add_instruction(OpCode::OpPop);
-                }
+            Node::VarAssignNode {
+                name,
+                value,
+                reassignable,
+                ..
+            } => {
+                self.interpret_node(*value);
+                let idx = self.add_constant(Constants::Boolean(reassignable));
+                self.add_instruction(OpCode::OpConstant(idx));
+                let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_2));
+                self.add_instruction(OpCode::OpVarAssign);
+            }
+            Node::VarAccessNode { token, .. } => {
+                let idx = self.add_constant(Constants::Identifier(token.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx));
+                self.add_instruction(OpCode::OpVarAccess);
+            }
+            Node::VarReassignNode { name, value, .. } => {
+                self.interpret_node(*value);
+                let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_2));
+                self.add_instruction(OpCode::OpVarReassign);
             }
             _ => (),
         }

@@ -18,7 +18,7 @@ cargo install --path ./ --bin blazescript
 
 ## Announcment
 
-For Now it's a tree walk interpreter but we are moving to bytecode.
+For Now it's a tree walk interpreter but we are moving to bytecode. (For using bytecode just set the second argument as "bytecode")
 
 ## Example
 

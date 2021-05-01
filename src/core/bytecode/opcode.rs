@@ -16,6 +16,9 @@ pub enum OpCode {
     OpGreaterThanEquals,
     OpLessThan,
     OpLessThanEquals,
+    OpVarAssign,
+    OpVarAccess,
+    OpVarReassign,
     OpPop,
 }
 
@@ -40,6 +43,9 @@ impl OpCode {
             Self::OpGreaterThanEquals => vec![0xAE],
             Self::OpLessThan => vec![0xBA],
             Self::OpLessThanEquals => vec![0xBB],
+            Self::OpVarAssign => vec![0xBC],
+            Self::OpVarAccess => vec![0xBD],
+            Self::OpVarReassign => vec![0xBE],
         }
     }
 }

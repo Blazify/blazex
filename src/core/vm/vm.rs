@@ -2,13 +2,16 @@ use crate::core::bytecode::{
     bytecode::{ByteCode, Constants},
     opcode::convert_to_usize,
 };
+use std::collections::HashMap;
 
 const STACK_SIZE: usize = 512;
 
+#[derive(Debug, Clone)]
 pub struct VM {
     bytecode: ByteCode,
     stack: [Constants; STACK_SIZE],
     stack_ptr: usize,
+    hash_table: HashMap<String, (bool, Constants)>,
 }
 
 impl VM {
@@ -17,6 +20,7 @@ impl VM {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
+            hash_table: HashMap::new(),
         }
     }
 
@@ -224,6 +228,28 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpNotEquals"),
                 },
+                0xBC => match (self.pop(), self.pop()) {
+                    (Constants::Identifier(i), Constants::Boolean(b)) => {
+                        self.hash_table.insert(i, (b, self.clone().pop()));
+                    }
+                    _ => panic!("Unknown types to OpVarAssign"),
+                },
+                0xBD => match self.pop() {
+                    Constants::Identifier(i) => {
+                        let (_, val) = self.hash_table.get(&i).unwrap();
+                        self.push(val.clone());
+                    }
+                    _ => panic!("Unknown types to OpVarAccess"),
+                },
+                0xBE => match self.pop() {
+                    Constants::Identifier(i) => {
+                        if !self.hash_table.contains_key(&i) {
+                            panic!("No variable found to be reassigned")
+                        }
+                        self.hash_table.insert(i, (true, self.clone().pop()));
+                    }
+                    _ => panic!("Unknown types to OpVarReassign"),
+                },
                 _ => panic!("Unknown instruction"),
             }
         }
@@ -239,6 +265,7 @@ impl VM {
         self.stack_ptr -= 1;
         node
     }
+
     pub fn pop_last(&self) -> &Constants {
         &self.stack[self.stack_ptr]
     }
