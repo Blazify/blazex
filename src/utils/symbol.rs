@@ -7,9 +7,9 @@ pub struct Symbol {
 }
 
 impl Symbol {
-    pub fn new(value: Value, reassignable: bool) -> Self {
+    pub fn new(value: &Value, reassignable: bool) -> Self {
         Self {
-            value,
+            value: (*value).clone(),
             reassignable,
         }
     }

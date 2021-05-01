@@ -154,7 +154,7 @@ impl Interpreter {
 
                 self.ctx.last_mut().unwrap().symbols.insert(
                     name.value.into_string(),
-                    Symbol::new(val.val.unwrap(), reassignable),
+                    Symbol::new(&val.val.unwrap(), reassignable),
                 );
                 res.success(Value::Null)
             }
@@ -196,7 +196,7 @@ impl Interpreter {
 
                 self.get_and_set_ctx(
                     name.value.into_string(),
-                    Symbol::new(val.val.unwrap(), true),
+                    Symbol::new(&val.val.unwrap(), true),
                 );
 
                 res.success(Value::Null)
@@ -294,7 +294,7 @@ impl Interpreter {
                     self.ctx.last_mut().unwrap().symbols.insert(
                         var_name_token.clone().value.into_string(),
                         Symbol::new(
-                            Value::Int {
+                            &Value::Int {
                                 val: i,
                                 pos_start,
                                 pos_end,
@@ -360,7 +360,7 @@ impl Interpreter {
                         );
                     }
 
-                    object = Some(*self.ctx.last().unwrap().symbols.get("soul").unwrap());
+                    object = Some((*self.ctx.last().unwrap().symbols.get("soul").unwrap()).clone());
                 }
 
                 let val = Value::Function {
@@ -379,7 +379,7 @@ impl Interpreter {
                 {
                     self.ctx.last_mut().unwrap().symbols.insert(
                         func_name.clone().value.into_string(),
-                        Symbol::new(val, true),
+                        Symbol::new(&val, true),
                     );
                 }
 
@@ -565,7 +565,7 @@ impl Interpreter {
                     .last_mut()
                     .unwrap()
                     .symbols
-                    .insert(name.clone().value.into_string(), Symbol::new(class, false));
+                    .insert(name.clone().value.into_string(), Symbol::new(&class, false));
 
                 res.success(class)
             }
@@ -602,7 +602,7 @@ impl Interpreter {
         for idx in (0..self.ctx.len()).rev() {
             let sym = self.ctx.get(idx).unwrap().symbols.get(&k);
             if sym.is_some() {
-                return Some(*sym.unwrap());
+                return Some((*sym.unwrap()).clone());
             }
         }
         None
