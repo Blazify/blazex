@@ -431,7 +431,7 @@ impl Value {
 
                 inter.ctx.last_mut().unwrap().symbols.insert(
                     name.clone().value.into_string(),
-                    Symbol::new(&val, true),
+                    Symbol::new(&val.clone(), true),
                 );
             }
             let result = inter.interpret_node(body_node);
@@ -519,9 +519,9 @@ impl Value {
                     ));
                 };
 
-                properties.insert(k, new_val.clone());
+                properties.insert(k, new_val);
 
-                res.success(new_val)
+                res.success(Value::Null)
             }
             _ => res.failure(Error::new(
                 "Runtime Error",
@@ -552,29 +552,10 @@ impl Value {
 
             let mut properties_e: HashMap<String, Value> = HashMap::new();
 
-            for (k, v) in &properties {
-                let e_v = inter.interpret_node(v.clone());
-                if e_v.should_return() {
-                    return e_v;
-                }
-                properties_e.insert(k.to_string(), e_v.val.unwrap());
-            }
-
-            let mut methods_e: HashMap<String, Value> = HashMap::new();
-            for (k, v) in &methods {
-                let e_v = inter.interpret_node(v.clone());
-                if e_v.should_return() {
-                    return e_v;
-                }
-                methods_e.insert(k.to_string(), e_v.val.unwrap());
-            }
-
-            properties_e.extend(methods_e);
-
             let soul = Self::Object {
                 pos_start,
                 pos_end,
-                properties: properties_e,
+                properties: properties_e.clone(),
             };
 
             inter
@@ -584,9 +565,23 @@ impl Value {
                 .symbols
                 .insert("soul".to_string(), Symbol::new(&soul, false));
 
-            let mut popped = false;
+            for (k, v) in &properties {
+                let e_v = inter.interpret_node(v.clone());
+                if e_v.should_return() {
+                    return e_v;
+                }
+                properties_e.insert(k.to_string(), e_v.val.unwrap());
+            }
 
-            let soul = inter.ctx.last().unwrap().symbols.get("soul").unwrap().value.clone();
+            for (k, v) in &methods {
+                let e_v = inter.interpret_node(v.clone());
+                if e_v.should_return() {
+                    return e_v;
+                }
+                properties_e.insert(k.to_string(), e_v.val.unwrap());
+            }
+
+            let mut popped = false;
 
             if constructor.is_some() {
                 let e_c = inter.interpret_node(constructor.unwrap());
