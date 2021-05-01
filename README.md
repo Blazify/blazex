@@ -18,34 +18,37 @@ cargo install --path ./ --bin blazescript
 
 # Known bugs
 
-- In Methods, you can't access the class properties
+- [In Methods, you can't access the class properties](https://github.com/BlazifyOrg/blazescript/issues/2)
 
 # Project Tree
 
-- 📦src
-- ┣ 📂core
-- ┃ ┣ 📂interpreter
-- ┃ ┃ ┣ 📜interpreter
-- ┃ ┃ ┣ 📜runtime_result
-- ┃ ┃ ┗ 📜value
-- ┃ ┣ 📂lexer
-- ┃ ┃ ┣ 📜lexer
-- ┃ ┃ ┣ 📜lexer_method_result
-- ┃ ┃ ┗ 📜lexer_result
-- ┃ ┣ 📂parser
-- ┃ ┃ ┣ 📜nodes
-- ┃ ┃ ┣ 📜parser
-- ┃ ┃ ┗ 📜parser_result
-- ┃ ┗ 📜token
-- ┣ 📂utils
-- ┃ ┣ 📜constants
-- ┃ ┣ 📜context
-- ┃ ┣ 📜error
-- ┃ ┣ 📜position
-- ┃ ┣ 📜symbol
-- ┃ ┗ 📜symbol_table
-- ┣ 📜lib
-- ┗ 📜main
+```
+📦src
+ ┣ 📂core
+ ┃ ┣ 📂interpreter
+ ┃ ┃ ┣ 📜interpreter.rs
+ ┃ ┃ ┣ 📜runtime_result.rs
+ ┃ ┃ ┗ 📜value.rs
+ ┃ ┣ 📂lexer
+ ┃ ┃ ┣ 📜lexer.rs
+ ┃ ┃ ┣ 📜lexer_method_result.rs
+ ┃ ┃ ┗ 📜lexer_result.rs
+ ┃ ┣ 📂parser
+ ┃ ┃ ┣ 📜nodes.rs
+ ┃ ┃ ┣ 📜parser.rs
+ ┃ ┃ ┗ 📜parser_result.rs
+ ┃ ┗ 📜token.rs
+ ┣ 📂std
+ ┃ ┗ 📜lib.rs
+ ┣ 📂utils
+ ┃ ┣ 📜constants.rs
+ ┃ ┣ 📜context.rs
+ ┃ ┣ 📜error.rs
+ ┃ ┣ 📜position.rs
+ ┃ ┗ 📜symbol.rs
+ ┣ 📜lib.rs
+ ┗ 📜main.rs
+```
 
 # TODO
 

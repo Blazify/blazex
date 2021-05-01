@@ -602,7 +602,7 @@ impl Interpreter {
         for idx in (0..self.ctx.len()).rev() {
             let sym = self.ctx.get(idx).unwrap().symbols.get(&k);
             if sym.is_some() {
-                return Some(sym.unwrap());
+                return Some(*sym.unwrap());
             }
         }
         None
