@@ -11,7 +11,7 @@ pub struct VM {
     bytecode: ByteCode,
     stack: [Constants; STACK_SIZE],
     stack_ptr: usize,
-    hash_table: HashMap<String, (bool, Constants)>,
+    ctx: Vec<HashMap<String, (bool, Constants)>>,
 }
 
 impl VM {
@@ -20,7 +20,7 @@ impl VM {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
-            hash_table: HashMap::new(),
+            ctx: vec![HashMap::new()],
         }
     }
 
@@ -230,23 +230,26 @@ impl VM {
                 },
                 0xBC => match (self.pop(), self.pop()) {
                     (Constants::Identifier(i), Constants::Boolean(b)) => {
-                        self.hash_table.insert(i, (b, self.clone().pop()));
+                        let n = self.pop();
+                        self.ctx.last_mut().unwrap().insert(i, (b, n));
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
                 0xBD => match self.pop() {
                     Constants::Identifier(i) => {
-                        let (_, val) = self.hash_table.get(&i).unwrap();
+                        let (_, val) = self.get_from_hash_table(i).unwrap();
                         self.push(val.clone());
                     }
                     _ => panic!("Unknown types to OpVarAccess"),
                 },
                 0xBE => match self.pop() {
                     Constants::Identifier(i) => {
-                        if !self.hash_table.contains_key(&i) {
+                        if self.get_from_hash_table(i.clone()).is_none() {
                             panic!("No variable found to be reassigned")
                         }
-                        self.hash_table.insert(i, (true, self.clone().pop()));
+
+                        let n = self.pop();
+                        self.get_and_set_hash_table(i, (true, n));
                     }
                     _ => panic!("Unknown types to OpVarReassign"),
                 },
@@ -268,5 +271,25 @@ impl VM {
 
     pub fn pop_last(&self) -> &Constants {
         &self.stack[self.stack_ptr]
+    }
+
+    pub fn get_from_hash_table(&self, k: String) -> Option<(bool, Constants)> {
+        for idx in (0..self.ctx.len()).rev() {
+            let sym = self.ctx.get(idx).unwrap().get(&k);
+            if sym.is_some() {
+                return Some((sym.unwrap()).clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_and_set_hash_table(&mut self, k: String, n: (bool, Constants)) {
+        for idx in (0..self.ctx.len()).rev() {
+            let sym = self.ctx.get(idx).unwrap().get(&k.clone());
+            if sym.is_some() {
+                self.ctx.get_mut(idx).unwrap().insert(k, n);
+                break;
+            }
+        }
     }
 }
