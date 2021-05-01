@@ -21,10 +21,14 @@ fn main() {
             let btc = ByteCodeGen::from_source(file, content);
             match btc {
                 Ok(b) => {
+                    println!(
+                        "Source Code: {:?}\nInstructions: {:?}\nConstants: {:?}",
+                        content, b.instructions, b.constants
+                    );
                     let mut vm = VM::new(b);
                     vm.run();
 
-                    println!("{:#?}", vm.pop_last());
+                    println!("Result: {:?}", vm.pop_last());
                     exit(0);
                 }
                 Err(_) => {}

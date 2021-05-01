@@ -1,6 +1,6 @@
-use crate::core::bytecode::opcode::{make_op, OpCode};
+use crate::core::bytecode::opcode::OpCode;
 use crate::core::parser::nodes::Node;
-use crate::utils::constants::Tokens;
+use crate::utils::constants::{DynType, Tokens};
 use crate::utils::error::Error;
 use crate::LanguageServer;
 
@@ -57,7 +57,7 @@ impl ByteCodeGen {
 
     fn add_instruction(&mut self, op: OpCode) -> u16 {
         let pos = self.bytecode.instructions.len() as u16;
-        self.bytecode.instructions.extend(make_op(op));
+        self.bytecode.instructions.extend(op.make_op());
         pos
     }
 
@@ -99,8 +99,20 @@ impl ByteCodeGen {
                     Tokens::Multiply => self.add_instruction(OpCode::OpMultiply),
                     Tokens::Divide => self.add_instruction(OpCode::OpDivide),
                     Tokens::Power => self.add_instruction(OpCode::OpPower),
+                    Tokens::DoubleEquals => self.add_instruction(OpCode::OpEquals),
+                    Tokens::NotEquals => self.add_instruction(OpCode::OpNotEquals),
+                    Tokens::GreaterThan => self.add_instruction(OpCode::OpGreaterThan),
+                    Tokens::GreaterThanEquals => self.add_instruction(OpCode::OpGreaterThanEquals),
+                    Tokens::LessThan => self.add_instruction(OpCode::OpLessThan),
+                    Tokens::LessThanEquals => self.add_instruction(OpCode::OpLessThanEquals),
                     _ => 0 as u16,
                 };
+
+                if op_token.matches(Tokens::Keyword, DynType::String("and".to_string())) {
+                    self.add_instruction(OpCode::OpAnd);
+                } else if op_token.matches(Tokens::Keyword, DynType::String("or".to_string())) {
+                    self.add_instruction(OpCode::OpOr);
+                }
             }
             Node::UnaryNode { node, op_token, .. } => {
                 self.interpret_node(*node);
@@ -110,6 +122,10 @@ impl ByteCodeGen {
                     Tokens::Minus => self.add_instruction(OpCode::OpMinus),
                     _ => 0 as u16,
                 };
+
+                if op_token.matches(Tokens::Keyword, DynType::String("not".to_string())) {
+                    self.add_instruction(OpCode::OpNot);
+                }
             }
             Node::Statements { statements, .. } => {
                 for node in statements {

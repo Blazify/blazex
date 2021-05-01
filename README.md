@@ -87,6 +87,9 @@ println(ins.sum_to_a(5));
 ```
 📦src
  ┣ 📂core
+ ┃ ┣ 📂bytecode
+ ┃ ┃ ┣ 📜bytecode.rs
+ ┃ ┃ ┗ 📜opcode.rs
  ┃ ┣ 📂interpreter
  ┃ ┃ ┣ 📜interpreter.rs
  ┃ ┃ ┣ 📜runtime_result.rs
@@ -99,6 +102,8 @@ println(ins.sum_to_a(5));
  ┃ ┃ ┣ 📜nodes.rs
  ┃ ┃ ┣ 📜parser.rs
  ┃ ┃ ┗ 📜parser_result.rs
+ ┃ ┣ 📂vm
+ ┃ ┃ ┗ 📜vm.rs
  ┃ ┗ 📜token.rs
  ┣ 📂std
  ┃ ┗ 📜lib.rs
@@ -114,11 +119,12 @@ println(ins.sum_to_a(5));
 
 # TODO
 
-- [x] **MULTI-LINE SUPPORT**
+- [ ] Bytecode Generator
+- [ ] VM Interpreter
 - [x] Reading from file
 - [x] Tokens
 - [x] Parser
-- [x] Interpreter
+- [x] Interpreter (Will be replaced)
 - [x] Number (Int and Floats)
 - [x] Maths Calculation (Addition, Subtraction, Multiplication, Division)
 - [x] Binary Operators

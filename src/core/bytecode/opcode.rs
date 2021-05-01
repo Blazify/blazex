@@ -7,7 +7,41 @@ pub enum OpCode {
     OpMultiply,
     OpDivide,
     OpPower,
+    OpNot,
+    OpAnd,
+    OpOr,
+    OpEquals,
+    OpNotEquals,
+    OpGreaterThan,
+    OpGreaterThanEquals,
+    OpLessThan,
+    OpLessThanEquals,
     OpPop,
+}
+
+impl OpCode {
+    pub fn make_op(&self) -> Vec<u8> {
+        match self {
+            Self::OpConstant(arg) => make_three_byte_op(0x01, *arg),
+            Self::OpPop => vec![0x02],
+            Self::OpAdd => vec![0x03],
+            Self::OpSubtract => vec![0x04],
+            Self::OpMultiply => vec![0x05],
+            Self::OpDivide => vec![0x06],
+            Self::OpPower => vec![0x07],
+            Self::OpPlus => vec![0x0A],
+            Self::OpMinus => vec![0x0B],
+            Self::OpNot => vec![0x0C],
+            Self::OpAnd => vec![0x0D],
+            Self::OpOr => vec![0x0E],
+            Self::OpEquals => vec![0xAB],
+            Self::OpNotEquals => vec![0xAC],
+            Self::OpGreaterThan => vec![0xAD],
+            Self::OpGreaterThanEquals => vec![0xAE],
+            Self::OpLessThan => vec![0xBA],
+            Self::OpLessThanEquals => vec![0xBB],
+        }
+    }
 }
 
 fn convert_to_u8(integer: u16) -> [u8; 2] {
@@ -22,18 +56,4 @@ fn make_three_byte_op(code: u8, data: u16) -> Vec<u8> {
     let mut output = vec![code];
     output.extend(&convert_to_u8(data));
     output
-}
-
-pub fn make_op(op: OpCode) -> Vec<u8> {
-    match op {
-        OpCode::OpConstant(arg) => make_three_byte_op(0x01, arg),
-        OpCode::OpPop => vec![0x02],
-        OpCode::OpAdd => vec![0x03],
-        OpCode::OpSubtract => vec![0x04],
-        OpCode::OpMultiply => vec![0x05],
-        OpCode::OpDivide => vec![0x06],
-        OpCode::OpPower => vec![0x07],
-        OpCode::OpPlus => vec![0x0A],
-        OpCode::OpMinus => vec![0x0B],
-    }
 }
