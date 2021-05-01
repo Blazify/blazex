@@ -38,7 +38,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["examples/main.bzs"],
+            "args": ["examples/main.bzs", "bytecode"],
             "cwd": "${workspaceFolder}"
         },
         {

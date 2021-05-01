@@ -65,8 +65,8 @@ impl ByteCodeGen {
     fn interpret_node(&mut self, node: Node) {
         match node {
             Node::Statements { statements, .. } => {
-                for node in statements {
-                    self.interpret_node(node);
+                for statement in statements {
+                    self.interpret_node(statement);
                     self.add_instruction(OpCode::OpPop);
                 }
             }

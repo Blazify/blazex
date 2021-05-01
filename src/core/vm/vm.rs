@@ -230,6 +230,7 @@ impl VM {
                 },
                 0xBC => match (self.pop(), self.pop()) {
                     (Constants::Identifier(i), Constants::Boolean(b)) => {
+                        ip += 1;
                         let n = self.pop();
                         self.ctx.last_mut().unwrap().insert(i, (b, n));
                     }
@@ -248,6 +249,7 @@ impl VM {
                             panic!("No variable found to be reassigned")
                         }
 
+                        ip += 1;
                         let n = self.pop();
                         self.get_and_set_hash_table(i, (true, n));
                     }
