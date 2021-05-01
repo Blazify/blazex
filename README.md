@@ -16,6 +16,10 @@ cd blazescript/
 cargo install --path ./ --bin blazescript
 ```
 
+## Announcment
+
+For Now it's a tree walk interpreter but we are moving to bytecode.
+
 ## Example
 
 Note: '@' means comments

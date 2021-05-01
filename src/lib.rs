@@ -21,6 +21,15 @@ pub mod core {
         pub mod runtime_result;
         pub mod value;
     }
+    // Bytecode Generation
+    pub mod bytecode {
+        pub mod bytecode;
+        pub mod opcode;
+    }
+    // VM
+    pub mod vm {
+        pub mod vm;
+    }
 }
 
 // Utils
@@ -36,31 +45,28 @@ pub mod std {
     pub mod lib;
 }
 
-use crate::core::interpreter::value::Value;
 use crate::core::lexer::lexer::Lexer;
 use crate::core::parser::nodes::Node;
 use crate::core::parser::parser::Parser;
-use crate::utils::context::Context;
-use crate::utils::error::Error;
+use ::std::process::exit;
 
 pub trait LanguageServer {
-    fn from_ast(name: &'static str, node: &Node, ctx: &mut Context) -> Result<Value, Error>;
+    type Result;
+    fn from_ast(name: &'static str, node: Node) -> Self::Result;
 
-    fn from_source(
-        name: &'static str,
-        file_content: &'static str,
-        ctx: &mut Context,
-    ) -> Result<Value, Error> {
+    fn from_source(name: &'static str, file_content: &'static str) -> Self::Result {
         let lexed = Lexer::new(name, file_content).tokenize();
         if lexed.error.is_some() {
-            return Err(lexed.error.unwrap());
+            println!("{}", lexed.error.unwrap().prettify());
+            exit(1);
         }
 
         let parsed = Parser::new(lexed.tokens).parse();
         if parsed.error.is_some() || parsed.node.is_none() {
-            return Err(parsed.error.unwrap());
+            println!("{}", parsed.error.unwrap().prettify());
+            exit(1);
         }
 
-        Self::from_ast(name, &parsed.node.unwrap(), ctx)
+        Self::from_ast(name, parsed.node.unwrap())
     }
 }

@@ -1,7 +1,1 @@
-var obj = {
-    "lol": 69,
-    "weed": 420
-};
-
-obj.lol = 9;
-println(obj.lol)
+((90 + 90) / 90) ^ 10 * 100 ^ 90 ^ (1/3);

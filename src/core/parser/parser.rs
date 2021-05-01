@@ -93,8 +93,8 @@ impl Parser {
             }
             statements.push(statement.unwrap())
         }
-        res.success(Node::ArrayNode {
-            element_nodes: statements,
+        res.success(Node::Statements {
+            statements,
             pos_start: pos_start,
             pos_end: self.current_token.pos_end,
         })

@@ -18,12 +18,13 @@ use std::collections::HashMap;
 
 pub struct Interpreter {
     pub ctx: Vec<Context>,
-    pub classes: HashMap<String, Context>,
 }
 
 impl LanguageServer for Interpreter {
-    fn from_ast(name: &'static str, node: &Node, ctx: &mut Context) -> Result<Value, Error> {
-        init_std(ctx);
+    type Result = Result<Value, Error>;
+    fn from_ast(name: &'static str, node: Node) -> Self::Result {
+        let mut ctx = Context::new("Global".to_string());
+        init_std(&mut ctx);
         let ctx_ = Context::new(name.to_string());
         let vec_ctx = vec![ctx.clone(), ctx_];
 
@@ -42,10 +43,7 @@ impl LanguageServer for Interpreter {
 
 impl Interpreter {
     pub fn new(ctx: Vec<Context>) -> Interpreter {
-        Self {
-            ctx,
-            classes: HashMap::new(),
-        }
+        Self { ctx }
     }
 
     pub fn interpret_node(&mut self, node: Node) -> RuntimeResult {
@@ -418,6 +416,27 @@ impl Interpreter {
                 let mut elements: Vec<Value> = vec![];
 
                 for node in element_nodes {
+                    let element = self.interpret_node(node);
+                    if element.should_return() {
+                        return element;
+                    }
+                    elements.push(element.val.unwrap());
+                }
+
+                res.success(Value::Array {
+                    elements,
+                    pos_start,
+                    pos_end,
+                })
+            }
+            Node::Statements {
+                statements,
+                pos_start,
+                pos_end,
+            } => {
+                let mut elements: Vec<Value> = vec![];
+
+                for node in statements {
                     let element = self.interpret_node(node);
                     if element.should_return() {
                         return element;
