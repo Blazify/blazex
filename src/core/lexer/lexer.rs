@@ -1,4 +1,3 @@
-use crate::core::lexer::{lexer_method_result::LexerMethodResult, lexer_result::LexerResult};
 use crate::core::token::Token;
 use crate::utils::{
     constants::{
@@ -39,7 +38,7 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&mut self) -> LexerResult {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, Error> {
         let mut tokens: Vec<Token> = vec![];
 
         while self.current_char.is_some() {
@@ -84,7 +83,6 @@ impl Lexer {
 
             let mut token_is_unknown = false;
             if token == Tokens::Unknown {
-                let mut res = LexerResult::new(None, None);
                 match self.current_char.unwrap() {
                     '@' => self.skip_comment(),
                     '"' => tokens.push(self.make_string()),
@@ -94,26 +92,29 @@ impl Lexer {
                     '=' => tokens.push(self.make_equals()),
                     '\'' => {
                         let result = self.make_char();
-                        if result.error.is_none() && !result.token.is_none() {
-                            tokens.push(result.token.unwrap());
-                        } else {
-                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        match result {
+                            Ok(token) => tokens.push(token),
+                            Err(e) => {
+                                return Err(e);
+                            }
                         };
                     }
                     '|' => {
                         let result = self.make_or();
-                        if result.error.is_none() && !result.token.is_none() {
-                            tokens.push(result.token.unwrap());
-                        } else {
-                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        match result {
+                            Ok(token) => tokens.push(token),
+                            Err(e) => {
+                                return Err(e);
+                            }
                         };
                     }
                     '&' => {
                         let result = self.make_and();
-                        if result.error.is_none() && !result.token.is_none() {
-                            tokens.push(result.token.unwrap());
-                        } else {
-                            res = LexerResult::new(None, Some(result.error.unwrap()));
+                        match result {
+                            Ok(token) => tokens.push(token),
+                            Err(e) => {
+                                return Err(e);
+                            }
                         };
                     }
                     _ => {
@@ -135,10 +136,6 @@ impl Lexer {
                         }
                     }
                 }
-
-                if res.error.is_some() {
-                    return res;
-                }
             } else {
                 tokens.push(Token::new(token, start, end, DynType::None));
                 self.advance();
@@ -147,19 +144,16 @@ impl Lexer {
             if token_is_unknown {
                 let start_1 = self.position.clone();
                 let char = self.current_char.unwrap().to_string();
-                return LexerResult::new(
-                    None,
-                    Some(Error::new(
-                        "Illegal Character",
-                        start_1,
-                        self.position.clone(),
-                        Box::leak(
-                            format!("Unexpected Character '{}'", char)
-                                .to_owned()
-                                .into_boxed_str(),
-                        ),
-                    )),
-                );
+                return Err(Error::new(
+                    "Illegal Character",
+                    start_1,
+                    self.position.clone(),
+                    Box::leak(
+                        format!("Unexpected Character '{}'", char)
+                            .to_owned()
+                            .into_boxed_str(),
+                    ),
+                ));
             }
         }
 
@@ -169,7 +163,7 @@ impl Lexer {
             self.position.clone(),
             DynType::None,
         ));
-        LexerResult::new(Some(tokens), None)
+        Ok(tokens)
     }
 
     fn make_number(&mut self) -> Token {
@@ -247,7 +241,7 @@ impl Lexer {
         )
     }
 
-    fn make_char(&mut self) -> LexerMethodResult {
+    fn make_char(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
 
         self.advance();
@@ -255,28 +249,22 @@ impl Lexer {
         self.advance();
 
         if self.current_char.unwrap_or(' ') != '\'' {
-            return LexerMethodResult::new(
-                None,
-                Some(Error::new(
-                    "Expected Character",
-                    start,
-                    self.position.clone(),
-                    "Expected Character \"'\" because chars are unicode characters.",
-                )),
-            );
+            return Err(Error::new(
+                "Expected Character",
+                start,
+                self.position.clone(),
+                "Expected Character \"'\" because chars are unicode characters.",
+            ));
         }
 
         self.advance();
 
-        LexerMethodResult::new(
-            Some(Token::new(
-                Tokens::Char,
-                start,
-                self.position.clone(),
-                DynType::Char(new_char.unwrap()),
-            )),
-            None,
-        )
+        Ok(Token::new(
+            Tokens::Char,
+            start,
+            self.position.clone(),
+            DynType::Char(new_char.unwrap()),
+        ))
     }
 
     fn make_equals(&mut self) -> Token {
@@ -363,60 +351,48 @@ impl Lexer {
         )
     }
 
-    fn make_or(&mut self) -> LexerMethodResult {
+    fn make_or(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '|' {
             self.advance();
-            return LexerMethodResult::new(
-                Some(Token::new(
-                    Tokens::Keyword,
-                    start,
-                    self.position.clone(),
-                    DynType::String("or".to_string()),
-                )),
-                None,
-            );
-        }
-
-        LexerMethodResult::new(
-            None,
-            Some(Error::new(
-                "Expected Character",
+            return Ok(Token::new(
+                Tokens::Keyword,
                 start,
                 self.position.clone(),
-                "Expected one more '|'",
-            )),
-        )
+                DynType::String("or".to_string()),
+            ));
+        }
+
+        Err(Error::new(
+            "Expected Character",
+            start,
+            self.position.clone(),
+            "Expected one more '|'",
+        ))
     }
 
-    fn make_and(&mut self) -> LexerMethodResult {
+    fn make_and(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '&' {
             self.advance();
-            return LexerMethodResult::new(
-                Some(Token::new(
-                    Tokens::Keyword,
-                    start,
-                    self.position.clone(),
-                    DynType::String("and".to_string()),
-                )),
-                None,
-            );
-        }
-
-        LexerMethodResult::new(
-            None,
-            Some(Error::new(
-                "Expected Character",
+            return Ok(Token::new(
+                Tokens::Keyword,
                 start,
                 self.position.clone(),
-                "Expected one more '&'",
-            )),
-        )
+                DynType::String("and".to_string()),
+            ));
+        }
+
+        Err(Error::new(
+            "Expected Character",
+            start,
+            self.position.clone(),
+            "Expected one more '&'",
+        ))
     }
 
     fn make_identifiers(&mut self) -> Token {

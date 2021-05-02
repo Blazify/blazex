@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum OpCode {
     OpConstant(u16),
     OpPlus,

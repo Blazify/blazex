@@ -7,8 +7,6 @@ pub mod core {
     // Lexer
     pub mod lexer {
         pub mod lexer;
-        pub mod lexer_method_result;
-        pub mod lexer_result;
     }
     // Parser
     pub mod parser {
@@ -57,12 +55,18 @@ pub trait LanguageServer {
 
     fn from_source(name: &'static str, file_content: &'static str) -> Self::Result {
         let lexed = Lexer::new(name, file_content).tokenize();
-        if lexed.error.is_some() {
-            println!("{}", lexed.error.unwrap().prettify());
-            exit(1);
+        let mut tokens = vec![];
+        match lexed {
+            Ok(tokens_) => {
+                tokens = tokens_;
+            }
+            Err(error) => {
+                println!("{}", error.prettify());
+                exit(1);
+            }
         }
 
-        let parsed = Parser::new(lexed.tokens).parse();
+        let parsed = Parser::new(tokens).parse();
         if parsed.error.is_some() || parsed.node.is_none() {
             println!("{}", parsed.error.unwrap().prettify());
             exit(1);

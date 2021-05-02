@@ -16,6 +16,7 @@ use crate::{
 use crate::std::lib::init_std;
 use std::collections::HashMap;
 
+// TODO: Remove Interpreter after VM is completed
 pub struct Interpreter {
     pub ctx: Vec<Context>,
 }

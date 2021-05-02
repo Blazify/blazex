@@ -1,6 +1,7 @@
 use crate::core::token::Token;
 use crate::utils::position::Position;
 
+// TODO(romeah): Remove pos_start and pos_end from the Node enum members
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     WhileNode {
