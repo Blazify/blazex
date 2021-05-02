@@ -120,7 +120,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpAnd"),
                 },
-                0xAB => match (self.pop(), self.pop()) {
+                0x0F => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs == rhs))
                     }
@@ -138,7 +138,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpEquals"),
                 },
-                0xAC => match (self.pop(), self.pop()) {
+                0x1A => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs != rhs))
                     }
@@ -156,7 +156,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpNotEquals"),
                 },
-                0xAD => match (self.pop(), self.pop()) {
+                0x1B => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs < rhs))
                     }
@@ -174,7 +174,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpGreaterThan"),
                 },
-                0xAE => match (self.pop(), self.pop()) {
+                0x1C => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs <= rhs))
                     }
@@ -192,7 +192,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpGreaterThanEquals"),
                 },
-                0xBA => match (self.pop(), self.pop()) {
+                0x1D => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs > rhs))
                     }
@@ -210,7 +210,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpNotEquals"),
                 },
-                0xBB => match (self.pop(), self.pop()) {
+                0x1E => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
                         self.push(Constants::Boolean(lhs >= rhs))
                     }
@@ -228,7 +228,7 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpNotEquals"),
                 },
-                0xBC => match (self.pop(), self.pop()) {
+                0x1F => match (self.pop(), self.pop()) {
                     (Constants::Identifier(i), Constants::Boolean(b)) => {
                         ip += 1;
                         let n = self.pop();
@@ -236,14 +236,14 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
-                0xBD => match self.pop() {
+                0x2A => match self.pop() {
                     Constants::Identifier(i) => {
                         let (_, val) = self.get_from_hash_table(i).unwrap();
                         self.push(val.clone());
                     }
                     _ => panic!("Unknown types to OpVarAccess"),
                 },
-                0xBE => match self.pop() {
+                0x2B => match self.pop() {
                     Constants::Identifier(i) => {
                         if self.get_from_hash_table(i.clone()).is_none() {
                             panic!("No variable found to be reassigned")

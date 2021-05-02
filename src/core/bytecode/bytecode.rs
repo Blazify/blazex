@@ -39,7 +39,7 @@ impl LanguageServer for ByteCodeGen {
 
     fn from_ast(_name: &'static str, node: Node) -> Self::Result {
         let mut gen = ByteCodeGen::new();
-        gen.interpret_node(node);
+        gen.compile_node(node);
         Ok(gen.bytecode)
     }
 }
@@ -62,11 +62,11 @@ impl ByteCodeGen {
         pos
     }
 
-    fn interpret_node(&mut self, node: Node) {
+    fn compile_node(&mut self, node: Node) {
         match node {
             Node::Statements { statements, .. } => {
                 for statement in statements {
-                    self.interpret_node(statement);
+                    self.compile_node(statement);
                     self.add_instruction(OpCode::OpPop);
                 }
             }
@@ -97,8 +97,8 @@ impl ByteCodeGen {
                 op_token,
                 ..
             } => {
-                self.interpret_node(*left);
-                self.interpret_node(*right);
+                self.compile_node(*left);
+                self.compile_node(*right);
 
                 match op_token.r#type {
                     Tokens::Plus => self.add_instruction(OpCode::OpAdd),
@@ -122,7 +122,7 @@ impl ByteCodeGen {
                 }
             }
             Node::UnaryNode { node, op_token, .. } => {
-                self.interpret_node(*node);
+                self.compile_node(*node);
 
                 match op_token.r#type {
                     Tokens::Plus => self.add_instruction(OpCode::OpPlus),
@@ -140,7 +140,7 @@ impl ByteCodeGen {
                 reassignable,
                 ..
             } => {
-                self.interpret_node(*value);
+                self.compile_node(*value);
                 let idx = self.add_constant(Constants::Boolean(reassignable));
                 self.add_instruction(OpCode::OpConstant(idx));
                 let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
@@ -153,7 +153,7 @@ impl ByteCodeGen {
                 self.add_instruction(OpCode::OpVarAccess);
             }
             Node::VarReassignNode { name, value, .. } => {
-                self.interpret_node(*value);
+                self.compile_node(*value);
                 let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
                 self.add_instruction(OpCode::OpConstant(idx_2));
                 self.add_instruction(OpCode::OpVarReassign);

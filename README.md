@@ -120,26 +120,35 @@ println(ins.sum_to_a(5));
 # TODO
 
 - [ ] Bytecode Generator
+
+  - [x] Statements
+  - [x] Int & Floats
+  - [x] Strings
+  - [x] Chars
+  - [x] Booleans
+  - [x] Binary Operations
+  - [x] Unary Operations
+  - [x] Variable Assignment
+  - [x] Variable Reassignment
+  - [x] Variable Access
+  - [ ] If else
+  - [ ] For loop
+  - [ ] While loop
+  - [ ] Functions
+  - [ ] Calling functions
+  - [ ] Arrays
+  - [ ] Objects
+  - [ ] Getting Object properties
+  - [ ] Reassigning Object Properties
+  - [ ] Classes
+  - [ ] Class Initializing
+
 - [ ] VM Interpreter
+
 - [x] Reading from file
 - [x] Tokens
 - [x] Parser
 - [x] Interpreter (Will be replaced)
-- [x] Number (Int and Floats)
-- [x] Maths Calculation (Addition, Subtraction, Multiplication, Division)
-- [x] Binary Operators
-- [x] Unary Operators
-- [x] Variables
-- [x] Comparisons
-- [x] If-Else Statements
-- [x] For, When Loops
-- [x] Comments
-- [x] Strings
-- [x] Chars
-- [x] Functions
-- [x] Arrays
-- [x] Objects
-- [x] Classes
 - [x] Standard Library (A basic one)
 
 ## Note
