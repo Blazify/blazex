@@ -20,6 +20,8 @@ pub enum OpCode {
     OpVarAssign,
     OpVarAccess,
     OpVarReassign,
+    OpJump(u16),
+    OpJumpIfFalse(u16),
     OpPop,
 }
 
@@ -33,6 +35,8 @@ impl OpCode {
             Self::OpMultiply => vec![0x05],
             Self::OpDivide => vec![0x06],
             Self::OpPower => vec![0x07],
+            Self::OpJump(to) => make_three_byte_op(0x08, *to),
+            Self::OpJumpIfFalse(to) => make_three_byte_op(0x09, *to),
             Self::OpPlus => vec![0x0A],
             Self::OpMinus => vec![0x0B],
             Self::OpNot => vec![0x0C],

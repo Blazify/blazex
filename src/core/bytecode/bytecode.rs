@@ -1,7 +1,9 @@
 use crate::core::bytecode::opcode::OpCode;
 use crate::core::parser::nodes::Node;
+use crate::core::token::Token;
 use crate::utils::constants::{DynType, Tokens};
 use crate::utils::error::Error;
+use crate::utils::position::Position;
 use crate::LanguageServer;
 
 #[derive(Debug, Clone)]
@@ -158,6 +160,33 @@ impl ByteCodeGen {
                 let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
                 self.add_instruction(OpCode::OpConstant(idx_2));
                 self.add_instruction(OpCode::OpVarReassign);
+            }
+            Node::IfNode {
+                mut cases,
+                else_case,
+                ..
+            } => {
+                if else_case.is_some() {
+                    // TODO: Remove this when Node enum TODO is complete
+                    let pos = Position::new(-1, -1, -1, "", "");
+                    cases.push((
+                        Node::BooleanNode {
+                            token: Token::new(Tokens::Boolean, pos, pos, DynType::Boolean(true)),
+                            pos_start: pos,
+                            pos_end: pos,
+                        },
+                        else_case.unwrap(),
+                    ));
+                }
+                for (expr, body) in cases {
+                    self.compile_node(expr.clone());
+                    let mut cl = self.clone();
+                    cl.compile_node(body.clone());
+                    self.add_instruction(OpCode::OpJumpIfFalse(
+                        (cl.bytecode.instructions.len()) as u16,
+                    ));
+                    self.compile_node(body.clone());
+                }
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }

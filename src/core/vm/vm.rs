@@ -96,6 +96,30 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpPower"),
                 },
+                0x08 => {
+                    ip = convert_to_usize(
+                        self.bytecode.instructions[ip],
+                        self.bytecode.instructions[ip + 1],
+                    );
+                }
+                0x09 => match self.pop() {
+                    Constants::Boolean(b) => {
+                        if !b {
+                            ip = convert_to_usize(
+                                self.bytecode.instructions[ip],
+                                self.bytecode.instructions[ip + 1],
+                            );
+                            println!(
+                                "{}->{}",
+                                self.bytecode.instructions[ip],
+                                self.bytecode.instructions[ip + 1]
+                            );
+                        } else {
+                            ip += 2;
+                        }
+                    }
+                    _ => panic!("Unknown types to OpJump"),
+                },
                 0x0A => match self.pop() {
                     Constants::Int(num) => self.push(Constants::Int(num)),
                     _ => panic!("Unknown arg type to OpPlus"),
@@ -255,7 +279,10 @@ impl VM {
                     }
                     _ => panic!("Unknown types to OpVarReassign"),
                 },
-                _ => panic!("Unknown instruction"),
+                _ => panic!(
+                    "Unknown instruction {}",
+                    self.bytecode.instructions[address]
+                ),
             }
         }
     }
