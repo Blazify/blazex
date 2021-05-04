@@ -61,7 +61,6 @@ impl ByteCodeGen {
     fn add_instruction(&mut self, op: OpCode) -> u16 {
         let pos = self.bytecode.instructions.len() as u16;
         self.bytecode.instructions.extend(op.make_op());
-        println!("{:?} -> {:?}", op, self.bytecode.instructions);
         pos
     }
 
