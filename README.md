@@ -131,9 +131,9 @@ println(ins.sum_to_a(5));
   - [x] Variable Assignment
   - [x] Variable Reassignment
   - [x] Variable Access
-  - [ ] If else
-  - [ ] For loop
-  - [ ] While loop
+  - [x] If else
+  - [x] For loop
+  - [x] While loop
   - [ ] Functions
   - [ ] Calling functions
   - [ ] Arrays

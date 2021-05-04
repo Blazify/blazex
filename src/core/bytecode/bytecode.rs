@@ -166,6 +166,7 @@ impl ByteCodeGen {
                 else_case,
                 ..
             } => {
+                let mut jumps = vec![];
                 if else_case.is_some() {
                     // TODO: Remove this when Node enum TODO is complete
                     let pos = Position::new(-1, -1, -1, "", "");
@@ -180,15 +181,102 @@ impl ByteCodeGen {
                 }
                 for (expr, body) in cases {
                     self.compile_node(expr.clone());
-                    let mut cl = self.clone();
-                    cl.compile_node(body.clone());
-                    self.add_instruction(OpCode::OpJumpIfFalse(
-                        (cl.bytecode.instructions.len()) as u16,
-                    ));
+                    let idx = self.add_instruction(OpCode::OpJumpIfFalse(1));
                     self.compile_node(body.clone());
+                    let idx_1 = self.add_instruction(OpCode::OpJump(1));
+                    jumps.push(idx_1);
+                    self.patch_jump_if_false(idx, None);
                 }
+
+                for jump in jumps {
+                    self.patch_jump(jump, None);
+                }
+            }
+            Node::ForNode {
+                var_name_token,
+                start_value,
+                step_value_node,
+                end_value,
+                body_node,
+                ..
+            } => {
+                self.compile_node(*start_value);
+                let idx = self.add_constant(Constants::Boolean(true));
+                self.add_instruction(OpCode::OpConstant(idx));
+                let idx_1 =
+                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_1));
+                self.add_instruction(OpCode::OpVarAssign);
+
+                let init = self.bytecode.instructions.len();
+
+                let idx_2 =
+                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_2));
+                self.add_instruction(OpCode::OpVarAccess);
+                self.compile_node(*end_value);
+                self.add_instruction(OpCode::OpLessThanEquals);
+
+                let idx_3 = self.add_instruction(OpCode::OpJumpIfFalse(1));
+
+                let idx_4 =
+                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_4));
+                self.add_instruction(OpCode::OpVarAccess);
+                if step_value_node.is_some() {
+                    self.compile_node(step_value_node.unwrap());
+                } else {
+                    let int = self.add_constant(Constants::Int(1));
+                    self.add_instruction(OpCode::OpConstant(int));
+                }
+                self.add_instruction(OpCode::OpAdd);
+
+                let idx_5 =
+                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx_5));
+                self.add_instruction(OpCode::OpVarReassign);
+
+                self.compile_node(*body_node.clone());
+                let jmp = self.add_instruction(OpCode::OpJump(1));
+                self.patch_jump_if_false(idx_3, None);
+                self.patch_jump(jmp, Some(init as u16));
+            }
+            Node::WhileNode {
+                condition_node,
+                body_node,
+                ..
+            } => {
+                let init = self.bytecode.instructions.len();
+                self.compile_node(*condition_node.clone());
+                let idx = self.add_instruction(OpCode::OpJumpIfFalse(1));
+                self.compile_node(*body_node.clone());
+                let jmp = self.add_instruction(OpCode::OpJump(1));
+                self.patch_jump_if_false(idx, None);
+                self.patch_jump(jmp, Some(init as u16));
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }
+    }
+
+    fn patch_jump_if_false(&mut self, idx: u16, new: Option<u16>) {
+        let offset = self.bytecode.instructions.len();
+        let jump_temp = if new.is_none() {
+            OpCode::OpJumpIfFalse(offset as u16).make_op()
+        } else {
+            OpCode::OpJumpIfFalse(new.unwrap()).make_op()
+        };
+        self.bytecode.instructions[(idx + 1) as usize] = jump_temp[1];
+        self.bytecode.instructions[(idx + 2) as usize] = jump_temp[2];
+    }
+
+    fn patch_jump(&mut self, idx: u16, new: Option<u16>) {
+        let offset = self.bytecode.instructions.len();
+        let jump_temp = if new.is_none() {
+            OpCode::OpJump(offset as u16).make_op()
+        } else {
+            OpCode::OpJump(new.unwrap()).make_op()
+        };
+        self.bytecode.instructions[(idx + 1) as usize] = jump_temp[1];
+        self.bytecode.instructions[(idx + 2) as usize] = jump_temp[2];
     }
 }

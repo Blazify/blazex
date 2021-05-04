@@ -109,11 +109,6 @@ impl VM {
                                 self.bytecode.instructions[ip],
                                 self.bytecode.instructions[ip + 1],
                             );
-                            println!(
-                                "{}->{}",
-                                self.bytecode.instructions[ip],
-                                self.bytecode.instructions[ip + 1]
-                            );
                         } else {
                             ip += 2;
                         }
@@ -182,79 +177,78 @@ impl VM {
                 },
                 0x1B => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(Constants::Boolean(lhs < rhs))
+                        self.push(Constants::Boolean(lhs > rhs))
                     }
                     (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(Constants::Boolean(lhs < rhs))
+                        self.push(Constants::Boolean(lhs > rhs))
                     }
                     (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(Constants::Boolean(lhs < rhs))
+                        self.push(Constants::Boolean(lhs > rhs))
                     }
                     (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(Constants::Boolean(lhs < rhs))
+                        self.push(Constants::Boolean(lhs > rhs))
                     }
                     (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(Constants::Boolean(lhs < rhs))
+                        self.push(Constants::Boolean(lhs > rhs))
                     }
                     _ => panic!("Unknown types to OpGreaterThan"),
                 },
                 0x1C => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(Constants::Boolean(lhs <= rhs))
+                        self.push(Constants::Boolean(lhs >= rhs))
                     }
                     (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(Constants::Boolean(lhs <= rhs))
+                        self.push(Constants::Boolean(lhs >= rhs))
                     }
                     (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(Constants::Boolean(lhs <= rhs))
+                        self.push(Constants::Boolean(lhs >= rhs))
                     }
                     (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(Constants::Boolean(lhs <= rhs))
+                        self.push(Constants::Boolean(lhs >= rhs))
                     }
                     (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(Constants::Boolean(lhs <= rhs))
+                        self.push(Constants::Boolean(lhs >= rhs))
                     }
                     _ => panic!("Unknown types to OpGreaterThanEquals"),
                 },
                 0x1D => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(Constants::Boolean(lhs > rhs))
+                        self.push(Constants::Boolean(lhs < rhs))
                     }
                     (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(Constants::Boolean(lhs > rhs))
+                        self.push(Constants::Boolean(lhs < rhs))
                     }
                     (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(Constants::Boolean(lhs > rhs))
+                        self.push(Constants::Boolean(lhs < rhs))
                     }
                     (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(Constants::Boolean(lhs > rhs))
+                        self.push(Constants::Boolean(lhs < rhs))
                     }
                     (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(Constants::Boolean(lhs > rhs))
+                        self.push(Constants::Boolean(lhs < rhs))
                     }
-                    _ => panic!("Unknown types to OpNotEquals"),
+                    _ => panic!("Unknown types to OpLessThan"),
                 },
                 0x1E => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(Constants::Boolean(lhs >= rhs))
+                        self.push(Constants::Boolean(lhs <= rhs))
                     }
                     (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(Constants::Boolean(lhs >= rhs))
+                        self.push(Constants::Boolean(lhs <= rhs))
                     }
                     (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(Constants::Boolean(lhs >= rhs))
+                        self.push(Constants::Boolean(lhs <= rhs))
                     }
                     (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(Constants::Boolean(lhs >= rhs))
+                        self.push(Constants::Boolean(lhs <= rhs))
                     }
                     (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(Constants::Boolean(lhs >= rhs))
+                        self.push(Constants::Boolean(lhs <= rhs))
                     }
-                    _ => panic!("Unknown types to OpNotEquals"),
+                    _ => panic!("Unknown types to OpLessThanEquals"),
                 },
                 0x1F => match (self.pop(), self.pop()) {
                     (Constants::Identifier(i), Constants::Boolean(b)) => {
-                        ip += 1;
                         let n = self.pop();
                         self.ctx.last_mut().unwrap().insert(i, (b, n));
                     }
@@ -273,15 +267,16 @@ impl VM {
                             panic!("No variable found to be reassigned")
                         }
 
-                        ip += 1;
                         let n = self.pop();
                         self.get_and_set_hash_table(i, (true, n));
                     }
                     _ => panic!("Unknown types to OpVarReassign"),
                 },
                 _ => panic!(
-                    "Unknown instruction {}",
-                    self.bytecode.instructions[address]
+                    "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
+                    self.bytecode.instructions[address - 1],
+                    self.bytecode.instructions[address],
+                    self.bytecode.instructions[address + 1]
                 ),
             }
         }
@@ -293,8 +288,13 @@ impl VM {
     }
 
     pub fn pop(&mut self) -> Constants {
-        let node = self.stack[self.stack_ptr - 1].clone();
-        self.stack_ptr -= 1;
+        let node = self.stack[if self.stack_ptr == 0 {
+            self.stack_ptr
+        } else {
+            self.stack_ptr - 1
+        }]
+        .clone();
+        self.stack_ptr -= if self.stack_ptr == 0 { 0 } else { 1 };
         node
     }
 

@@ -85,41 +85,41 @@ pub enum DynType {
 }
 
 impl DynType {
-    pub fn into_int(self) -> i64 {
+    pub fn into_int(&self) -> i64 {
         if let DynType::Int(i) = self {
-            i
+            *i
         } else {
             panic!()
         }
     }
 
-    pub fn into_float(self) -> f32 {
+    pub fn into_float(&self) -> f32 {
         if let DynType::Float(i) = self {
-            i
+            *i
         } else {
             panic!()
         }
     }
 
-    pub fn into_string(self) -> String {
+    pub fn into_string(&self) -> String {
         if let DynType::String(i) = self {
-            i
+            i.to_string()
         } else {
             panic!()
         }
     }
 
-    pub fn into_char(self) -> char {
+    pub fn into_char(&self) -> char {
         if let DynType::Char(i) = self {
-            i
+            *i
         } else {
             panic!()
         }
     }
 
-    pub fn into_boolean(self) -> bool {
+    pub fn into_boolean(&self) -> bool {
         if let DynType::Boolean(i) = self {
-            i
+            *i
         } else {
             panic!()
         }
