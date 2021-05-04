@@ -23,11 +23,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo build --release && ./speed_test.sh ./target/release/blazescript examples/main.bzs bytecode
+          cargo run --release -- ./target/release/blazescript examples/main.bzs bytecode
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo build --release && ./speed_test.sh ./target/release/blazescript examples/main.bzs bytecode
+          cargo run --release -- ./target/release/blazescript examples/main.bzs bytecode
