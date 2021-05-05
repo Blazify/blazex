@@ -78,10 +78,6 @@ println(ins);
 println(ins.sum_to_a(5));
 ```
 
-# Known bugs
-
-- [In Methods, you can't access the class properties](https://github.com/BlazifyOrg/blazescript/issues/2)
-
 ## Contributing
 
 - Please use the given below commands
@@ -92,7 +88,7 @@ $ npm i -g cz-conventional-changelog
 $ echo '{ "path": "cz-conventional-changelog" }' > ~/.czrc
 ```
 
-For commiting use the command `cz`
+For commiting use the command `cz`. But make sure to use `git add .` before that too.
 
 ## Project Tree
 
@@ -102,14 +98,8 @@ For commiting use the command `cz`
  ┃ ┣ 📂bytecode
  ┃ ┃ ┣ 📜bytecode.rs
  ┃ ┃ ┗ 📜opcode.rs
- ┃ ┣ 📂interpreter
- ┃ ┃ ┣ 📜interpreter.rs
- ┃ ┃ ┣ 📜runtime_result.rs
- ┃ ┃ ┗ 📜value.rs
  ┃ ┣ 📂lexer
- ┃ ┃ ┣ 📜lexer.rs
- ┃ ┃ ┣ 📜lexer_method_result.rs
- ┃ ┃ ┗ 📜lexer_result.rs
+ ┃ ┃ ┗ 📜lexer.rs
  ┃ ┣ 📂parser
  ┃ ┃ ┣ 📜nodes.rs
  ┃ ┃ ┣ 📜parser.rs
@@ -117,14 +107,10 @@ For commiting use the command `cz`
  ┃ ┣ 📂vm
  ┃ ┃ ┗ 📜vm.rs
  ┃ ┗ 📜token.rs
- ┣ 📂std
- ┃ ┗ 📜lib.rs
  ┣ 📂utils
  ┃ ┣ 📜constants.rs
- ┃ ┣ 📜context.rs
  ┃ ┣ 📜error.rs
- ┃ ┣ 📜position.rs
- ┃ ┗ 📜symbol.rs
+ ┃ ┗ 📜position.rs
  ┣ 📜lib.rs
  ┗ 📜main.rs
 ```
@@ -163,10 +149,6 @@ For commiting use the command `cz`
 - [x] Interpreter (Will be replaced)
 - [x] Standard Library (A basic one)
 
-## Note
-
-- **It is in its very new born form.**
-
 ## Author
 
-- [RoMeAh (Ronit Rahaman)](https://github.com/RoMeAh)
+- [RoMeAh (Ronit Rahaman)](https://www.romeah.me)
