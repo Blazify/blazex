@@ -17,9 +17,9 @@ use crate::core::bytecode::opcode::OpCode;
 use crate::core::parser::nodes::Node;
 use crate::core::token::Token;
 use crate::utils::constants::{DynType, Tokens};
-use crate::utils::error::Error;
 use crate::utils::position::Position;
 use crate::LanguageServer;
+use std::fmt::{Display, Error as E, Formatter};
 
 #[derive(Debug, Clone)]
 pub enum Constants {
@@ -31,10 +31,42 @@ pub enum Constants {
     Identifier(String),
 }
 
+impl Display for Constants {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
+        match self {
+            Self::Int(n) => write!(f, "int {}", n),
+            Self::Float(n) => write!(f, "float {}", n),
+            Self::Char(n) => write!(f, "char {}", n),
+            Self::String(n) => write!(f, "str {}", n),
+            Self::Boolean(n) => write!(f, "bool {}", n),
+            Self::Identifier(n) => write!(f, "iden {}", n),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ByteCode {
     pub instructions: Vec<u8>,
     pub constants: Vec<Constants>,
+}
+
+impl Display for ByteCode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
+        write!(
+            f,
+            "---Instructions---\n{}\n---Constants---\n{}",
+            self.instructions
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(""),
+            self.constants
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
 }
 
 impl ByteCode {
@@ -52,7 +84,7 @@ pub struct ByteCodeGen {
 }
 
 impl LanguageServer for ByteCodeGen {
-    type Result = Result<ByteCode, Error>;
+    type Result = Result<ByteCode, ()>;
 
     fn from_ast(_name: &'static str, node: Node) -> Self::Result {
         let mut gen = ByteCodeGen::new();

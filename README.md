@@ -146,8 +146,6 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 - [x] Reading from file
 - [x] Tokens
 - [x] Parser
-- [x] Interpreter (Will be replaced)
-- [x] Standard Library (A basic one)
 
 ## Author
 

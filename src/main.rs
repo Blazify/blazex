@@ -32,12 +32,13 @@ fn main() {
     let btc = ByteCodeGen::from_source(file, content);
     match btc {
         Ok(b) => {
-            let mut vm = VM::new(b);
+            let mut vm = VM::new(b.clone());
             vm.run();
+            println!("{}---Result---\n{}\n", b, vm.pop_last());
             match btc_time.elapsed() {
                 Ok(elapsed) => {
                     println!(
-                        "Time taken for Lexer & Parser & Bytecode & VM: {} nanoseconds",
+                        "Time taken for Compilation Process: {} nanoseconds",
                         elapsed.as_nanos()
                     );
                 }
