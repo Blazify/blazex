@@ -18,7 +18,7 @@ cargo install --path ./ --bin blazescript
 
 ## Announcment
 
-For Now it's a tree walk interpreter but we are moving to bytecode. (For using bytecode just set the second argument as "bytecode")
+The Bytecode Compiler and the VM are in progress, to use all features of the language use the code from the [70th Commit](https://github.com/BlazifyOrg/blazescript/commit/a2e2186bec75bc05a86ebd3192fa9d931475cb80)
 
 ## Example
 

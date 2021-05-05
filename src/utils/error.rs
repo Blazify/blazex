@@ -1,4 +1,4 @@
-use crate::utils::{context::Context, position::Position};
+use crate::utils::position::Position;
 
 #[derive(Debug, Clone)]
 pub struct Error {
@@ -6,7 +6,7 @@ pub struct Error {
     pub pos_start: Position,
     pub pos_end: Position,
     pub description: &'static str,
-    pub ctx: Option<Vec<Context>>,
+    // pub ctx: Option<Vec<Context>>,
 }
 
 impl Error {
@@ -21,17 +21,20 @@ impl Error {
             pos_start,
             pos_end,
             description,
-            ctx: None,
+            // ctx: None,
         }
     }
 
+    /*
     pub fn set_ctx(mut self, ctx: Vec<Context>) -> Self {
         self.ctx = Some(ctx);
         self
     }
+    */
 
     pub fn prettify(&self) -> String {
-        let mut res = String::new();
+        let /* mut */ res = String::new();
+        /*
         if self.ctx.is_some() {
             let mut r_ctx = self.ctx.clone().unwrap();
             r_ctx.reverse();
@@ -42,6 +45,7 @@ impl Error {
             }
             res = format!("Traceback (most recent call last):{}\n", res);
         }
+        */
 
         format!(
             "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n{}\u{001b}[0m",

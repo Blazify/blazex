@@ -16,18 +16,21 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo build --release && ./speed_test.sh ./target/release/blazescript examples/main.bzs bytecode
+          cargo build --release -- quiet
+          ./target/release/blazescript examples/main.bzs
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo run --release -- examples/main.bzs bytecode
+          cargo build --release -- quiet
+          ./target/release/blazescript examples/main.bzs
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo run --release -- examples/main.bzs bytecode
+          cargo build --release -- quiet
+          ./target/release/blazescript.exe examples/main.bzs

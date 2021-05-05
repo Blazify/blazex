@@ -18,6 +18,6 @@
             },
             "args": ["examples/main.bzs", "bytecode"],
             "cwd": "${workspaceFolder}"
-        },
+        }
     ]
 }

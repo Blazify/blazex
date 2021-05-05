@@ -14,12 +14,6 @@ pub mod core {
         pub mod parser;
         pub mod parser_result;
     }
-    // Interpreter
-    pub mod interpreter {
-        pub mod interpreter;
-        pub mod runtime_result;
-        pub mod value;
-    }
     // Bytecode Generation
     pub mod bytecode {
         pub mod bytecode;
@@ -34,14 +28,8 @@ pub mod core {
 // Utils
 pub mod utils {
     pub mod constants;
-    pub mod context;
     pub mod error;
     pub mod position;
-    pub mod symbol;
-}
-
-pub mod std {
-    pub mod lib;
 }
 
 use crate::core::lexer::lexer::Lexer;

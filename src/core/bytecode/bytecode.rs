@@ -66,13 +66,13 @@ impl ByteCodeGen {
 
     fn compile_node(&mut self, node: Node) {
         match node {
-            Node::Statements { statements, .. } => {
+            Node::Statements { statements } => {
                 for statement in statements {
                     self.compile_node(statement);
                     self.add_instruction(OpCode::OpPop);
                 }
             }
-            Node::NumberNode { token, .. } => {
+            Node::NumberNode { token } => {
                 if token.r#type == Tokens::Int {
                     let idx = self.add_constant(Constants::Int(token.value.into_int()));
                     self.add_instruction(OpCode::OpConstant(idx));
@@ -81,15 +81,15 @@ impl ByteCodeGen {
                     self.add_instruction(OpCode::OpConstant(idx));
                 }
             }
-            Node::StringNode { token, .. } => {
+            Node::StringNode { token } => {
                 let idx = self.add_constant(Constants::String(token.value.into_string()));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
-            Node::CharNode { token, .. } => {
+            Node::CharNode { token } => {
                 let idx = self.add_constant(Constants::Char(token.value.into_char()));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
-            Node::BooleanNode { token, .. } => {
+            Node::BooleanNode { token } => {
                 let idx = self.add_constant(Constants::Boolean(token.value.into_boolean()));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
@@ -97,7 +97,6 @@ impl ByteCodeGen {
                 left,
                 right,
                 op_token,
-                ..
             } => {
                 self.compile_node(*left);
                 self.compile_node(*right);
@@ -123,7 +122,7 @@ impl ByteCodeGen {
                     self.add_instruction(OpCode::OpOr);
                 }
             }
-            Node::UnaryNode { node, op_token, .. } => {
+            Node::UnaryNode { node, op_token } => {
                 self.compile_node(*node);
 
                 match op_token.r#type {
@@ -140,7 +139,6 @@ impl ByteCodeGen {
                 name,
                 value,
                 reassignable,
-                ..
             } => {
                 self.compile_node(*value);
                 let idx = self.add_constant(Constants::Boolean(reassignable));
@@ -163,7 +161,6 @@ impl ByteCodeGen {
             Node::IfNode {
                 mut cases,
                 else_case,
-                ..
             } => {
                 let mut jumps = vec![];
                 if else_case.is_some() {
@@ -172,8 +169,6 @@ impl ByteCodeGen {
                     cases.push((
                         Node::BooleanNode {
                             token: Token::new(Tokens::Boolean, pos, pos, DynType::Boolean(true)),
-                            pos_start: pos,
-                            pos_end: pos,
                         },
                         else_case.unwrap(),
                     ));
@@ -197,7 +192,6 @@ impl ByteCodeGen {
                 step_value_node,
                 end_value,
                 body_node,
-                ..
             } => {
                 self.compile_node(*start_value);
                 let idx = self.add_constant(Constants::Boolean(true));
@@ -243,7 +237,6 @@ impl ByteCodeGen {
             Node::WhileNode {
                 condition_node,
                 body_node,
-                ..
             } => {
                 let init = self.bytecode.instructions.len();
                 self.compile_node(*condition_node.clone());
