@@ -82,7 +82,19 @@ println(ins.sum_to_a(5));
 
 - [In Methods, you can't access the class properties](https://github.com/BlazifyOrg/blazescript/issues/2)
 
-# Project Tree
+## Contributing
+
+- Please use the given below commands
+
+```shell
+$ npm i -g commitizen
+$ npm i -g cz-conventional-changelog
+$ echo '{ "path": "cz-conventional-changelog" }' > ~/.czrc
+```
+
+For commiting use the command `cz`
+
+## Project Tree
 
 ```
 📦src
