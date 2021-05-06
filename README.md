@@ -94,7 +94,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 
 ```
 📦src
- ┣ 📂core
+ ┣ 📂compiler
  ┃ ┣ 📂bytecode
  ┃ ┃ ┣ 📜bytecode.rs
  ┃ ┃ ┗ 📜opcode.rs
@@ -104,13 +104,13 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
  ┃ ┃ ┣ 📜nodes.rs
  ┃ ┃ ┣ 📜parser.rs
  ┃ ┃ ┗ 📜parser_result.rs
- ┃ ┣ 📂vm
- ┃ ┃ ┗ 📜vm.rs
  ┃ ┗ 📜token.rs
  ┣ 📂utils
  ┃ ┣ 📜constants.rs
  ┃ ┣ 📜error.rs
  ┃ ┗ 📜position.rs
+ ┣ 📂vm
+ ┃ ┗ 📜vm.rs
  ┣ 📜lib.rs
  ┗ 📜main.rs
 ```

@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-use crate::core::token::Token;
+use crate::compiler::token::Token;
 use crate::utils::{
     constants::{
         get_ascii_letters, get_ascii_letters_and_digits, get_keywords, get_number, DynType, Tokens,

@@ -13,9 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-use crate::core::bytecode::opcode::OpCode;
-use crate::core::parser::nodes::Node;
-use crate::core::token::Token;
+use crate::compiler::bytecode::opcode::OpCode;
+use crate::compiler::parser::nodes::Node;
+use crate::compiler::token::Token;
 use crate::utils::constants::{DynType, Tokens};
 use crate::utils::position::Position;
 use crate::LanguageServer;
@@ -87,7 +87,7 @@ impl LanguageServer for ByteCodeGen {
     type Result = Result<ByteCode, ()>;
 
     fn from_ast(name: &'static str, node: Node) -> Self::Result {
-        println!("----Blazescript Compiler----");
+        println!("----Blazescript crate::compiler----");
         println!("Version: 0.0.1");
         println!("File: {}", name);
         let mut gen = ByteCodeGen::new();

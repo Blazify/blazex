@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-use crate::core::parser::nodes::Node;
+use crate::compiler::parser::nodes::Node;
 use crate::utils::error::Error;
 
 #[derive(Debug, Clone)]

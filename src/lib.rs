@@ -16,7 +16,7 @@
 #![allow(unused_assignments)]
 #![allow(mutable_borrow_reservation_conflict)]
 // Core
-pub mod core {
+pub mod compiler {
     // Token
     pub mod token;
     // Lexer
@@ -34,10 +34,11 @@ pub mod core {
         pub mod bytecode;
         pub mod opcode;
     }
-    // VM
-    pub mod vm {
-        pub mod vm;
-    }
+}
+
+// VM
+pub mod vm {
+    pub mod vm;
 }
 
 // Utils
@@ -47,9 +48,9 @@ pub mod utils {
     pub mod position;
 }
 
-use crate::core::lexer::lexer::Lexer;
-use crate::core::parser::nodes::Node;
-use crate::core::parser::parser::Parser;
+use crate::compiler::lexer::lexer::Lexer;
+use crate::compiler::parser::nodes::Node;
+use crate::compiler::parser::parser::Parser;
 use ::std::process::exit;
 
 pub trait LanguageServer {

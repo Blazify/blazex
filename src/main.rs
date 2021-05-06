@@ -15,10 +15,7 @@
 */
 
 #![allow(unused_must_use)]
-use blazescript::{
-    core::{bytecode::bytecode::ByteCodeGen, vm::vm::VM},
-    LanguageServer,
-};
+use blazescript::{compiler::bytecode::bytecode::ByteCodeGen, vm::vm::VM, LanguageServer};
 use std::env::args;
 use std::process::exit;
 use std::time::SystemTime;

@@ -13,9 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-use crate::core::parser::nodes::Node;
-use crate::core::parser::parser_result::ParseResult;
-use crate::core::token::Token;
+use crate::compiler::parser::nodes::Node;
+use crate::compiler::parser::parser_result::ParseResult;
+use crate::compiler::token::Token;
 use crate::utils::constants::{DynType, Tokens};
 use crate::utils::error::Error;
 
