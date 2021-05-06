@@ -34,7 +34,7 @@ fn main() {
         Ok(b) => {
             let mut vm = VM::new(b.clone());
             vm.run();
-            println!("{}---Result---\n{}\n", b, vm.pop_last());
+            println!("{}\n---Result---\n{}\n", b, vm.pop_last());
             match btc_time.elapsed() {
                 Ok(elapsed) => {
                     println!(

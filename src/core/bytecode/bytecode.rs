@@ -50,6 +50,15 @@ pub struct ByteCode {
     pub constants: Vec<Constants>,
 }
 
+impl ByteCode {
+    pub fn new() -> Self {
+        Self {
+            instructions: Vec::new(),
+            constants: Vec::new(),
+        }
+    }
+}
+
 impl Display for ByteCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         write!(
@@ -66,15 +75,6 @@ impl Display for ByteCode {
                 .collect::<Vec<String>>()
                 .join(", ")
         )
-    }
-}
-
-impl ByteCode {
-    pub fn new() -> Self {
-        Self {
-            instructions: Vec::new(),
-            constants: Vec::new(),
-        }
     }
 }
 
@@ -211,7 +211,6 @@ impl ByteCodeGen {
             } => {
                 let mut jumps = vec![];
                 if else_case.is_some() {
-                    // TODO: Remove this when Node enum TODO is complete
                     let pos = Position::new(-1, -1, -1, "", "");
                     cases.push((
                         Node::BooleanNode {

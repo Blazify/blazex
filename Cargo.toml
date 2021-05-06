@@ -1,12 +1,12 @@
 [package]
 name = "blazescript"
-version = "1.0.0-SNAPSHOT"
+version = "0.0.1"
 authors = ["RoMeAh <romeah@blazify.rocks>"]
 edition = "2018"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/BlazifyOrg/blazescript"
-homepage = "https://blazify.rocks/"
+homepage = "https://blazescript.blazify.rocks/"
 
 [dependencies]
 
