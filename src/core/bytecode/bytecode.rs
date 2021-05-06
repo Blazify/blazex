@@ -63,12 +63,12 @@ impl Display for ByteCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         write!(
             f,
-            "---Instructions---\n{}\n---Constants---\n{}",
+            "\nInstructions: {}\nConstants: {}\n",
             self.instructions
                 .iter()
                 .map(|x| format!("{}", x))
                 .collect::<Vec<String>>()
-                .join(""),
+                .join(" "),
             self.constants
                 .iter()
                 .map(|x| format!("{}", x))
@@ -86,7 +86,10 @@ pub struct ByteCodeGen {
 impl LanguageServer for ByteCodeGen {
     type Result = Result<ByteCode, ()>;
 
-    fn from_ast(_name: &'static str, node: Node) -> Self::Result {
+    fn from_ast(name: &'static str, node: Node) -> Self::Result {
+        println!("----Blazescript Compiler----");
+        println!("Version: 0.0.1");
+        println!("File: {}", name);
         let mut gen = ByteCodeGen::new();
         gen.compile_node(node);
         Ok(gen.bytecode)
@@ -160,7 +163,7 @@ impl ByteCodeGen {
                     Tokens::GreaterThanEquals => self.add_instruction(OpCode::OpGreaterThanEquals),
                     Tokens::LessThan => self.add_instruction(OpCode::OpLessThan),
                     Tokens::LessThanEquals => self.add_instruction(OpCode::OpLessThanEquals),
-                    _ => 0 as u16,
+                    _ => 0,
                 };
 
                 if op_token.matches(Tokens::Keyword, DynType::String("and".to_string())) {
@@ -175,7 +178,7 @@ impl ByteCodeGen {
                 match op_token.r#type {
                     Tokens::Plus => self.add_instruction(OpCode::OpPlus),
                     Tokens::Minus => self.add_instruction(OpCode::OpMinus),
-                    _ => 0 as u16,
+                    _ => 0,
                 };
 
                 if op_token.matches(Tokens::Keyword, DynType::String("not".to_string())) {
@@ -190,8 +193,9 @@ impl ByteCodeGen {
                 self.compile_node(*value);
                 let idx = self.add_constant(Constants::Boolean(reassignable));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_2));
+                let reassignibility =
+                    self.add_constant(Constants::Identifier(name.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(reassignibility));
                 self.add_instruction(OpCode::OpVarAssign);
             }
             Node::VarAccessNode { token, .. } => {
@@ -201,8 +205,8 @@ impl ByteCodeGen {
             }
             Node::VarReassignNode { name, value, .. } => {
                 self.compile_node(*value);
-                let idx_2 = self.add_constant(Constants::Identifier(name.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_2));
+                let idx = self.add_constant(Constants::Identifier(name.value.into_string()));
+                self.add_instruction(OpCode::OpConstant(idx));
                 self.add_instruction(OpCode::OpVarReassign);
             }
             Node::IfNode {
@@ -221,9 +225,9 @@ impl ByteCodeGen {
                 }
                 for (expr, body) in cases {
                     self.compile_node(expr.clone());
-                    let idx = self.add_instruction(OpCode::OpJumpIfFalse(1));
+                    let idx = self.add_instruction(OpCode::OpJumpIfFalse(0));
                     self.compile_node(body.clone());
-                    let idx_1 = self.add_instruction(OpCode::OpJump(1));
+                    let idx_1 = self.add_instruction(OpCode::OpJump(0));
                     jumps.push(idx_1);
                     self.patch_jump_if_false(idx, None);
                 }
@@ -242,25 +246,25 @@ impl ByteCodeGen {
                 self.compile_node(*start_value);
                 let idx = self.add_constant(Constants::Boolean(true));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let idx_1 =
+                let assign =
                     self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_1));
+                self.add_instruction(OpCode::OpConstant(assign));
                 self.add_instruction(OpCode::OpVarAssign);
 
                 let init = self.bytecode.instructions.len();
 
-                let idx_2 =
+                let compare =
                     self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_2));
+                self.add_instruction(OpCode::OpConstant(compare));
                 self.add_instruction(OpCode::OpVarAccess);
                 self.compile_node(*end_value);
-                self.add_instruction(OpCode::OpLessThanEquals);
+                self.add_instruction(OpCode::OpNotEquals);
 
                 let idx_3 = self.add_instruction(OpCode::OpJumpIfFalse(1));
 
-                let idx_4 =
+                let adding =
                     self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_4));
+                self.add_instruction(OpCode::OpConstant(adding));
                 self.add_instruction(OpCode::OpVarAccess);
                 if step_value_node.is_some() {
                     self.compile_node(step_value_node.unwrap());
@@ -270,13 +274,13 @@ impl ByteCodeGen {
                 }
                 self.add_instruction(OpCode::OpAdd);
 
-                let idx_5 =
+                let reassigning =
                     self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx_5));
+                self.add_instruction(OpCode::OpConstant(reassigning));
                 self.add_instruction(OpCode::OpVarReassign);
 
                 self.compile_node(*body_node.clone());
-                let jmp = self.add_instruction(OpCode::OpJump(1));
+                let jmp = self.add_instruction(OpCode::OpJump(0));
                 self.patch_jump_if_false(idx_3, None);
                 self.patch_jump(jmp, Some(init as u16));
             }
@@ -286,9 +290,9 @@ impl ByteCodeGen {
             } => {
                 let init = self.bytecode.instructions.len();
                 self.compile_node(*condition_node.clone());
-                let idx = self.add_instruction(OpCode::OpJumpIfFalse(1));
+                let idx = self.add_instruction(OpCode::OpJumpIfFalse(0));
                 self.compile_node(*body_node.clone());
-                let jmp = self.add_instruction(OpCode::OpJump(1));
+                let jmp = self.add_instruction(OpCode::OpJump(0));
                 self.patch_jump_if_false(idx, None);
                 self.patch_jump(jmp, Some(init as u16));
             }
@@ -297,8 +301,8 @@ impl ByteCodeGen {
     }
 
     fn patch_jump_if_false(&mut self, idx: u16, new: Option<u16>) {
-        let offset = self.bytecode.instructions.len();
         let jump_temp = if new.is_none() {
+            let offset = self.bytecode.instructions.len();
             OpCode::OpJumpIfFalse(offset as u16).make_op()
         } else {
             OpCode::OpJumpIfFalse(new.unwrap()).make_op()
@@ -308,8 +312,8 @@ impl ByteCodeGen {
     }
 
     fn patch_jump(&mut self, idx: u16, new: Option<u16>) {
-        let offset = self.bytecode.instructions.len();
         let jump_temp = if new.is_none() {
+            let offset = self.bytecode.instructions.len();
             OpCode::OpJump(offset as u16).make_op()
         } else {
             OpCode::OpJump(new.unwrap()).make_op()

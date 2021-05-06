@@ -38,8 +38,8 @@ fn main() {
             match btc_time.elapsed() {
                 Ok(elapsed) => {
                     println!(
-                        "Time taken for Compilation Process: {} nanoseconds",
-                        elapsed.as_nanos()
+                        "Time taken for Compilation Process: {} milliseconds",
+                        elapsed.as_millis()
                     );
                 }
                 Err(e) => {

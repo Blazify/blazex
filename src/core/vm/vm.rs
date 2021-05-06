@@ -131,11 +131,13 @@ impl VM {
                     _ => panic!("Unknown types to OpJump"),
                 },
                 0x0A => match self.pop() {
-                    Constants::Int(num) => self.push(Constants::Int(num)),
+                    Constants::Int(num) => self.push(Constants::Int(num * 1)),
+                    Constants::Float(num) => self.push(Constants::Float(num * 1.0)),
                     _ => panic!("Unknown arg type to OpPlus"),
                 },
                 0x0B => match self.pop() {
-                    Constants::Int(num) => self.push(Constants::Int(-num)),
+                    Constants::Int(num) => self.push(Constants::Int(num * -1)),
+                    Constants::Float(num) => self.push(Constants::Float(num * -1.0)),
                     _ => panic!("Unknown arg type to OpMinus"),
                 },
                 0x0C => match self.pop() {
@@ -152,7 +154,7 @@ impl VM {
                     (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
                         self.push(Constants::Boolean(lhs || rhs))
                     }
-                    _ => panic!("Unknown types to OpAnd"),
+                    _ => panic!("Unknown types to OpOr"),
                 },
                 0x0F => match (self.pop(), self.pop()) {
                     (Constants::Int(rhs), Constants::Int(lhs)) => {
