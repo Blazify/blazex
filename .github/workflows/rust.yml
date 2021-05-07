@@ -19,6 +19,7 @@ jobs:
           cargo run --release --quiet -- examples/main.bzs
           echo \n\n
           cargo run --release --quiet -- examples/main.bze
+  build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -27,6 +28,7 @@ jobs:
           cargo run --release --quiet -- examples/main.bzs
           echo \n\n
           cargo run --release --quiet -- examples/main.bze
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
