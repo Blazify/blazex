@@ -11,26 +11,11 @@ env:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo build --release --verbose
-          ./target/release/blazescript examples/main.bzs
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cargo build --release --verbose
-          ./target/release/blazescript examples/main.bzs
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cargo build --release --verbose
-          ./target/release/blazescript.exe examples/main.bzs
+          cargo run --release --quiet -- examples/main.bzs
+          echo \n\n
+          cargo run --release --quiet -- examples/main.bze

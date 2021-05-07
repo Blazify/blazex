@@ -63,17 +63,12 @@ impl Display for ByteCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         write!(
             f,
-            "\nInstructions: {}\nConstants: {}\n",
+            "{}",
             self.instructions
                 .iter()
                 .map(|x| format!("{}", x))
                 .collect::<Vec<String>>()
-                .join(" "),
-            self.constants
-                .iter()
-                .map(|x| format!("{}", x))
-                .collect::<Vec<String>>()
-                .join(", ")
+                .join(" | "),
         )
     }
 }
@@ -87,7 +82,7 @@ impl LanguageServer for ByteCodeGen {
     type Result = Result<ByteCode, ()>;
 
     fn from_ast(name: &'static str, node: Node) -> Self::Result {
-        println!("----Blazescript crate::compiler----");
+        println!("----Blazescript compiler----");
         println!("Version: 0.0.1");
         println!("File: {}", name);
         let mut gen = ByteCodeGen::new();

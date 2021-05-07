@@ -1,3 +1,7 @@
-var a = 0.0;
-for i = 100.0 to 0.0 step -1.0 { for j = 0.0 to 100.0 step 1.0 { a = a + i * j; }  }
+var a = 9 + 9;
+if a == 18 {
+    a = 0
+} else {
+    a = 1
+}
 a

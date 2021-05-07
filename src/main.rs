@@ -15,10 +15,12 @@
 */
 
 #![allow(unused_must_use)]
-use blazescript::{
-    blazevm::vm::VM as OldVM, compiler::bytecode::bytecode::ByteCodeGen, LanguageServer,
-};
+use blazescript::{compiler::bytecode::bytecode::ByteCodeGen, LanguageServer};
+use flate2::read::ZlibDecoder;
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
 use std::env::args;
+use std::io::prelude::*;
 use std::process::exit;
 use std::time::SystemTime;
 
@@ -31,18 +33,48 @@ mod blazevm {
 }
 
 fn main() {
-    let cnt = std::fs::read_to_string(args().nth(1).expect("no path specified"))
-        .expect("could not read file");
-    let file = Box::leak(args().nth(1).unwrap().to_owned().into_boxed_str());
+    let file_name = args().nth(1).expect("no path specified");
+    let is_compile_mode = if file_name.ends_with(".bze") {
+        true
+    } else if file_name.ends_with(".bzs") {
+        false
+    } else {
+        eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
+        exit(1);
+    };
+    let cnt = if !is_compile_mode {
+        std::fs::read_to_string(file_name.clone()).expect("could not read script")
+    } else {
+        let bytes = std::fs::read(file_name.clone()).expect("could not read executable");
+        let mut z = ZlibDecoder::new(&bytes[..]);
+        let mut s = String::new();
+        z.read_to_string(&mut s);
+        s
+    };
+    let file = Box::leak(file_name.to_owned().into_boxed_str());
     let content = Box::leak(cnt.to_owned().into_boxed_str());
-    if args().nth(1).unwrap().ends_with(".bzs") {
+    if !is_compile_mode {
         let btc_time = SystemTime::now();
         let btc = ByteCodeGen::from_source(file, content);
         match btc {
             Ok(b) => {
-                let mut vm = OldVM::new(b.clone());
-                vm.run();
-                println!("{}\n---Result---\n{}\n", b, vm.pop_last());
+                let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+                e.write_all(
+                    &b.instructions
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join("")
+                        .into_bytes(),
+                );
+                std::fs::write(
+                    file_name.clone().replace(".bzs", ".bze"),
+                    e.finish().unwrap(),
+                );
+                println!(
+                    "Compilation Success: Wrote to {}",
+                    file_name.clone().replace(".bzs", ".bze")
+                );
                 match btc_time.elapsed() {
                     Ok(elapsed) => {
                         println!(
@@ -58,13 +90,21 @@ fn main() {
             }
             Err(_) => {}
         }
-    } else if args().nth(1).unwrap().ends_with(".bze") {
-        std::env::set_var("bze_name", args().nth(1).unwrap());
-        std::env::set_var("bze_content", cnt);
-
-        blazevm::VM();
     } else {
-        eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
-        exit(1);
+        let inter_time = SystemTime::now();
+        std::env::set_var("bze_name", file_name);
+        std::env::set_var("bze_content", format!("{}", cnt));
+        blazevm::VM();
+        match inter_time.elapsed() {
+            Ok(elapsed) => {
+                println!(
+                    "Time taken for Interpretation Process: {} milliseconds",
+                    elapsed.as_millis()
+                );
+            }
+            Err(e) => {
+                println!("Error: {:?}", e);
+            }
+        }
     }
 }

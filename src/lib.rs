@@ -36,11 +36,6 @@ pub mod compiler {
     }
 }
 
-// VM
-pub mod blazevm {
-    pub mod vm;
-}
-
 // Utils
 pub mod utils {
     pub mod constants;
