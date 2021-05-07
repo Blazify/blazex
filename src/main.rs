@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 Blazify
+   Copyright 2021 BlazifyOrg
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 */
 
 #![allow(unused_must_use)]
-use blazescript::{compiler::bytecode::bytecode::ByteCodeGen, vm::vm::VM, LanguageServer};
+use blazescript::{blazevm::vm::VM, compiler::bytecode::bytecode::ByteCodeGen, LanguageServer};
 use std::env::args;
 use std::process::exit;
 use std::time::SystemTime;

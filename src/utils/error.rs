@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 Blazify
+   Copyright 2021 BlazifyOrg
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ pub struct Error {
     pub pos_start: Position,
     pub pos_end: Position,
     pub description: &'static str,
-    // pub ctx: Option<Vec<Context>>,
 }
 
 impl Error {
@@ -36,40 +35,17 @@ impl Error {
             pos_start,
             pos_end,
             description,
-            // ctx: None,
         }
     }
-
-    /*
-    pub fn set_ctx(mut self, ctx: Vec<Context>) -> Self {
-        self.ctx = Some(ctx);
-        self
-    }
-    */
 
     pub fn prettify(&self) -> String {
-        let /* mut */ res = String::new();
-        /*
-        if self.ctx.is_some() {
-            let mut r_ctx = self.ctx.clone().unwrap();
-            r_ctx.reverse();
-            r_ctx.pop();
-
-            for ctx in r_ctx {
-                res.push_str(format!("\n    at {}", ctx.display_name).as_str());
-            }
-            res = format!("Traceback (most recent call last):{}\n", res);
-        }
-        */
-
         format!(
-            "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\n{}\u{001b}[0m",
+            "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\u{001b}[0m",
             self.name,
             self.description,
             self.pos_start.file_name,
             self.pos_start.line + 1,
             self.string_with_arrows(),
-            res
         )
     }
 

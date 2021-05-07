@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 Blazify
+   Copyright 2021 BlazifyOrg
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -158,6 +158,7 @@ impl Lexer {
 
             if token_is_unknown {
                 let start_1 = self.position.clone();
+                self.position.advance(' ');
                 let char = self.current_char.unwrap().to_string();
                 return Err(Error::new(
                     "Illegal Character",
@@ -446,8 +447,23 @@ impl Lexer {
     pub fn skip_comment(&mut self) {
         self.advance();
 
-        while self.current_char.unwrap_or(' ') != '\n' {
+        if self.current_char.unwrap() == '@' {
+            while self.current_char.is_some() {
+                self.advance();
+                if self.current_char.unwrap() == '@' {
+                    self.advance();
+                    if self.current_char.unwrap() == '@' {
+                        break;
+                    }
+                }
+            }
+        }
+
+        while self.current_char.is_some() {
             self.advance();
+            if self.current_char.unwrap() == '\n' {
+                break;
+            }
         }
 
         self.advance();
