@@ -59,6 +59,9 @@ fn main() {
             Err(_) => {}
         }
     } else if args().nth(1).unwrap().ends_with(".bze") {
+        std::env::set_var("bze_name", args().nth(1).unwrap());
+        std::env::set_var("bze_content", cnt);
+
         blazevm::VM();
     } else {
         eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
