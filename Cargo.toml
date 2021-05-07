@@ -7,8 +7,13 @@ license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/BlazifyOrg/blazescript"
 homepage = "https://blazescript.blazify.rocks/"
+build = "build.rs"
 
 [dependencies]
+cxx = "1.0"
+
+[build-dependencies]
+cxx-build = "1.0"
 
 [lib]
 path = "src/lib.rs"

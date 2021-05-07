@@ -15,36 +15,53 @@
 */
 
 #![allow(unused_must_use)]
-use blazescript::{blazevm::vm::VM, compiler::bytecode::bytecode::ByteCodeGen, LanguageServer};
+use blazescript::{
+    blazevm::vm::VM as OldVM, compiler::bytecode::bytecode::ByteCodeGen, LanguageServer,
+};
 use std::env::args;
 use std::process::exit;
 use std::time::SystemTime;
+
+#[cxx::bridge]
+mod blazevm {
+    unsafe extern "C++" {
+        include!("blazescript/src/blazevm/vm.h");
+        fn VM();
+    }
+}
 
 fn main() {
     let cnt = std::fs::read_to_string(args().nth(1).expect("no path specified"))
         .expect("could not read file");
     let file = Box::leak(args().nth(1).unwrap().to_owned().into_boxed_str());
     let content = Box::leak(cnt.to_owned().into_boxed_str());
-    let btc_time = SystemTime::now();
-    let btc = ByteCodeGen::from_source(file, content);
-    match btc {
-        Ok(b) => {
-            let mut vm = VM::new(b.clone());
-            vm.run();
-            println!("{}\n---Result---\n{}\n", b, vm.pop_last());
-            match btc_time.elapsed() {
-                Ok(elapsed) => {
-                    println!(
-                        "Time taken for Compilation Process: {} milliseconds",
-                        elapsed.as_millis()
-                    );
+    if args().nth(1).unwrap().ends_with(".bzs") {
+        let btc_time = SystemTime::now();
+        let btc = ByteCodeGen::from_source(file, content);
+        match btc {
+            Ok(b) => {
+                let mut vm = OldVM::new(b.clone());
+                vm.run();
+                println!("{}\n---Result---\n{}\n", b, vm.pop_last());
+                match btc_time.elapsed() {
+                    Ok(elapsed) => {
+                        println!(
+                            "Time taken for Compilation Process: {} milliseconds",
+                            elapsed.as_millis()
+                        );
+                    }
+                    Err(e) => {
+                        println!("Error: {:?}", e);
+                    }
                 }
-                Err(e) => {
-                    println!("Error: {:?}", e);
-                }
+                exit(0);
             }
-            exit(0);
+            Err(_) => {}
         }
-        Err(_) => {}
+    } else if args().nth(1).unwrap().ends_with(".bze") {
+        blazevm::VM();
+    } else {
+        eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
+        exit(1);
     }
 }
