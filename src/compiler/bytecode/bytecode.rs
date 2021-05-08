@@ -63,12 +63,17 @@ impl Display for ByteCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         write!(
             f,
-            "{}",
+            "{}\n{}",
             self.instructions
                 .iter()
                 .map(|x| format!("{}", x))
                 .collect::<Vec<String>>()
-                .join(" | "),
+                .join(""),
+            self.constants
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(", "),
         )
     }
 }

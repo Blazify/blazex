@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo run --release --quiet -- examples/main.bzs
+          cargo run --release -- examples/main.bzs
           cargo run --release --quiet -- examples/main.bze
   build-macos:
     runs-on: macos-latest
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo run --release --quiet -- examples/main.bzs
+          cargo run --release -- examples/main.bzs
           cargo run --release --quiet -- examples/main.bze
   build-windows:
     runs-on: windows-latest
@@ -32,5 +32,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          cargo run --release --quiet -- examples/main.bzs
+          cargo run --release -- examples/main.bzs
           cargo run --release --quiet -- examples/main.bze

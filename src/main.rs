@@ -27,42 +27,12 @@ use std::time::SystemTime;
 
 fn main() {
     let file_name = args().nth(1).expect("no path specified");
-    let is_compile_mode = if file_name.ends_with(".bze") {
-        true
-    } else if file_name.ends_with(".bzs") {
-        false
-    } else {
-        eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
-        exit(1);
-    };
+    if file_name.ends_with(".bzs") {
+        let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
 
-    let cnt = if !is_compile_mode {
-        std::fs::read_to_string(file_name.clone()).expect("could not read script")
-    } else {
-        let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
-        let bytecode: ByteCode = bincode::deserialize(&btc_raw.clone()[..]).unwrap();
-        let mut vm = VM::new(bytecode);
-        vm.run();
-        println!("{:?}", vm.pop_last());
-        let inter_time = SystemTime::now();
-        match inter_time.elapsed() {
-            Ok(elapsed) => {
-                println!(
-                    "Time taken for Interpretation Process: {} milliseconds",
-                    elapsed.as_millis()
-                );
-            }
-            Err(e) => {
-                println!("Error: {:?}", e);
-            }
-        }
-        exit(0);
-    };
+        let file = Box::leak(file_name.to_owned().into_boxed_str());
+        let content = Box::leak(cnt.to_owned().into_boxed_str());
 
-    let file = Box::leak(file_name.to_owned().into_boxed_str());
-    let content = Box::leak(cnt.to_owned().into_boxed_str());
-
-    if !is_compile_mode {
         let btc_time = SystemTime::now();
         let btc = ByteCodeGen::from_source(file, content);
         match btc {
@@ -88,5 +58,27 @@ fn main() {
             }
             Err(_) => {}
         }
-    }
+    } else if file_name.ends_with(".bze") {
+        let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
+        let bytecode: ByteCode = bincode::deserialize(&btc_raw[..]).unwrap();
+        let mut vm = VM::new(bytecode);
+        vm.run();
+        println!("{:?}", vm.pop_last());
+        let inter_time = SystemTime::now();
+        match inter_time.elapsed() {
+            Ok(elapsed) => {
+                println!(
+                    "Time taken for Interpretation Process: {} milliseconds",
+                    elapsed.as_millis()
+                );
+            }
+            Err(e) => {
+                println!("Error: {:?}", e);
+            }
+        }
+        exit(0)
+    } else {
+        eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
+        exit(1);
+    };
 }
