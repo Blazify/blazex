@@ -25,8 +25,8 @@ use std::fmt::{Display, Error as E, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Constants {
-    Int(i64),
-    Float(f32),
+    Int(i128),
+    Float(f64),
     String(String),
     Char(char),
     Boolean(bool),
@@ -87,10 +87,7 @@ pub struct ByteCodeGen {
 impl LanguageServer for ByteCodeGen {
     type Result = Result<ByteCode, ()>;
 
-    fn from_ast(name: &'static str, node: Node) -> Self::Result {
-        println!("----Blazescript compiler----");
-        println!("Version: 0.0.1");
-        println!("File: {}", name);
+    fn from_ast(node: Node) -> Self::Result {
         let mut gen = ByteCodeGen::new();
         gen.compile_node(node);
         Ok(gen.bytecode)

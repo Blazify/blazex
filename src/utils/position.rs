@@ -15,18 +15,18 @@
 */
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
-    pub index: i64,
-    pub line: i64,
-    pub column: i64,
+    pub index: i128,
+    pub line: i128,
+    pub column: i128,
     pub file_name: &'static str,
     pub file_content: &'static str,
 }
 
 impl Position {
     pub fn new(
-        index: i64,
-        line: i64,
-        column: i64,
+        index: i128,
+        line: i128,
+        column: i128,
         file_name: &'static str,
         file_content: &'static str,
     ) -> Position {

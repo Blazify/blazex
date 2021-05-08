@@ -46,7 +46,7 @@ impl Lexer {
         self.position.advance(self.current_char.unwrap_or(' '));
         if self.text.len() > self.position.index.try_into().unwrap() {
             let split: Vec<char> = self.text.chars().collect::<Vec<char>>();
-            let index: i64 = self.position.index.try_into().unwrap();
+            let index: i128 = self.position.index.try_into().unwrap();
             self.current_char = Some(split[index as usize]);
         } else {
             self.current_char = None;
@@ -205,14 +205,14 @@ impl Lexer {
                 Tokens::Float,
                 start,
                 self.position.clone(),
-                DynType::Float(str_num.parse::<f32>().unwrap()),
+                DynType::Float(str_num.parse::<f64>().unwrap()),
             )
         } else {
             Token::new(
                 Tokens::Int,
                 start,
                 self.position.clone(),
-                DynType::Int(str_num.parse::<i64>().unwrap()),
+                DynType::Int(str_num.parse::<i128>().unwrap()),
             )
         };
     }

@@ -91,8 +91,8 @@ pub fn get_ascii_letters_and_digits() -> Vec<&'static str> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum DynType {
-    Int(i64),
-    Float(f32),
+    Int(i128),
+    Float(f64),
     String(String),
     Char(char),
     Boolean(bool),
@@ -100,7 +100,7 @@ pub enum DynType {
 }
 
 impl DynType {
-    pub fn into_int(&self) -> i64 {
+    pub fn into_int(&self) -> i128 {
         if let DynType::Int(i) = self {
             *i
         } else {
@@ -108,7 +108,7 @@ impl DynType {
         }
     }
 
-    pub fn into_float(&self) -> f32 {
+    pub fn into_float(&self) -> f64 {
         if let DynType::Float(i) = self {
             *i
         } else {

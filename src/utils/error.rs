@@ -75,7 +75,7 @@ impl Error {
                 col_start = self.pos_start.column;
             }
 
-            let mut col_end = line.len() as i64 - 1;
+            let mut col_end = line.len() as i128 - 1;
             if i == (line_count - 1) {
                 col_end = self.pos_end.column;
             }

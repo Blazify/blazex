@@ -20,8 +20,8 @@ use crate::utils::error::Error;
 pub struct ParseResult {
     pub node: Option<Node>,
     pub error: Option<Error>,
-    pub advance_count: i64,
-    pub to_reverse_count: i64,
+    pub advance_count: i128,
+    pub to_reverse_count: i128,
 }
 
 impl ParseResult {

@@ -15,7 +15,7 @@
 */
 
 #![allow(unused_must_use)]
-use bincode::*;
+use bincode::{deserialize, serialize};
 use blazescript::{
     blazevm::vm::VM,
     compiler::bytecode::bytecode::{ByteCode, ByteCodeGen},
@@ -27,23 +27,26 @@ use std::time::SystemTime;
 
 fn main() {
     let file_name = args().nth(1).expect("no path specified");
+    let time = SystemTime::now();
     if file_name.ends_with(".bzs") {
+        println!("----Blazescript compiler----");
+        println!("Version: 0.0.1");
+        println!("File: {}", file_name);
         let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
 
         let file = Box::leak(file_name.to_owned().into_boxed_str());
         let content = Box::leak(cnt.to_owned().into_boxed_str());
 
-        let btc_time = SystemTime::now();
         let btc = ByteCodeGen::from_source(file, content);
         match btc {
             Ok(b) => {
-                let encoded = serialize(&b).unwrap();
-                std::fs::write(file_name.clone().replace(".bzs", ".bze"), encoded);
+                let serialized = serialize(&b).expect("serialization of bytecode failed");
+                std::fs::write(file_name.clone().replace(".bzs", ".bze"), serialized);
                 println!(
                     "Compilation Success: Wrote to {}",
                     file_name.clone().replace(".bzs", ".bze")
                 );
-                match btc_time.elapsed() {
+                match time.elapsed() {
                     Ok(elapsed) => {
                         println!(
                             "Time taken for Compilation Process: {} milliseconds",
@@ -59,13 +62,16 @@ fn main() {
             Err(_) => {}
         }
     } else if file_name.ends_with(".bze") {
+        println!("----Blaze Virtual Machine----");
+        println!("Version: 0.0.1");
+        println!("File: {}", file_name);
         let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
-        let bytecode: ByteCode = bincode::deserialize(&btc_raw[..]).unwrap();
+        let bytecode: ByteCode =
+            deserialize(&btc_raw[..]).expect("deserialization of executable failed");
         let mut vm = VM::new(bytecode);
         vm.run();
-        println!("{:?}", vm.pop_last());
-        let inter_time = SystemTime::now();
-        match inter_time.elapsed() {
+        println!("Result: {:?}", vm.pop_last());
+        match time.elapsed() {
             Ok(elapsed) => {
                 println!(
                     "Time taken for Interpretation Process: {} milliseconds",

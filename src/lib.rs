@@ -55,7 +55,7 @@ use ::std::process::exit;
 
 pub trait LanguageServer {
     type Result;
-    fn from_ast(name: &'static str, node: Node) -> Self::Result;
+    fn from_ast(node: Node) -> Self::Result;
 
     fn from_source(name: &'static str, file_content: &'static str) -> Self::Result {
         let lexed = Lexer::new(name, file_content).tokenize();
@@ -76,6 +76,6 @@ pub trait LanguageServer {
             exit(1);
         }
 
-        Self::from_ast(name, parsed.node.unwrap())
+        Self::from_ast(parsed.node.unwrap())
     }
 }

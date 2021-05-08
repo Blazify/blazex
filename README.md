@@ -5,20 +5,27 @@
 - **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
 - **2. Clone this repository by the below given command**
 
-```console
-git clone git@github.com:BlazifyOrg/blazescript.git
+```shell
+$ git clone git@github.com:BlazifyOrg/blazescript.git
 ```
 
 - **3. Go to the Directory, Compile it**
 
-```console
-cd blazescript/
-cargo install --path ./ --bin blazescript
+```shell
+$ cd blazescript/
+$ cargo install --path ./ --bin blazescript
+```
+
+- **4. Compiling and running executables**
+
+```shell
+$ blazescript path/to/file.bzs
+$ blazescript path/to/file.bze
 ```
 
 ## Announcment
 
-The Bytecode Compiler and the VM are in progress, to use all features of the language use the code from the [70th Commit](https://github.com/BlazifyOrg/blazescript/commit/a2e2186bec75bc05a86ebd3192fa9d931475cb80)
+The Bytecode Compiler and the VM are in progress, to use all features of the language use the code from the [70th Commit](https://github.com/BlazifyOrg/blazescript/tree/a2e2186bec75bc05a86ebd3192fa9d931475cb80)
 
 ## Example
 
@@ -94,6 +101,8 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 
 ```
 📦src
+ ┣ 📂blazevm
+ ┃ ┗ 📜vm.rs
  ┣ 📂compiler
  ┃ ┣ 📂bytecode
  ┃ ┃ ┣ 📜bytecode.rs
@@ -109,16 +118,15 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
  ┃ ┣ 📜constants.rs
  ┃ ┣ 📜error.rs
  ┃ ┗ 📜position.rs
- ┣ 📂vm
- ┃ ┗ 📜vm.rs
  ┣ 📜lib.rs
  ┗ 📜main.rs
 ```
 
 # TODO
 
-- [ ] Bytecode Generator
+- [ ] Bytecode Compiler
 
+  - [x] Executables
   - [x] Statements
   - [x] Int & Floats
   - [x] Strings
@@ -144,7 +152,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 - [ ] VM Interpreter
 
 - [x] Reading from file
-- [x] Tokens
+- [x] Lexer
 - [x] Parser
 
 ## Author
