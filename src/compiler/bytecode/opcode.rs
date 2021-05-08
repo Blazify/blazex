@@ -32,9 +32,9 @@ pub enum OpCode {
     OpGreaterThanEquals,
     OpLessThan,
     OpLessThanEquals,
-    OpVarAssign,
-    OpVarAccess,
-    OpVarReassign,
+    OpVarAssign(u16),
+    OpVarAccess(u16),
+    OpVarReassign(u16),
     OpJump(u16),
     OpJumpIfFalse(u16),
     OpPop,
@@ -63,9 +63,9 @@ impl OpCode {
             Self::OpGreaterThanEquals => vec![0x1C],
             Self::OpLessThan => vec![0x1D],
             Self::OpLessThanEquals => vec![0x1E],
-            Self::OpVarAssign => vec![0x1F],
-            Self::OpVarAccess => vec![0x2A],
-            Self::OpVarReassign => vec![0x2B],
+            Self::OpVarAssign(i) => make_three_byte_op(0x1F, *i),
+            Self::OpVarAccess(i) => make_three_byte_op(0x2A, *i),
+            Self::OpVarReassign(i) => make_three_byte_op(0x2B, *i),
         }
     }
 }

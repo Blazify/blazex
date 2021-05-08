@@ -19,16 +19,17 @@ use crate::compiler::token::Token;
 use crate::utils::constants::{DynType, Tokens};
 use crate::utils::position::Position;
 use crate::LanguageServer;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::{Display, Error as E, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Constants {
     Int(i64),
     Float(f32),
     String(String),
     Char(char),
     Boolean(bool),
-    Identifier(String),
 }
 
 impl Display for Constants {
@@ -39,12 +40,11 @@ impl Display for Constants {
             Self::Char(n) => write!(f, "char {}", n),
             Self::String(n) => write!(f, "str {}", n),
             Self::Boolean(n) => write!(f, "bool {}", n),
-            Self::Identifier(n) => write!(f, "iden {}", n),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ByteCode {
     pub instructions: Vec<u8>,
     pub constants: Vec<Constants>,
@@ -76,6 +76,7 @@ impl Display for ByteCode {
 #[derive(Debug, Clone)]
 pub struct ByteCodeGen {
     pub bytecode: ByteCode,
+    vars: HashMap<String, u16>,
 }
 
 impl LanguageServer for ByteCodeGen {
@@ -94,8 +95,25 @@ impl LanguageServer for ByteCodeGen {
 impl ByteCodeGen {
     fn new() -> Self {
         Self {
+            vars: HashMap::new(),
             bytecode: ByteCode::new(),
         }
+    }
+
+    fn get_var(&mut self, name: String) -> u16 {
+        return if self.vars.contains_key(&name) {
+            *self.vars.get(&name).unwrap()
+        } else {
+            self.vars.insert(
+                name.clone(),
+                if self.vars.len() == 0 {
+                    0
+                } else {
+                    self.vars.values().last().unwrap() + 1
+                },
+            );
+            *self.vars.get(&name).unwrap()
+        };
     }
 
     fn add_constant(&mut self, c: Constants) -> u16 {
@@ -188,21 +206,17 @@ impl ByteCodeGen {
                 self.compile_node(*value);
                 let idx = self.add_constant(Constants::Boolean(reassignable));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let reassignibility =
-                    self.add_constant(Constants::Identifier(name.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(reassignibility));
-                self.add_instruction(OpCode::OpVarAssign);
+                let id = self.get_var(name.value.into_string());
+                self.add_instruction(OpCode::OpVarAssign(id));
             }
             Node::VarAccessNode { token, .. } => {
-                let idx = self.add_constant(Constants::Identifier(token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx));
-                self.add_instruction(OpCode::OpVarAccess);
+                let id = self.get_var(token.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id));
             }
             Node::VarReassignNode { name, value, .. } => {
                 self.compile_node(*value);
-                let idx = self.add_constant(Constants::Identifier(name.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(idx));
-                self.add_instruction(OpCode::OpVarReassign);
+                let id = self.get_var(name.value.into_string());
+                self.add_instruction(OpCode::OpVarReassign(id));
             }
             Node::IfNode {
                 mut cases,
@@ -241,26 +255,20 @@ impl ByteCodeGen {
                 self.compile_node(*start_value);
                 let idx = self.add_constant(Constants::Boolean(true));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let assign =
-                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(assign));
-                self.add_instruction(OpCode::OpVarAssign);
+                let id = self.get_var(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAssign(id));
 
                 let init = self.bytecode.instructions.len();
 
-                let compare =
-                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(compare));
-                self.add_instruction(OpCode::OpVarAccess);
+                let id = self.get_var(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id));
                 self.compile_node(*end_value);
                 self.add_instruction(OpCode::OpNotEquals);
 
                 let idx_3 = self.add_instruction(OpCode::OpJumpIfFalse(1));
 
-                let adding =
-                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(adding));
-                self.add_instruction(OpCode::OpVarAccess);
+                let id = self.get_var(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id));
                 if step_value_node.is_some() {
                     self.compile_node(step_value_node.unwrap());
                 } else {
@@ -269,10 +277,8 @@ impl ByteCodeGen {
                 }
                 self.add_instruction(OpCode::OpAdd);
 
-                let reassigning =
-                    self.add_constant(Constants::Identifier(var_name_token.value.into_string()));
-                self.add_instruction(OpCode::OpConstant(reassigning));
-                self.add_instruction(OpCode::OpVarReassign);
+                let id = self.get_var(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarReassign(id));
 
                 self.compile_node(*body_node.clone());
                 let jmp = self.add_instruction(OpCode::OpJump(0));

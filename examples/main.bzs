@@ -1,7 +1,7 @@
-var a = 9 + 9;
-if a == 18 {
-    a = 0
-} else {
-    a = 1
+var a = 0;
+for i = 0 to 100 {
+    for f = 100 to 0 step -1 {
+        a = a + i * f;
+    }
 }
 a

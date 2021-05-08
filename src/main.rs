@@ -15,22 +15,15 @@
 */
 
 #![allow(unused_must_use)]
-use blazescript::{compiler::bytecode::bytecode::ByteCodeGen, LanguageServer};
-use flate2::read::ZlibDecoder;
-use flate2::write::ZlibEncoder;
-use flate2::Compression;
+use bincode::*;
+use blazescript::{
+    blazevm::vm::VM,
+    compiler::bytecode::bytecode::{ByteCode, ByteCodeGen},
+    LanguageServer,
+};
 use std::env::args;
-use std::io::prelude::*;
 use std::process::exit;
 use std::time::SystemTime;
-
-#[cxx::bridge]
-mod blazevm {
-    unsafe extern "C++" {
-        include!("blazescript/src/blazevm/vm.h");
-        fn VM();
-    }
-}
 
 fn main() {
     let file_name = args().nth(1).expect("no path specified");
@@ -42,35 +35,40 @@ fn main() {
         eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
         exit(1);
     };
+
     let cnt = if !is_compile_mode {
         std::fs::read_to_string(file_name.clone()).expect("could not read script")
     } else {
-        let bytes = std::fs::read(file_name.clone()).expect("could not read executable");
-        let mut z = ZlibDecoder::new(&bytes[..]);
-        let mut s = String::new();
-        z.read_to_string(&mut s);
-        s
+        let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
+        let bytecode: ByteCode = bincode::deserialize(&btc_raw.clone()[..]).unwrap();
+        let mut vm = VM::new(bytecode);
+        vm.run();
+        println!("{:?}", vm.pop_last());
+        let inter_time = SystemTime::now();
+        match inter_time.elapsed() {
+            Ok(elapsed) => {
+                println!(
+                    "Time taken for Interpretation Process: {} milliseconds",
+                    elapsed.as_millis()
+                );
+            }
+            Err(e) => {
+                println!("Error: {:?}", e);
+            }
+        }
+        exit(0);
     };
+
     let file = Box::leak(file_name.to_owned().into_boxed_str());
     let content = Box::leak(cnt.to_owned().into_boxed_str());
+
     if !is_compile_mode {
         let btc_time = SystemTime::now();
         let btc = ByteCodeGen::from_source(file, content);
         match btc {
             Ok(b) => {
-                let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
-                e.write_all(
-                    &b.instructions
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join("")
-                        .into_bytes(),
-                );
-                std::fs::write(
-                    file_name.clone().replace(".bzs", ".bze"),
-                    e.finish().unwrap(),
-                );
+                let encoded = serialize(&b).unwrap();
+                std::fs::write(file_name.clone().replace(".bzs", ".bze"), encoded);
                 println!(
                     "Compilation Success: Wrote to {}",
                     file_name.clone().replace(".bzs", ".bze")
@@ -89,22 +87,6 @@ fn main() {
                 exit(0);
             }
             Err(_) => {}
-        }
-    } else {
-        let inter_time = SystemTime::now();
-        std::env::set_var("bze_name", file_name);
-        std::env::set_var("bze_content", format!("{}", cnt));
-        blazevm::VM();
-        match inter_time.elapsed() {
-            Ok(elapsed) => {
-                println!(
-                    "Time taken for Interpretation Process: {} milliseconds",
-                    elapsed.as_millis()
-                );
-            }
-            Err(e) => {
-                println!("Error: {:?}", e);
-            }
         }
     }
 }
