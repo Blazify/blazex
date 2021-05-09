@@ -1,12 +1,9 @@
 /*
    Copyright 2021 BlazifyOrg
-
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-
        http://www.apache.org/licenses/LICENSE-2.0
-
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,16 +14,16 @@ use crate::compiler::bytecode::{
     bytecode::{ByteCode, Constants},
     opcode::convert_to_usize,
 };
-use std::collections::HashMap;
 
 const STACK_SIZE: usize = 512;
+type Symbol = (Constants, bool, bool);
 
 #[derive(Debug, Clone)]
 pub struct VM {
     bytecode: ByteCode,
     stack: [Constants; STACK_SIZE],
     stack_ptr: usize,
-    ctx: Vec<HashMap<usize, (bool, Constants)>>,
+    symbols: [Symbol; STACK_SIZE],
 }
 
 impl VM {
@@ -35,7 +32,7 @@ impl VM {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
-            ctx: vec![HashMap::new()],
+            symbols: unsafe { std::mem::zeroed() },
         }
     }
 
@@ -266,13 +263,13 @@ impl VM {
                 },
                 0x1F => match self.pop() {
                     Constants::Boolean(b) => {
-                        let n = self.pop();
                         let i = convert_to_usize(
                             self.bytecode.instructions[ip],
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
-                        self.ctx.last_mut().unwrap().insert(i, (b, n));
+                        let n = self.pop();
+                        self.symbols[i] = (n, b, true);
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
@@ -282,8 +279,7 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    let (_, val) = self.get_from_hash_table(i).unwrap();
-                    self.push(val.clone());
+                    self.push(self.symbols[i].0.clone());
                 }
                 0x2B => {
                     let i = convert_to_usize(
@@ -291,12 +287,12 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    if self.get_from_hash_table(i.clone()).is_none() {
+                    if !self.symbols[i].2 {
                         panic!("No variable found to be reassigned")
                     }
 
                     let n = self.pop();
-                    self.get_and_set_hash_table(i, (true, n));
+                    self.symbols[i] = (n, true, true);
                 }
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
@@ -326,25 +322,5 @@ impl VM {
 
     pub fn pop_last(&self) -> &Constants {
         &self.stack[self.stack_ptr]
-    }
-
-    pub fn get_from_hash_table(&self, k: usize) -> Option<(bool, Constants)> {
-        for idx in (0..self.ctx.len()).rev() {
-            let sym = self.ctx.get(idx).unwrap().get(&k);
-            if sym.is_some() {
-                return Some((sym.unwrap()).clone());
-            }
-        }
-        None
-    }
-
-    pub fn get_and_set_hash_table(&mut self, k: usize, n: (bool, Constants)) {
-        for idx in (0..self.ctx.len()).rev() {
-            let sym = self.ctx.get(idx).unwrap().get(&k.clone());
-            if sym.is_some() {
-                self.ctx.get_mut(idx).unwrap().insert(k, n);
-                break;
-            }
-        }
     }
 }

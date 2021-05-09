@@ -57,7 +57,7 @@ pub enum Node {
         start_value: Box<Node>,
         end_value: Box<Node>,
         body_node: Box<Node>,
-        step_value_node: Box<Option<Node>>,
+        step_value_node: Box<Node>,
     },
     CharNode {
         token: Token,

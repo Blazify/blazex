@@ -1,23 +1,33 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'blazescript'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=blazescript",
-                    "--package=blazescript",
-                ],
-                "filter": {
-                    "name": "blazescript",
-                    "kind": "bin"
-                }
-            },
-            "args": ["examples/main.bzs", "bytecode"],
-            "cwd": "${workspaceFolder}"
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Compile",
+      "cargo": {
+        "args": ["build", "--bin=blazescript", "--package=blazescript"],
+        "filter": {
+          "name": "blazescript",
+          "kind": "bin"
         }
-    ]
+      },
+      "args": ["examples/main.bzs", "bytecode"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Interpret",
+      "cargo": {
+        "args": ["build", "--bin=blazescript", "--package=blazescript"],
+        "filter": {
+          "name": "blazescript",
+          "kind": "bin"
+        }
+      },
+      "args": ["examples/main.bze", "bytecode"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
 }

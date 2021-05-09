@@ -32,18 +32,6 @@ pub enum Constants {
     Boolean(bool),
 }
 
-impl Display for Constants {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
-        match self {
-            Self::Int(n) => write!(f, "int {}", n),
-            Self::Float(n) => write!(f, "float {}", n),
-            Self::Char(n) => write!(f, "char {}", n),
-            Self::String(n) => write!(f, "str {}", n),
-            Self::Boolean(n) => write!(f, "bool {}", n),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ByteCode {
     pub instructions: Vec<u8>,
@@ -63,17 +51,17 @@ impl Display for ByteCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
         write!(
             f,
-            "{}\n{}",
+            "\nInstructions: {}\nConstants: {}\n",
             self.instructions
                 .iter()
                 .map(|x| format!("{}", x))
                 .collect::<Vec<String>>()
-                .join(""),
+                .join(" "),
             self.constants
                 .iter()
-                .map(|x| format!("{}", x))
+                .map(|x| format!("{:?}", x))
                 .collect::<Vec<String>>()
-                .join(", "),
+                .join(", ")
         )
     }
 }
@@ -81,7 +69,7 @@ impl Display for ByteCode {
 #[derive(Debug, Clone)]
 pub struct ByteCodeGen {
     pub bytecode: ByteCode,
-    vars: HashMap<String, u16>,
+    variables: HashMap<String, u16>,
 }
 
 impl LanguageServer for ByteCodeGen {
@@ -97,25 +85,24 @@ impl LanguageServer for ByteCodeGen {
 impl ByteCodeGen {
     fn new() -> Self {
         Self {
-            vars: HashMap::new(),
             bytecode: ByteCode::new(),
+            variables: HashMap::new(),
         }
     }
 
-    fn get_var(&mut self, name: String) -> u16 {
-        return if self.vars.contains_key(&name) {
-            *self.vars.get(&name).unwrap()
-        } else {
-            self.vars.insert(
-                name.clone(),
-                if self.vars.len() == 0 {
-                    0
-                } else {
-                    self.vars.values().last().unwrap() + 1
-                },
+    fn variable(&mut self, k: String) -> u16 {
+        return *self.variables.clone().get(&k).unwrap_or_else(|| -> &u16 {
+            self.variables.insert(
+                k.clone(),
+                *self.variables.values().last().unwrap_or(&0)
+                    + if self.variables.values().len() == 0 {
+                        0
+                    } else {
+                        1
+                    },
             );
-            *self.vars.get(&name).unwrap()
-        };
+            self.variables.get(&k).unwrap()
+        });
     }
 
     fn add_constant(&mut self, c: Constants) -> u16 {
@@ -208,16 +195,16 @@ impl ByteCodeGen {
                 self.compile_node(*value);
                 let idx = self.add_constant(Constants::Boolean(reassignable));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let id = self.get_var(name.value.into_string());
+                let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarAssign(id));
             }
             Node::VarAccessNode { token, .. } => {
-                let id = self.get_var(token.value.into_string());
+                let id = self.variable(token.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
             }
             Node::VarReassignNode { name, value, .. } => {
                 self.compile_node(*value);
-                let id = self.get_var(name.value.into_string());
+                let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarReassign(id));
             }
             Node::IfNode {
@@ -257,29 +244,24 @@ impl ByteCodeGen {
                 self.compile_node(*start_value);
                 let idx = self.add_constant(Constants::Boolean(true));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let id = self.get_var(var_name_token.value.into_string());
+                let id = self.variable(var_name_token.value.into_string());
                 self.add_instruction(OpCode::OpVarAssign(id));
 
                 let init = self.bytecode.instructions.len();
 
-                let id = self.get_var(var_name_token.value.into_string());
+                let id = self.variable(var_name_token.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
                 self.compile_node(*end_value);
                 self.add_instruction(OpCode::OpNotEquals);
 
                 let idx_3 = self.add_instruction(OpCode::OpJumpIfFalse(1));
 
-                let id = self.get_var(var_name_token.value.into_string());
+                let id = self.variable(var_name_token.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
-                if step_value_node.is_some() {
-                    self.compile_node(step_value_node.unwrap());
-                } else {
-                    let int = self.add_constant(Constants::Int(1));
-                    self.add_instruction(OpCode::OpConstant(int));
-                }
+                self.compile_node(*step_value_node);
                 self.add_instruction(OpCode::OpAdd);
 
-                let id = self.get_var(var_name_token.value.into_string());
+                let id = self.variable(var_name_token.value.into_string());
                 self.add_instruction(OpCode::OpVarReassign(id));
 
                 self.compile_node(*body_node.clone());

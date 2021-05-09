@@ -1549,20 +1549,26 @@ impl Parser {
             return res;
         }
 
-        let mut step: Option<Node> = None;
-        if self
+        if !self
             .current_token
             .clone()
             .matches(Tokens::Keyword, DynType::String("step".to_string()))
         {
-            res.register_advancement();
-            self.advance();
-            let expr = res.register(self.expr());
-            if res.error.is_some() {
-                return res;
-            }
-            step = Some(expr.unwrap());
+            return res.failure(Error::new(
+                "Invalid Syntax",
+                self.current_token.pos_start,
+                self.current_token.pos_end,
+                "Expected 'step' keyword",
+            ));
         }
+
+        res.register_advancement();
+        self.advance();
+        let expr = res.register(self.expr());
+        if res.error.is_some() {
+            return res;
+        }
+        let step = expr.unwrap();
 
         if !self
             .current_token

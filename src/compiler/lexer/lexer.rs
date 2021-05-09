@@ -460,10 +460,10 @@ impl Lexer {
         }
 
         while self.current_char.is_some() {
-            self.advance();
             if self.current_char.unwrap() == '\n' {
                 break;
             }
+            self.advance();
         }
 
         self.advance();
