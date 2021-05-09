@@ -2,28 +2,7 @@
 
 ## Installation
 
-- **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
-- **2. Download and Install Blazescript**
-
-In Ubuntu Or MacOS
-
-```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
-```
-
-In Windows
-
-```shell
-$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh -o install.sh
-$ bash install.sh
-```
-
-- **3. Compiling and running executables**
-
-```shell
-$ blazescript path/to/file.bzs
-$ blazescript path/to/file.bze
-```
+[Github Releases](https://github.com/BlazifyOrg/blazescript/releases)
 
 ## Note
 
