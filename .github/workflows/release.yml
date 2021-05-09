@@ -19,12 +19,13 @@ jobs:
             asset_name: bzs-macos-amd64
           - os: windows-latest
             artifact_name: blazescript.exe
-            asset_name: bzs-windows-amd64
+            asset_name: bzs-windows-amd64.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
-        run: cargo build --release
+        run: cargo build --release --debug 0
+        run: strip target/release/${{ matrix.artifact_name }}
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
