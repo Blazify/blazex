@@ -18,7 +18,7 @@ jobs:
             artifact_name: blazescript
             asset_name: bzs-macos-amd64
           - os: windows-latest
-            artifact_name: blazescript
+            artifact_name: blazescript.exe
             asset_name: bzs-windows-amd64
     steps:
       - name: Checkout code
