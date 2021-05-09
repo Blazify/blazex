@@ -13,18 +13,18 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: blazescript
-            asset_name: bzs-linux-amd64
+            asset_name: blazescript-linux
           - os: macos-latest
             artifact_name: blazescript
-            asset_name: bzs-macos-amd64
+            asset_name: blazescript-macos
           - os: windows-latest
             artifact_name: blazescript.exe
-            asset_name: bzs-windows-amd64.exe
+            asset_name: blazescript-windows.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
-        run: cargo build --release --debug 0
+        run: cargo build --release
       - name: Strip Executable 
         run: strip target/release/${{ matrix.artifact_name }}
       - name: Upload binary to release
