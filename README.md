@@ -5,8 +5,17 @@
 - **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
 - **2. Download and Install Blazescript**
 
+In Ubuntu Or MacOS
+
 ```shell
-$ curl -fsSL https://https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
+```
+
+In Windows
+
+```shell
+$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh -o install.sh
+$ bash install.sh
 ```
 
 - **3. Compiling and running executables**
@@ -17,7 +26,8 @@ $ blazescript path/to/file.bze
 ```
 
 ## Note
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode)
+
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode) and we are also looking for collaborators
 
 ## Announcment
 
@@ -32,6 +42,7 @@ println("Hello World!") @ yep as simple as that
 ```
 
 - Comments
+
 ```bzs
 @ single line comment
 @@
