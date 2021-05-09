@@ -3,25 +3,21 @@
 ## Installation
 
 - **1. Download and Install [Rust](https://www.rust-lang.org/tools/install)**
-- **2. Clone this repository by the below given command**
+- **2. Download and Install Blazescript**
 
 ```shell
-$ git clone git@github.com:BlazifyOrg/blazescript.git
+$ curl -fsSL https://https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
 ```
 
-- **3. Go to the Directory, Compile it**
-
-```shell
-$ cd blazescript/
-$ cargo install --path ./ --bin blazescript
-```
-
-- **4. Compiling and running executables**
+- **3. Compiling and running executables**
 
 ```shell
 $ blazescript path/to/file.bzs
 $ blazescript path/to/file.bze
 ```
+
+## Note
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode)
 
 ## Announcment
 
@@ -29,12 +25,18 @@ The Bytecode Compiler and the VM are in progress, to use all features of the lan
 
 ## Example
 
-Note: '@' means comments
-
 - Printing the famous "Hello World"
 
 ```bzs
 println("Hello World!") @ yep as simple as that
+```
+
+- Comments
+```bzs
+@ single line comment
+@@
+	multi-line comment
+@@
 ```
 
 - Creating and calling functions
