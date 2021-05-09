@@ -14,16 +14,16 @@ use crate::compiler::bytecode::{
     bytecode::{ByteCode, Constants},
     opcode::convert_to_usize,
 };
+use std::collections::HashMap;
 
 const STACK_SIZE: usize = 512;
-type Symbol = (Constants, bool, bool);
 
 #[derive(Debug, Clone)]
 pub struct VM {
     bytecode: ByteCode,
     stack: [Constants; STACK_SIZE],
     stack_ptr: usize,
-    symbols: [Symbol; STACK_SIZE],
+    symbols: Vec<HashMap<usize, (Constants, bool)>>,
 }
 
 impl VM {
@@ -32,7 +32,7 @@ impl VM {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
-            symbols: unsafe { std::mem::zeroed() },
+            symbols: vec![HashMap::new()],
         }
     }
 
@@ -269,7 +269,7 @@ impl VM {
                         );
                         ip += 2;
                         let n = self.pop();
-                        self.symbols[i] = (n, b, true);
+                        self.symbols.last_mut().unwrap().insert(i, (n, b));
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
@@ -279,7 +279,7 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    self.push(self.symbols[i].0.clone());
+                    self.push(self.get_from_hash_table(i).unwrap().0);
                 }
                 0x2B => {
                     let i = convert_to_usize(
@@ -287,12 +287,20 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    if !self.symbols[i].2 {
+                    if self.get_from_hash_table(i).is_none() {
                         panic!("No variable found to be reassigned")
                     }
 
+                    if self.get_from_hash_table(i).unwrap().1 == false {
+                        panic!("Variable not reassignable")
+                    }
+
                     let n = self.pop();
-                    self.symbols[i] = (n, true, true);
+                    self.get_and_set_hash_table(i, (n, true));
+                }
+                0x2C => self.symbols.push(HashMap::new()),
+                0x2D => {
+                    self.symbols.pop();
                 }
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
@@ -322,5 +330,25 @@ impl VM {
 
     pub fn pop_last(&self) -> &Constants {
         &self.stack[self.stack_ptr]
+    }
+
+    pub fn get_from_hash_table(&self, k: usize) -> Option<(Constants, bool)> {
+        for idx in (0..self.symbols.len()).rev() {
+            let sym = self.symbols.get(idx).unwrap().get(&k);
+            if sym.is_some() {
+                return Some((sym.unwrap()).clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_and_set_hash_table(&mut self, k: usize, n: (Constants, bool)) {
+        for idx in (0..self.symbols.len()).rev() {
+            let sym = self.symbols.get(idx).unwrap().get(&k.clone());
+            if sym.is_some() {
+                self.symbols.get_mut(idx).unwrap().insert(k, n);
+                break;
+            }
+        }
     }
 }

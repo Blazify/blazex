@@ -224,7 +224,9 @@ impl ByteCodeGen {
                 for (expr, body) in cases {
                     self.compile_node(expr.clone());
                     let idx = self.add_instruction(OpCode::OpJumpIfFalse(0));
+                    self.add_instruction(OpCode::OpBlockStart);
                     self.compile_node(body.clone());
+                    self.add_instruction(OpCode::OpBlockEnd);
                     let idx_1 = self.add_instruction(OpCode::OpJump(0));
                     jumps.push(idx_1);
                     self.patch_jump_if_false(idx, None);
@@ -264,7 +266,9 @@ impl ByteCodeGen {
                 let id = self.variable(var_name_token.value.into_string());
                 self.add_instruction(OpCode::OpVarReassign(id));
 
+                self.add_instruction(OpCode::OpBlockStart);
                 self.compile_node(*body_node.clone());
+                self.add_instruction(OpCode::OpBlockEnd);
                 let jmp = self.add_instruction(OpCode::OpJump(0));
                 self.patch_jump_if_false(idx_3, None);
                 self.patch_jump(jmp, Some(init as u16));
@@ -276,7 +280,9 @@ impl ByteCodeGen {
                 let init = self.bytecode.instructions.len();
                 self.compile_node(*condition_node.clone());
                 let idx = self.add_instruction(OpCode::OpJumpIfFalse(0));
+                self.add_instruction(OpCode::OpBlockStart);
                 self.compile_node(*body_node.clone());
+                self.add_instruction(OpCode::OpBlockEnd);
                 let jmp = self.add_instruction(OpCode::OpJump(0));
                 self.patch_jump_if_false(idx, None);
                 self.patch_jump(jmp, Some(init as u16));
