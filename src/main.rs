@@ -70,7 +70,7 @@ fn main() {
         let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
         let bytecode: ByteCode =
             deserialize(&btc_raw[..]).expect("deserialization of executable failed");
-        let mut vm = VM::new(bytecode);
+        let mut vm = VM::new(bytecode, None);
         vm.run();
         println!("Result: {:?}", vm.pop_last());
         match time.elapsed() {

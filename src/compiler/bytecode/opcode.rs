@@ -34,6 +34,7 @@ pub enum OpCode {
     OpVarReassign(u16),
     OpJump(u16),
     OpJumpIfFalse(u16),
+    OpCall,
     OpBlockStart,
     OpBlockEnd,
     OpPop,
@@ -67,6 +68,7 @@ impl OpCode {
             Self::OpVarReassign(i) => make_three_byte_op(0x2B, *i),
             Self::OpBlockStart => vec![0x2C],
             Self::OpBlockEnd => vec![0x2D],
+            Self::OpCall => vec![0x2E],
         }
     }
 }

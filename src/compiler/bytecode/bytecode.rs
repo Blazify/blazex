@@ -30,6 +30,7 @@ pub enum Constants {
     String(String),
     Char(char),
     Boolean(bool),
+    Function(Vec<u16>, ByteCode),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -286,6 +287,35 @@ impl ByteCodeGen {
                 let jmp = self.add_instruction(OpCode::OpJump(0));
                 self.patch_jump_if_false(idx, None);
                 self.patch_jump(jmp, Some(init as u16));
+            }
+            Node::FunDef {
+                name,
+                body_node,
+                arg_tokens,
+            } => {
+                let mut func_byte = ByteCodeGen::new();
+                func_byte.compile_node(*body_node);
+                let args: Vec<u16> = arg_tokens
+                    .iter()
+                    .map(|x| self.variable(x.value.into_string()))
+                    .collect();
+                let idx = self.add_constant(Constants::Function(args, func_byte.bytecode));
+                self.add_instruction(OpCode::OpConstant(idx));
+                if name.is_some() {
+                    let idx = self.add_constant(Constants::Boolean(true));
+                    self.add_instruction(OpCode::OpConstant(idx));
+                    let id = self.variable(name.unwrap().value.into_string());
+                    self.add_instruction(OpCode::OpVarAssign(id));
+                }
+            }
+            Node::CallNode { node_to_call, args } => {
+                self.add_instruction(OpCode::OpBlockStart);
+                for arg in args {
+                    self.compile_node(arg);
+                }
+                self.compile_node(*node_to_call);
+                self.add_instruction(OpCode::OpCall);
+                self.add_instruction(OpCode::OpBlockEnd);
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }

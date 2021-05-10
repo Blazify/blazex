@@ -27,12 +27,19 @@ pub struct VM {
 }
 
 impl VM {
-    pub fn new(bytecode: ByteCode) -> Self {
+    pub fn new(
+        bytecode: ByteCode,
+        symbols: Option<Vec<HashMap<usize, (Constants, bool)>>>,
+    ) -> Self {
         Self {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
-            symbols: vec![HashMap::new()],
+            symbols: if symbols.is_none() {
+                vec![HashMap::new()]
+            } else {
+                symbols.unwrap()
+            },
         }
     }
 
@@ -302,6 +309,22 @@ impl VM {
                 0x2D => {
                     self.symbols.pop();
                 }
+                0x2E => match self.pop() {
+                    Constants::Function(args, body) => {
+                        for arg in args {
+                            let eval_arg = self.pop();
+                            self.symbols
+                                .last_mut()
+                                .unwrap()
+                                .insert(arg as usize, (eval_arg, true));
+                        }
+                        let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
+                        fun_vm.run();
+                        self.push(fun_vm.pop_last().clone());
+                        self.symbols = fun_vm.symbols;
+                    }
+                    _ => panic!("Unknown Types applied to OpCall"),
+                },
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
                     self.bytecode.instructions[address - 1],
