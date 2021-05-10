@@ -1,4 +1,4 @@
-name: Build and upload binaries to release
+name: Run Tests
 
 on:
   push:
