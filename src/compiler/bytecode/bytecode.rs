@@ -15,9 +15,7 @@
 */
 use crate::compiler::bytecode::opcode::OpCode;
 use crate::compiler::parser::nodes::Node;
-use crate::compiler::token::Token;
 use crate::utils::constants::{DynType, Tokens};
-use crate::utils::position::Position;
 use crate::LanguageServer;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -93,15 +91,8 @@ impl ByteCodeGen {
 
     fn variable(&mut self, k: String) -> u16 {
         return *self.variables.clone().get(&k).unwrap_or_else(|| -> &u16 {
-            self.variables.insert(
-                k.clone(),
-                *self.variables.values().last().unwrap_or(&0)
-                    + if self.variables.values().len() == 0 {
-                        0
-                    } else {
-                        1
-                    },
-            );
+            self.variables
+                .insert(k.clone(), *self.variables.values().last().unwrap_or(&0) + 1);
             self.variables.get(&k).unwrap()
         });
     }
@@ -208,20 +199,9 @@ impl ByteCodeGen {
                 let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarReassign(id));
             }
-            Node::IfNode {
-                mut cases,
-                else_case,
-            } => {
+            Node::IfNode { cases, else_case } => {
                 let mut jumps = vec![];
-                if else_case.is_some() {
-                    let pos = Position::new(-1, -1, -1, "", "");
-                    cases.push((
-                        Node::BooleanNode {
-                            token: Token::new(Tokens::Boolean, pos, pos, DynType::Boolean(true)),
-                        },
-                        else_case.unwrap(),
-                    ));
-                }
+
                 for (expr, body) in cases {
                     self.compile_node(expr.clone());
                     let idx = self.add_instruction(OpCode::OpJumpIfFalse(0));
@@ -231,6 +211,12 @@ impl ByteCodeGen {
                     let idx_1 = self.add_instruction(OpCode::OpJump(0));
                     jumps.push(idx_1);
                     self.patch_jump_if_false(idx, None);
+                }
+
+                if else_case.is_some() {
+                    self.add_instruction(OpCode::OpBlockStart);
+                    self.compile_node(else_case.unwrap());
+                    self.add_instruction(OpCode::OpBlockEnd);
                 }
 
                 for jump in jumps {
@@ -247,25 +233,25 @@ impl ByteCodeGen {
                 self.compile_node(*start_value);
                 let idx = self.add_constant(Constants::Boolean(true));
                 self.add_instruction(OpCode::OpConstant(idx));
-                let id = self.variable(var_name_token.value.into_string());
-                self.add_instruction(OpCode::OpVarAssign(id));
+                let id_1 = self.variable(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAssign(id_1));
 
                 let init = self.bytecode.instructions.len();
 
-                let id = self.variable(var_name_token.value.into_string());
-                self.add_instruction(OpCode::OpVarAccess(id));
+                let id_2 = self.variable(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id_2));
                 self.compile_node(*end_value);
                 self.add_instruction(OpCode::OpNotEquals);
 
                 let idx_3 = self.add_instruction(OpCode::OpJumpIfFalse(1));
 
-                let id = self.variable(var_name_token.value.into_string());
-                self.add_instruction(OpCode::OpVarAccess(id));
+                let id_3 = self.variable(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id_3));
                 self.compile_node(*step_value_node);
                 self.add_instruction(OpCode::OpAdd);
 
-                let id = self.variable(var_name_token.value.into_string());
-                self.add_instruction(OpCode::OpVarReassign(id));
+                let id_4 = self.variable(var_name_token.value.into_string());
+                self.add_instruction(OpCode::OpVarReassign(id_4));
 
                 self.add_instruction(OpCode::OpBlockStart);
                 self.compile_node(*body_node.clone());
@@ -295,15 +281,16 @@ impl ByteCodeGen {
             } => {
                 let mut func_byte = ByteCodeGen::new();
                 func_byte.compile_node(*body_node);
-                let args: Vec<u16> = arg_tokens
-                    .iter()
-                    .map(|x| self.variable(x.value.into_string()))
-                    .collect();
+                let mut args: Vec<u16> = vec![];
+                for arg in arg_tokens {
+                    let id = self.variable(arg.value.into_string());
+                    args.push(id);
+                }
                 let idx = self.add_constant(Constants::Function(args, func_byte.bytecode));
                 self.add_instruction(OpCode::OpConstant(idx));
                 if name.is_some() {
-                    let idx = self.add_constant(Constants::Boolean(true));
-                    self.add_instruction(OpCode::OpConstant(idx));
+                    let idx_ = self.add_constant(Constants::Boolean(false));
+                    self.add_instruction(OpCode::OpConstant(idx_));
                     let id = self.variable(name.unwrap().value.into_string());
                     self.add_instruction(OpCode::OpVarAssign(id));
                 }

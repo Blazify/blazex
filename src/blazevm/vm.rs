@@ -275,6 +275,9 @@ impl VM {
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
+                        if self.get_from_hash_table(i).is_some() {
+                            panic!("Variable already assigned")
+                        }
                         let n = self.pop();
                         self.symbols.last_mut().unwrap().insert(i, (n, b));
                     }
@@ -298,7 +301,7 @@ impl VM {
                         panic!("No variable found to be reassigned")
                     }
 
-                    if self.get_from_hash_table(i).unwrap().1 == false {
+                    if !self.get_from_hash_table(i).unwrap().1 {
                         panic!("Variable not reassignable")
                     }
 
@@ -317,6 +320,7 @@ impl VM {
                                 .last_mut()
                                 .unwrap()
                                 .insert(arg as usize, (eval_arg, true));
+                            println!("{:#?}", self.symbols);
                         }
                         let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
                         fun_vm.run();
