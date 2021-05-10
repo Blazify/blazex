@@ -85,6 +85,10 @@ println(ins.sum_to_a(5));
 $ npm i -g commitizen
 $ npm i -g cz-conventional-changelog
 $ echo '{ "path": "cz-conventional-changelog" }' > ~/.czrc
+$ npm root -g
+# use the output of the above command instead of PATH
+# edit PATH/commitizen/node_modules/conventional-commit-types/index.json
+# use https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538
 ```
 
 For commiting use the command `cz`. But make sure to use `git add .` before that too.
