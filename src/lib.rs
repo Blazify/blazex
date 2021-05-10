@@ -15,6 +15,7 @@
 */
 #![allow(unused_assignments)]
 #![allow(mutable_borrow_reservation_conflict)]
+
 // Core
 pub mod compiler {
     // Token

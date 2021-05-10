@@ -1,36 +1,34 @@
-name: Blazescript
+name: Build and upload binaries to release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
-
-env:
-  CARGO_TERM_COLOR: always
+    branches:
+      - main
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  release:
+    name: Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: blazescript
+          - os: macos-latest
+            artifact_name: blazescript
+          - os: windows-latest
+            artifact_name: blazescript.exe
     steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cargo run --release -- examples/main.bzs
-          cargo run --release --quiet -- examples/main.bze
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cargo run --release -- examples/main.bzs
-          cargo run --release --quiet -- examples/main.bze
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: |
-          cargo run --release -- examples/main.bzs
-          cargo run --release --quiet -- examples/main.bze
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build project
+        run: cargo build --release
+      - name: Strip Executable
+        run: strip target/release/${{ matrix.artifact_name }}
+      - name: Compile
+        run: ./target/release/${{ matrix.artifact_name }} examples/main.bzs
+      - name: Interpret
+        run: ./target/release/${{ matrix.artifact_name }} examples/main.bze

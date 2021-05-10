@@ -268,6 +268,9 @@ impl VM {
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
+                        if self.get_from_hash_table(i).is_some() {
+                            panic!("No variable found to be reassigned")
+                        }
                         let n = self.pop();
                         self.symbols.last_mut().unwrap().insert(i, (n, b));
                     }

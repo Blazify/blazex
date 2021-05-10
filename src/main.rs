@@ -13,8 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #![allow(unused_must_use)]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use bincode::{deserialize, serialize};
 use blazescript::{
     blazevm::vm::VM,
