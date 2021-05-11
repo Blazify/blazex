@@ -4,13 +4,19 @@
 
 [Github Releases](https://github.com/BlazifyOrg/blazescript/releases)
 
-## Building
+## Installing
+
+In Ubuntu Or MacOS
 
 ```shell
-# install rust
-$ git clone https://github.com/BlazifyOrg/blazescript.git
-$ cd blazescript
-$ bash ./build.sh
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
+```
+
+In Windows
+
+```shell
+$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh -o install.sh
+$ start install.sh
 ```
 
 ## Note
