@@ -24,6 +24,10 @@ else
     exe="$bin_dir/blazescript"
 fi
 
+if [ ! -d "$bin_dir" ]; then
+	mkdir -p "$bin_dir"
+fi
+
 if [ $# -eq 0 ]; then
 	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/latest/download/${target}"
 else
