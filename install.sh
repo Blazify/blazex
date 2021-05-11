@@ -9,7 +9,10 @@ fi
 bzs_install="${BZS_INSTALL:-$HOME/.bzs}"
 bin_dir="$bzs_install/bin"
 
-mkdir $bin_dir
+if [ ! -d "$bin_dir" ]; then
+	mkdir -p "$bin_dir"
+fi
+
 cd $bin_dir
 
 if [ "$OS" = "Windows_NT" ]; then
@@ -24,9 +27,6 @@ else
     exe="$bin_dir/blazescript"
 fi
 
-if [ ! -d "$bin_dir" ]; then
-	mkdir -p "$bin_dir"
-fi
 
 if [ $# -eq 0 ]; then
 	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/latest/download/${target}"
