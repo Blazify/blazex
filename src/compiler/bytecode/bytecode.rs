@@ -23,12 +23,15 @@ use std::fmt::{Display, Error as E, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Constants {
+    None,
     Int(i128),
     Float(f64),
     String(String),
     Char(char),
     Boolean(bool),
     Function(Vec<u16>, ByteCode),
+    RawArray(ByteCode),
+    Array(Vec<Constants>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -305,6 +308,15 @@ impl ByteCodeGen {
                 self.compile_node(*node_to_call);
                 self.add_instruction(OpCode::OpCall);
                 self.add_instruction(OpCode::OpBlockEnd);
+            }
+            Node::ArrayNode { element_nodes } => {
+                let mut array = ByteCodeGen::new();
+                for element in element_nodes {
+                    array.compile_node(element);
+                }
+
+                let idx = self.add_constant(Constants::RawArray(array.bytecode));
+                self.add_instruction(OpCode::OpConstant(idx));
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }

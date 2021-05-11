@@ -56,7 +56,22 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    self.push(self.bytecode.constants[idx].clone());
+                    let k = self.bytecode.constants[idx].clone();
+                    match k {
+                        Constants::RawArray(bytc) => {
+                            let mut array = VM::new(bytc, Some(self.symbols.clone()));
+                            array.run();
+                            let mut vec_arr = array.stack.clone().to_vec();
+                            let len = vec_arr.len().clone();
+                            for i in (0..len).rev() {
+                                if let Constants::None = vec_arr[i] {
+                                    vec_arr.pop();
+                                }
+                            }
+                            self.push(Constants::Array(vec_arr));
+                        }
+                        _ => self.push(k),
+                    }
                 }
                 0x02 => {
                     self.pop();
@@ -70,6 +85,10 @@ impl VM {
                     }
                     (Constants::String(rhs), Constants::String(lhs)) => {
                         self.push(Constants::String(lhs + &rhs))
+                    }
+                    (a, Constants::Array(mut lhs)) => {
+                        lhs.push(a);
+                        self.push(Constants::Array(lhs));
                     }
                     _ => panic!("Unknown types to OpAdd"),
                 },
@@ -104,6 +123,9 @@ impl VM {
                     (Constants::Int(rhs), Constants::String(lhs)) => self.push(Constants::String(
                         (lhs.as_bytes()[rhs as usize] as char).to_string(),
                     )),
+                    (Constants::Int(i), Constants::Array(a)) => {
+                        self.push(a.get(i as usize).expect("Index out of bound").clone());
+                    }
                     _ => panic!("Unknown types to OpDivide"),
                 },
                 0x07 => match (self.pop(), self.pop()) {

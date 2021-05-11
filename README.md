@@ -86,6 +86,10 @@ println(ins);
 println(ins.sum_to_a(5));
 ```
 
+## Dependencies
+
+We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible
+
 ## Contributing
 
 - Please use the given below commands
@@ -147,7 +151,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] While loop
   - [x] Functions
   - [x] Calling functions
-  - [ ] Arrays
+  - [x] Arrays
   - [ ] Objects
   - [ ] Getting Object properties
   - [ ] Reassigning Object Properties
