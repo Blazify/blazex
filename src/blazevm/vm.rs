@@ -59,6 +59,7 @@ impl VM {
                     let k = self.bytecode.constants[idx].clone();
                     match k {
                         Constants::RawArray(bytc) => {
+                            println!("{:?}", self.symbols);
                             let mut array = VM::new(bytc, Some(self.symbols.clone()));
                             array.run();
                             let mut vec_arr = array.stack.clone().to_vec();
@@ -68,6 +69,7 @@ impl VM {
                                     vec_arr.pop();
                                 }
                             }
+                            self.symbols = array.symbols;
                             self.push(Constants::Array(vec_arr));
                         }
                         _ => self.push(k),
@@ -311,7 +313,7 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    self.push(self.get_from_hash_table(i).unwrap().0);
+                    self.push(self.get_from_hash_table(i).expect("Variable not found").0);
                 }
                 0x2B => {
                     let i = convert_to_usize(

@@ -93,11 +93,13 @@ impl ByteCodeGen {
     }
 
     fn variable(&mut self, k: String) -> u16 {
-        return *self.variables.clone().get(&k).unwrap_or_else(|| -> &u16 {
+        if self.variables.contains_key(&k) {
+            self.variables.get(&k).unwrap().clone()
+        } else {
             self.variables
-                .insert(k.clone(), *self.variables.values().last().unwrap_or(&0) + 1);
-            self.variables.get(&k).unwrap()
-        });
+                .insert(k.clone(), (self.variables.len() - 1) as u16);
+            self.variables.get(&k).unwrap().clone()
+        }
     }
 
     fn add_constant(&mut self, c: Constants) -> u16 {
@@ -311,10 +313,10 @@ impl ByteCodeGen {
             }
             Node::ArrayNode { element_nodes } => {
                 let mut array = ByteCodeGen::new();
+                array.variables = self.variables.clone();
                 for element in element_nodes {
                     array.compile_node(element);
                 }
-
                 let idx = self.add_constant(Constants::RawArray(array.bytecode));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
