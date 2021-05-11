@@ -320,7 +320,6 @@ impl VM {
                                 .last_mut()
                                 .unwrap()
                                 .insert(arg as usize, (eval_arg, true));
-                            println!("{:#?}", self.symbols);
                         }
                         let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
                         fun_vm.run();

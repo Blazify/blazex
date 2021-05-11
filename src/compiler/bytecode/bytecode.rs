@@ -68,7 +68,7 @@ impl Display for ByteCode {
 #[derive(Debug, Clone)]
 pub struct ByteCodeGen {
     pub bytecode: ByteCode,
-    variables: HashMap<String, u16>,
+    pub variables: HashMap<String, u16>,
 }
 
 impl LanguageServer for ByteCodeGen {
@@ -280,12 +280,14 @@ impl ByteCodeGen {
                 arg_tokens,
             } => {
                 let mut func_byte = ByteCodeGen::new();
-                func_byte.compile_node(*body_node);
+                func_byte.variables = self.variables.clone();
                 let mut args: Vec<u16> = vec![];
                 for arg in arg_tokens {
-                    let id = self.variable(arg.value.into_string());
+                    let id = func_byte.variable(arg.value.into_string());
                     args.push(id);
                 }
+                func_byte.compile_node(*body_node);
+                self.variables = func_byte.variables;
                 let idx = self.add_constant(Constants::Function(args, func_byte.bytecode));
                 self.add_instruction(OpCode::OpConstant(idx));
                 if name.is_some() {
