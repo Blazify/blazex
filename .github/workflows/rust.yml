@@ -27,6 +27,6 @@ jobs:
       - name: Build project
         run: ./build.sh
       - name: Compile
-        run: ./target/release/${{ matrix.artifact_name }} examples/main.bzs
+        run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
       - name: Interpret
-        run: ./target/release/${{ matrix.artifact_name }} examples/main.bze
+        run: ./bin/${{ matrix.artifact_name }} examples/main.bze
