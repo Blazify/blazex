@@ -17,7 +17,7 @@ rustup toolchain install nightly
 rustup override set nightly
 rustup component add rust-src
 cargo install xargo
-xargo build --release --target $target
+xargo build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then

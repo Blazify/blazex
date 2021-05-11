@@ -2,7 +2,7 @@ name: Bump version, create new tag and release point
 on:
   push:
     branches:
-      - release
+      - main
 
 jobs:
   bump_version:
@@ -17,6 +17,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
+          DEFAULT_BUMP: patch
       - name: Repository dispatch tag created event
         uses: peter-evans/repository-dispatch@v1
         with:

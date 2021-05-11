@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 if ! command -v cargo >/dev/null; then
 	echo "Error: Rust is required to install Blazescript (see: https://www.rust-lang.org/tools/install)." 1>&2
@@ -6,17 +7,31 @@ if ! command -v cargo >/dev/null; then
 fi
 
 bzs_install="${BZS_INSTALL:-$HOME/.bzs}"
+bin_dir="$bzs_install/bin"
 
-git clone https://github.com/BlazifyOrg/blazescript.git $bzs_install
-cd $bzs_install
+mkdir $bin_dir
+cd $bin_dir
+
 if [ "$OS" = "Windows_NT" ]; then
-	start build.sh
+	target="blazescript-windows"
+    exe="$bin_dir/blazescript.exe"
 else
-    bash build.sh
+	case $(uname -sm) in
+	"Darwin x86_64") target="blazescript-macos" ;;
+	"Darwin arm64") target="blazescript-macos" ;;
+	*) target="blazescript-linux" ;;
+	esac
+    exe="$bin_dir/blazescript"
 fi
 
-bin_dir="$bzs_install/bin"
-exe="$bin_dir/blazescript"
+if [ $# -eq 0 ]; then
+	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/latest/download/${target}"
+else
+	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/download/${1}/${target}"
+fi
+
+curl --fail --location --progress-bar --output "$exe" "$bzs_uri"
+chmod +x "$exe"
 
 if command -v blazescript >/dev/null; then
     echo "Run 'blazescript [file name][(.bzs)/(.bze)]' to get started"
