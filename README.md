@@ -4,6 +4,15 @@
 
 [Github Releases](https://github.com/BlazifyOrg/blazescript/releases)
 
+## Building
+
+```shell
+# install rust
+$ git clone https://github.com/BlazifyOrg/blazescript.git
+$ cd blazescript
+$ cargo run --release
+```
+
 ## Note
 
 This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode) and we are also looking for collaborators
@@ -136,8 +145,8 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] If else
   - [x] For loop
   - [x] While loop
-  - [ ] Functions
-  - [ ] Calling functions
+  - [x] Functions
+  - [x] Calling functions
   - [ ] Arrays
   - [ ] Objects
   - [ ] Getting Object properties
@@ -150,6 +159,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
+- [x] AST
 
 ## Author
 

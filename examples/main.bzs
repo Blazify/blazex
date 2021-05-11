@@ -1,6 +1,6 @@
 var a = 0;
-fun e(b) => {
-	a = b;
+fun a_edit(b, c) => {
+	a = b + c;
 }
-e(69);
+a_edit(5, 5);
 a;
