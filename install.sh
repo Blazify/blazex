@@ -1,11 +1,6 @@
 #!/bin/sh
 set -e
 
-if ! command -v cargo >/dev/null; then
-	echo "Error: Rust is required to install Blazescript (see: https://www.rust-lang.org/tools/install)." 1>&2
-	exit 1
-fi
-
 bzs_install="${BZS_INSTALL:-$HOME/.bzs}"
 bin_dir="$bzs_install/bin"
 
