@@ -24,7 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
-        run: ./build.sh
+        run: bash ./build.sh
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:

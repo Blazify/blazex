@@ -23,8 +23,8 @@ strip $executable
 if [ ! -d "bin" ]; then
 	mkdir -p "bin"
 fi
-if [ -f "bin/blazescript" ]; then
-    rm -r "bin/blazescript"
+if [ -f "bin/$exe" ]; then
+    rm -r "bin/$exe"
 fi
 
 mv $executable bin/

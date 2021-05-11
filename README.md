@@ -10,7 +10,7 @@
 # install rust
 $ git clone https://github.com/BlazifyOrg/blazescript.git
 $ cd blazescript
-$ cargo run --release
+$ bash ./build.sh
 ```
 
 ## Note

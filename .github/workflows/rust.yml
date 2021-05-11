@@ -25,7 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
-        run: ./build.sh
+        run: bash ./build.sh
       - name: Compile
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
       - name: Interpret
