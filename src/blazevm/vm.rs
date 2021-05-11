@@ -10,10 +10,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-use crate::compiler::bytecode::{
-    bytecode::{ByteCode, Constants},
-    opcode::convert_to_usize,
-};
+use crate::compiler::bytecode::{bytecode::ByteCode, opcode::convert_to_usize};
+use crate::utils::constants::Constants;
+
 use std::collections::HashMap;
 
 const STACK_SIZE: usize = 512;
@@ -59,7 +58,6 @@ impl VM {
                     let k = self.bytecode.constants[idx].clone();
                     match k {
                         Constants::RawArray(bytc) => {
-                            println!("{:?}", self.symbols);
                             let mut array = VM::new(bytc, Some(self.symbols.clone()));
                             array.run();
                             let mut vec_arr = array.stack.clone().to_vec();

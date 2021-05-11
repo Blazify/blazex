@@ -15,24 +15,11 @@
 */
 use crate::compiler::bytecode::opcode::OpCode;
 use crate::compiler::parser::nodes::Node;
-use crate::utils::constants::{DynType, Tokens};
+use crate::utils::constants::{Constants, DynType, Tokens};
 use crate::LanguageServer;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Error as E, Formatter};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Constants {
-    None,
-    Int(i128),
-    Float(f64),
-    String(String),
-    Char(char),
-    Boolean(bool),
-    Function(Vec<u16>, ByteCode),
-    RawArray(ByteCode),
-    Array(Vec<Constants>),
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ByteCode {

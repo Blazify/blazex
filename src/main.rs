@@ -56,7 +56,7 @@ fn main() {
                         );
                     }
                     Err(e) => {
-                        println!("Error: {:?}", e);
+                        eprintln!("Error: {:?}", e);
                     }
                 }
                 exit(0);
@@ -81,7 +81,7 @@ fn main() {
                 );
             }
             Err(e) => {
-                println!("Error: {:?}", e);
+                eprintln!("Error: {:?}", e);
             }
         }
         exit(0)

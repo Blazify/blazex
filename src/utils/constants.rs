@@ -13,6 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+use crate::compiler::bytecode::bytecode::ByteCode;
+use serde::{Deserialize, Serialize};
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Tokens {
     Int,
@@ -66,6 +68,7 @@ pub fn get_keywords() -> Vec<String> {
         string("return"),
         string("class"),
         string("new"),
+        string("soul"),
     ]
 }
 
@@ -139,4 +142,17 @@ impl DynType {
             panic!()
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Constants {
+    None,
+    Int(i128),
+    Float(f64),
+    String(String),
+    Char(char),
+    Boolean(bool),
+    Function(Vec<u16>, ByteCode),
+    RawArray(ByteCode),
+    Array(Vec<Constants>),
 }

@@ -24,9 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
-        run: cargo build --release
-      - name: Strip Executable 
-        run: strip target/release/${{ matrix.artifact_name }}
+        run: ./build.sh
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
