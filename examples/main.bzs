@@ -7,5 +7,5 @@ fun loop() => {
     }
     a
 }
-var a = [loop()];
-a/0
+var loopsiedoopsie = [loop()];
+loopsiedoopsie/0

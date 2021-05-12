@@ -13,29 +13,27 @@
 use crate::compiler::bytecode::{bytecode::ByteCode, opcode::convert_to_usize};
 use crate::utils::constants::Constants;
 
-use std::collections::HashMap;
-
 const STACK_SIZE: usize = 512;
+const SYM_ARR_SIZE: usize = 50;
+type Symbol = Option<(Constants, bool)>;
 
 #[derive(Debug, Clone)]
 pub struct VM {
     bytecode: ByteCode,
     stack: [Constants; STACK_SIZE],
     stack_ptr: usize,
-    symbols: Vec<HashMap<usize, (Constants, bool)>>,
+    symbols: Vec<[Symbol; SYM_ARR_SIZE]>,
 }
 
 impl VM {
-    pub fn new(
-        bytecode: ByteCode,
-        symbols: Option<Vec<HashMap<usize, (Constants, bool)>>>,
-    ) -> Self {
+    pub fn new(bytecode: ByteCode, symbols: Option<Vec<[Symbol; SYM_ARR_SIZE]>>) -> Self {
         Self {
             bytecode,
             stack: unsafe { std::mem::zeroed() },
             stack_ptr: 0,
             symbols: if symbols.is_none() {
-                vec![HashMap::new()]
+                const S: Symbol = None;
+                vec![[S; SYM_ARR_SIZE]]
             } else {
                 symbols.unwrap()
             },
@@ -297,11 +295,11 @@ impl VM {
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
-                        if self.get_from_hash_table(i).is_some() {
+                        if self.get_symbol(i).is_some() {
                             panic!("Variable already assigned")
                         }
                         let n = self.pop();
-                        self.symbols.last_mut().unwrap().insert(i, (n, b));
+                        self.symbols.last_mut().unwrap()[i] = Some((n, b));
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
@@ -311,7 +309,13 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    self.push(self.get_from_hash_table(i).expect("Variable not found").0);
+                    self.push(
+                        self.get_symbol(i)
+                            .as_ref()
+                            .expect("Variable not found")
+                            .0
+                            .clone(),
+                    );
                 }
                 0x2B => {
                     let i = convert_to_usize(
@@ -319,18 +323,21 @@ impl VM {
                         self.bytecode.instructions[ip + 1],
                     );
                     ip += 2;
-                    if self.get_from_hash_table(i).is_none() {
+                    if self.get_symbol(i).is_none() {
                         panic!("No variable found to be reassigned")
                     }
 
-                    if !self.get_from_hash_table(i).unwrap().1 {
+                    if !self.get_symbol(i).as_ref().unwrap().1 {
                         panic!("Variable not reassignable")
                     }
 
                     let n = self.pop();
-                    self.get_and_set_hash_table(i, (n, true));
+                    self.get_set_symbols(i, Some((n, true)));
                 }
-                0x2C => self.symbols.push(HashMap::new()),
+                0x2C => {
+                    const S: Symbol = None;
+                    self.symbols.push([S; SYM_ARR_SIZE]);
+                }
                 0x2D => {
                     self.symbols.pop();
                 }
@@ -338,10 +345,7 @@ impl VM {
                     Constants::Function(args, body) => {
                         for arg in args {
                             let eval_arg = self.pop();
-                            self.symbols
-                                .last_mut()
-                                .unwrap()
-                                .insert(arg as usize, (eval_arg, true));
+                            self.symbols.last_mut().unwrap()[arg as usize] = Some((eval_arg, true));
                         }
                         let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
                         fun_vm.run();
@@ -380,21 +384,21 @@ impl VM {
         &self.stack[self.stack_ptr]
     }
 
-    pub fn get_from_hash_table(&self, k: usize) -> Option<(Constants, bool)> {
+    pub fn get_symbol(&self, k: usize) -> &Symbol {
         for idx in (0..self.symbols.len()).rev() {
-            let sym = self.symbols.get(idx).unwrap().get(&k);
+            let sym = &self.symbols.get(idx).unwrap()[k];
             if sym.is_some() {
-                return Some((sym.unwrap()).clone());
+                return sym;
             }
         }
-        None
+        &None
     }
 
-    pub fn get_and_set_hash_table(&mut self, k: usize, n: (Constants, bool)) {
+    pub fn get_set_symbols(&mut self, k: usize, n: Symbol) {
         for idx in (0..self.symbols.len()).rev() {
-            let sym = self.symbols.get(idx).unwrap().get(&k.clone());
+            let sym = &self.symbols.get(idx).unwrap()[k];
             if sym.is_some() {
-                self.symbols.get_mut(idx).unwrap().insert(k, n);
+                self.symbols.get_mut(idx).unwrap()[k] = n;
                 break;
             }
         }

@@ -43,5 +43,5 @@ else
     echo "Manually add the directory to your \$HOME/$shell_profile (or similar)"
     echo "  export BZS_INSTALL=\"$bzs_install\""
     echo "  export PATH=\"\$BZS_INSTALL/bin:\$PATH\""
-    echo "Run '$exe [file name][(.bzs)/(.bze)]' to get started"
+    echo "Run '$exe [file name].bz(e/s)' to get started"
 fi

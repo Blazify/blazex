@@ -83,8 +83,9 @@ impl ByteCodeGen {
         if self.variables.contains_key(&k) {
             self.variables.get(&k).unwrap().clone()
         } else {
+            let idx = self.variables.len().clone();
             self.variables
-                .insert(k.clone(), (self.variables.len() - 1) as u16);
+                .insert(k.clone(), (idx + if idx == 0 { 0 } else { 1 }) as u16);
             self.variables.get(&k).unwrap().clone()
         }
     }
@@ -305,6 +306,7 @@ impl ByteCodeGen {
                     array.compile_node(element);
                 }
                 let idx = self.add_constant(Constants::RawArray(array.bytecode));
+                self.variables = array.variables;
                 self.add_instruction(OpCode::OpConstant(idx));
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
