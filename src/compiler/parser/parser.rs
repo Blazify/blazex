@@ -190,7 +190,10 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
-            let expr = res.register(self.expr()).unwrap();
+            let expr = res.register(self.expr());
+            if res.error.is_some() {
+                return res;
+            }
 
             let reassignable = if var_type == String::from("var") {
                 true
@@ -199,7 +202,7 @@ impl Parser {
             };
             return res.success(Node::VarAssignNode {
                 name: var_name.clone(),
-                value: Box::new(expr),
+                value: Box::new(expr.unwrap()),
                 reassignable,
             });
         }
@@ -1186,10 +1189,10 @@ impl Parser {
                     "'}', ',' was expected.",
                 ));
             }
-        }
 
-        res.register_advancement();
-        self.advance();
+            res.register_advancement();
+            self.advance();
+        }
 
         res.success(Node::ObjectDefNode { properties })
     }

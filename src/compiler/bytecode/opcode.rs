@@ -38,6 +38,7 @@ pub enum OpCode {
     OpBlockStart,
     OpBlockEnd,
     OpIndexArray,
+    OpPropertyAccess(u16),
     OpPop,
 }
 
@@ -71,6 +72,7 @@ impl OpCode {
             Self::OpBlockEnd => vec![0x2D],
             Self::OpCall => vec![0x2E],
             Self::OpIndexArray => vec![0x2F],
+            Self::OpPropertyAccess(i) => make_three_byte_op(0x3A, *i),
         }
     }
 }

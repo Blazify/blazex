@@ -15,6 +15,7 @@
 */
 use crate::compiler::bytecode::bytecode::ByteCode;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Tokens {
     Int,
@@ -153,6 +154,6 @@ pub enum Constants {
     Char(char),
     Boolean(bool),
     Function(Vec<u16>, ByteCode),
-    RawArray(ByteCode),
     Array(Vec<Constants>),
+    Object(HashMap<usize, Constants>),
 }

@@ -300,19 +300,40 @@ impl ByteCodeGen {
                 self.add_instruction(OpCode::OpBlockEnd);
             }
             Node::ArrayNode { element_nodes } => {
-                let mut array = ByteCodeGen::new();
-                array.variables = self.variables.clone();
+                let mut array = vec![];
                 for element in element_nodes {
-                    array.compile_node(element);
+                    let mut array_btc = ByteCodeGen::new();
+                    array_btc.compile_node(element);
+                    array.push(array_btc.bytecode.constants.last().unwrap().clone())
                 }
-                let idx = self.add_constant(Constants::RawArray(array.bytecode));
-                self.variables = array.variables;
+                let idx = self.add_constant(Constants::Array(array));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
             Node::ArrayAcess { array, index } => {
                 self.compile_node(*array);
                 self.compile_node(*index);
                 self.add_instruction(OpCode::OpIndexArray);
+            }
+            Node::ObjectDefNode { properties } => {
+                let mut compiled_properties = HashMap::new();
+                for (k, v) in &properties {
+                    let id = self.variable(k.value.into_string());
+                    let mut val_btc = ByteCodeGen::new();
+                    val_btc.variables = self.variables.clone();
+                    val_btc.compile_node(v.clone());
+                    self.variables = val_btc.variables.clone();
+                    compiled_properties.insert(
+                        id as usize,
+                        val_btc.bytecode.constants.last().unwrap().clone(),
+                    );
+                }
+                let idx = self.add_constant(Constants::Object(compiled_properties));
+                self.add_instruction(OpCode::OpConstant(idx));
+            }
+            Node::ObjectPropAccess { object, property } => {
+                self.compile_node(*object);
+                let id = self.variable(property.value.into_string());
+                self.add_instruction(OpCode::OpPropertyAccess(id));
             }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }

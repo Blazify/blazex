@@ -158,11 +158,9 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] Functions
   - [x] Calling functions
   - [x] Arrays
-  - [ ] Objects
-  - [ ] Getting Object properties
-  - [ ] Reassigning Object Properties
+  - [x] Objects
   - [ ] Classes
-  - [ ] Class Initializing
+  - [ ] Proper Mutability
 
 - [ ] VM Interpreter
 
