@@ -121,9 +121,6 @@ impl VM {
                     (Constants::Int(rhs), Constants::String(lhs)) => self.push(Constants::String(
                         (lhs.as_bytes()[rhs as usize] as char).to_string(),
                     )),
-                    (Constants::Int(i), Constants::Array(a)) => {
-                        self.push(a.get(i as usize).expect("Index out of bound").clone());
-                    }
                     _ => panic!("Unknown types to OpDivide"),
                 },
                 0x07 => match (self.pop(), self.pop()) {
@@ -353,6 +350,12 @@ impl VM {
                         self.symbols = fun_vm.symbols;
                     }
                     _ => panic!("Unknown Types applied to OpCall"),
+                },
+                0x2F => match (self.pop(), self.pop()) {
+                    (Constants::Int(i), Constants::Array(a)) => {
+                        self.push(a.get(i as usize).expect("Index out of bound").clone());
+                    }
+                    _ => panic!("Unknown types applied to OpIndexArray"),
                 },
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",

@@ -77,6 +77,10 @@ pub enum Node {
     ArrayNode {
         element_nodes: Vec<Node>,
     },
+    ArrayAcess {
+        array: Box<Node>,
+        index: Box<Node>,
+    },
     Statements {
         statements: Vec<Node>,
     },

@@ -37,6 +37,7 @@ pub enum OpCode {
     OpCall,
     OpBlockStart,
     OpBlockEnd,
+    OpIndexArray,
     OpPop,
 }
 
@@ -69,6 +70,7 @@ impl OpCode {
             Self::OpBlockStart => vec![0x2C],
             Self::OpBlockEnd => vec![0x2D],
             Self::OpCall => vec![0x2E],
+            Self::OpIndexArray => vec![0x2F],
         }
     }
 }

@@ -309,6 +309,11 @@ impl ByteCodeGen {
                 self.variables = array.variables;
                 self.add_instruction(OpCode::OpConstant(idx));
             }
+            Node::ArrayAcess { array, index } => {
+                self.compile_node(*array);
+                self.compile_node(*index);
+                self.add_instruction(OpCode::OpIndexArray);
+            }
             _ => panic!("Please don't use 'bytecode' argument for this program."),
         }
     }
