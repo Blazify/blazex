@@ -1,21 +1,12 @@
-/*
-   Copyright 2021 BlazifyOrg
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-       http://www.apache.org/licenses/LICENSE-2.0
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-use crate::compiler::bytecode::{bytecode::ByteCode, opcode::convert_to_usize};
-use crate::utils::constants::Constants;
+use bzs_shared::{ByteCode, Constants};
 
 const STACK_SIZE: usize = 512;
 const SYM_ARR_SIZE: usize = 50;
 type Symbol = Option<(Constants, bool)>;
+
+pub fn convert_to_usize(int1: u8, int2: u8) -> usize {
+    ((int1 as usize) << 8) | int2 as usize
+}
 
 #[derive(Debug, Clone)]
 pub struct VM {

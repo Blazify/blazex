@@ -13,11 +13,7 @@ else
     executable="target/$target/release/$exe"
 fi
 
-rustup toolchain install nightly
-rustup override set nightly
-rustup component add rust-src
-cargo install xargo
-xargo build --locked --target $target --release
+cargo build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then

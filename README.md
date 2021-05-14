@@ -114,27 +114,46 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 
 ## Project Tree
 
+After running "./build.sh"
+
 ```
-📦src
- ┣ 📂blazevm
- ┃ ┗ 📜vm.rs
- ┣ 📂compiler
- ┃ ┣ 📂bytecode
- ┃ ┃ ┣ 📜bytecode.rs
- ┃ ┃ ┗ 📜opcode.rs
- ┃ ┣ 📂lexer
- ┃ ┃ ┗ 📜lexer.rs
- ┃ ┣ 📂parser
- ┃ ┃ ┣ 📜nodes.rs
- ┃ ┃ ┣ 📜parser.rs
- ┃ ┃ ┗ 📜parser_result.rs
- ┃ ┗ 📜token.rs
- ┣ 📂utils
- ┃ ┣ 📜constants.rs
- ┃ ┣ 📜error.rs
- ┃ ┗ 📜position.rs
- ┣ 📜lib.rs
- ┗ 📜main.rs
+.
+├── bin
+│   └── blazescript
+├── build.sh
+├── Cargo.lock
+├── Cargo.toml
+├── crates
+│   ├── blazescript
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── main.rs
+│   ├── blaze_vm
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── bzsc_bytecode
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── bzsc_lexer
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── bzsc_parser
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   └── bzs_shared
+│       ├── Cargo.toml
+│       └── src
+│           └── lib.rs
+├── examples
+│   ├── main.bze
+│   └── main.bzs
+├── install.sh
+├── LICENSE
+└── README.md
 ```
 
 # TODO

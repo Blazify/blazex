@@ -1,25 +1,7 @@
-/*
-   Copyright 2021 BlazifyOrg
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-use crate::compiler::token::Token;
-use crate::utils::{
-    constants::{
-        get_ascii_letters, get_ascii_letters_and_digits, get_keywords, get_number, DynType, Tokens,
-    },
-    error::Error,
-    position::Position,
+#![allow(unused_assignments)]
+use bzs_shared::{
+    get_ascii_letters, get_ascii_letters_and_digits, get_keywords, get_number, DynType, Error,
+    Position, Token, Tokens,
 };
 use std::convert::TryInto;
 
@@ -53,7 +35,7 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, Error> {
+    pub fn lex(&mut self) -> Result<Vec<Token>, Error> {
         let mut tokens: Vec<Token> = vec![];
 
         while self.current_char.is_some() {
