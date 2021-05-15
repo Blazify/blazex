@@ -23,4 +23,4 @@ if [ -f "bin/$exe" ]; then
     rm -r "bin/$exe"
 fi
 
-mv $executable bin/
+cp $executable bin/

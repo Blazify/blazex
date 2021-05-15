@@ -112,8 +112,8 @@ pub enum Constants {
     Char(char),
     Boolean(bool),
     Function(Vec<u16>, ByteCode),
-    Array(Vec<Constants>),
-    Object(HashMap<usize, Constants>),
+    Array(Vec<ByteCode>),
+    Object(HashMap<usize, ByteCode>),
 }
 
 #[derive(Debug, Clone)]
@@ -245,16 +245,6 @@ pub struct Token {
     pub value: DynType,
     pub pos_start: Position,
     pub pos_end: Position,
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
-        return if self.value == DynType::None {
-            write!(f, "[{:?}]", self.r#type)
-        } else {
-            write!(f, "[{:?}]", self.value)
-        };
-    }
 }
 
 impl Token {

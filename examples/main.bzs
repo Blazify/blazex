@@ -5,4 +5,4 @@ var obj = {
     }
 };
 
-obj.a
+obj.b()[5] == obj.a

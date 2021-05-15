@@ -331,14 +331,17 @@ impl VM {
                         }
                         let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
                         fun_vm.run();
-                        self.push(fun_vm.pop_last().clone());
+                        self.push(fun_vm.pop());
                         self.symbols = fun_vm.symbols;
                     }
                     _ => panic!("Unknown Types applied to OpCall"),
                 },
                 0x2F => match (self.pop(), self.pop()) {
                     (Constants::Int(i), Constants::Array(a)) => {
-                        self.push(a.get(i as usize).unwrap().clone());
+                        let e = a.get(i as usize).expect("Index out of bounds").clone();
+                        let mut vm = VM::new(e, Some(self.symbols.clone()));
+                        vm.run();
+                        self.push(vm.pop());
                     }
                     _ => panic!("Unknown types applied to OpIndexArray"),
                 },
@@ -349,9 +352,10 @@ impl VM {
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
-
-                        let btc = a.get(&i).unwrap().clone();
-                        self.push(btc);
+                        let btc = a.get(&i).expect("Unknown key").clone();
+                        let mut vm = VM::new(btc, Some(self.symbols.clone()));
+                        vm.run();
+                        self.push(vm.pop());
                     }
                     _ => panic!("Unknown types applied to OpPropertyAcess"),
                 },

@@ -29,7 +29,6 @@ dependencies = [
  "bzsc_lexer",
  "bzsc_parser",
  "mimalloc",
- "serde",
 ]
 
 [[package]]
