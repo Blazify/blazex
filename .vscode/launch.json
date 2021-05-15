@@ -6,7 +6,12 @@
       "request": "launch",
       "name": "Compile",
       "cargo": {
-        "args": ["build", "--bin=blazescript", "--package=blazescript"],
+        "args": [
+          "build",
+          "--release",
+          "--bin=blazescript",
+          "--package=blazescript"
+        ],
         "filter": {
           "name": "blazescript",
           "kind": "bin"
@@ -20,7 +25,12 @@
       "request": "launch",
       "name": "Interpret",
       "cargo": {
-        "args": ["build", "--bin=blazescript", "--package=blazescript"],
+        "args": [
+          "build",
+          "--release",
+          "--bin=blazescript",
+          "--package=blazescript"
+        ],
         "filter": {
           "name": "blazescript",
           "kind": "bin"
