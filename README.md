@@ -114,54 +114,14 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 
 ## Project Structure
 
-- [blaze_vm](https://github.com/BlazifyOrg/blazescript/tree/main/crates/blaze_vm) This is the crate for the blaze virtual machine which interprets the bytecode
-- [blazescript](https://github.com/BlazifyOrg/blazescript/tree/main/crates/blazescript) This is the crate which is the actual binary
-- [bzs_shared](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzs_shared) This is the crate which contains stuff which is used in more than one crate
-- [bzsc_bytecode](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_bytecode) This is the crate for the actual Bytecode Generation
-- [bzsc_lexer](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_lexer) This is the crate which lexes the file and returns tokens
-- [bzsc_parser](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_parser) This is the crate which parses a sequence of token and forms a AST tree
-
-After running "./build.sh"
-
-```
-.
-├── bin
-│   └── blazescript
-├── build.sh
-├── Cargo.lock
-├── Cargo.toml
-├── crates
-│   ├── blazescript
-│   │   ├── Cargo.toml
-│   │   └── src
-│   │       └── main.rs
-│   ├── blaze_vm
-│   │   ├── Cargo.toml
-│   │   └── src
-│   │       └── lib.rs
-│   ├── bzsc_bytecode
-│   │   ├── Cargo.toml
-│   │   └── src
-│   │       └── lib.rs
-│   ├── bzsc_lexer
-│   │   ├── Cargo.toml
-│   │   └── src
-│   │       └── lib.rs
-│   ├── bzsc_parser
-│   │   ├── Cargo.toml
-│   │   └── src
-│   │       └── lib.rs
-│   └── bzs_shared
-│       ├── Cargo.toml
-│       └── src
-│           └── lib.rs
-├── examples
-│   ├── main.bze
-│   └── main.bzs
-├── install.sh
-├── LICENSE
-└── README.md
-```
+|               Codebase                |                   Description                   |
+| :-----------------------------------: | :---------------------------------------------: |
+|   [blazescript](crates/blazescript)   |                   The binary                    |
+|    [bzsc_lexer](crates/bzsc_lexer)    |              Lexer for Tokenizing               |
+|   [bzsc_parser](crates/bzsc_parser)   |               Parser for AST Tree               |
+| [bzsc_bytecode](crates/bzsc_bytecode) |               Bytecode Generator                |
+|      [blaze_vm](crates/blaze_vm)      |            The bytecode interpreter             |
+|    [bzs_shared](crates/bzs_shared)    | Structs, Methods, etc Shared among other crates |
 
 # TODO
 

@@ -331,8 +331,10 @@ impl ByteCodeGen {
                 let mut array = vec![];
                 for element in element_nodes {
                     let mut array_btc = ByteCodeGen::new();
+                    array_btc.variables = self.variables.clone();
                     array_btc.compile_node(element);
                     array.push(array_btc.bytecode);
+                    self.variables = array_btc.variables;
                 }
                 let idx = self.add_constant(Constants::RawArray(array));
                 self.add_instruction(OpCode::OpConstant(idx));
@@ -349,8 +351,8 @@ impl ByteCodeGen {
                     let mut val_btc = ByteCodeGen::new();
                     val_btc.variables = self.variables.clone();
                     val_btc.compile_node(v.clone());
-                    self.variables = val_btc.variables.clone();
                     compiled_properties.insert(id as usize, val_btc.bytecode);
+                    self.variables = val_btc.variables.clone();
                 }
                 let idx = self.add_constant(Constants::RawObject(compiled_properties));
                 self.add_instruction(OpCode::OpConstant(idx));
