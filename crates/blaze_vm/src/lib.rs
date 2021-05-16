@@ -12,9 +12,7 @@
 */
 
 use bzs_shared::{ByteCode, Constants};
-use std::cell::RefCell;
-use std::mem::MaybeUninit;
-use std::rc::Rc;
+use std::{cell::RefCell, mem::MaybeUninit, rc::Rc};
 
 const STACK_SIZE: usize = 512;
 const SYM_ARR_SIZE: usize = 50;
@@ -378,6 +376,22 @@ impl VM {
                     }
                     _ => panic!("Unknown types applied to OpPropertyAcess"),
                 },
+                0x3B => {
+                    let val = self.pop();
+                    let obj = self.pop();
+
+                    let i = convert_to_usize(
+                        self.bytecode.instructions[ip],
+                        self.bytecode.instructions[ip + 1],
+                    );
+                    ip += 2;
+
+                    let btc = ByteCode {
+                        instructions: vec![1, 0, 0],
+                        constants: vec![val.borrow().clone()],
+                    };
+                    obj.borrow_mut().property_edit(i, btc);
+                }
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
                     self.bytecode.instructions[address - 1],

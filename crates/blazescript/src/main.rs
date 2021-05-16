@@ -85,7 +85,7 @@ fn main() {
             deserialize(&btc_raw[..]).expect("deserialization of executable failed");
         let mut vm = VM::new(bytecode, None);
         vm.run();
-        println!("Result: {:?}", vm.pop_last());
+        println!("Result: {:?}", vm.pop_last().borrow().clone());
         match time.elapsed() {
             Ok(elapsed) => {
                 println!(

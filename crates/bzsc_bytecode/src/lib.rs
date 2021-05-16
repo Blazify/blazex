@@ -43,6 +43,7 @@ pub enum OpCode {
     OpBlockEnd,
     OpIndexArray,
     OpPropertyAccess(u16),
+    OpPropertyAssign(u16),
     OpPop,
 }
 
@@ -77,6 +78,7 @@ impl OpCode {
             Self::OpCall => vec![0x2E],
             Self::OpIndexArray => vec![0x2F],
             Self::OpPropertyAccess(i) => make_three_byte_op(0x3A, *i),
+            Self::OpPropertyAssign(i) => make_three_byte_op(0x3B, *i),
         }
     }
 }
@@ -358,7 +360,25 @@ impl ByteCodeGen {
                 let id = self.variable(property.value.into_string());
                 self.add_instruction(OpCode::OpPropertyAccess(id));
             }
-            _ => panic!("Please don't use 'bytecode' argument for this program."),
+            Node::ObjectPropEdit {
+                object,
+                new_val,
+                property,
+            } => {
+                self.compile_node(*object);
+                self.compile_node(*new_val);
+                let id = self.variable(property.value.into_string());
+                self.add_instruction(OpCode::OpPropertyAssign(id));
+            }
+            Node::ReturnNode { .. } => {
+                todo!("Node::ReturnNode")
+            }
+            Node::ClassDefNode { .. } => {
+                todo!("Node::ClassDefNode")
+            }
+            Node::ClassInitNode { .. } => {
+                todo!("Node::ClassInitNode")
+            }
         }
     }
 

@@ -5,4 +5,5 @@ var obj = {
     }
 };
 
-obj.b()[5] == obj.a
+obj.a = 69;
+obj.a

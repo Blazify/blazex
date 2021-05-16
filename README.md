@@ -112,7 +112,14 @@ $ npm root -g
 
 For commiting use the command `cz`. But make sure to use `git add .` before that too.
 
-## Project Tree
+## Project Structure
+
+- [blaze_vm](https://github.com/BlazifyOrg/blazescript/tree/main/crates/blaze_vm) This is the crate for the blaze virtual machine which interprets the bytecode
+- [blazescript](https://github.com/BlazifyOrg/blazescript/tree/main/crates/blazescript) This is the crate which is the actual binary
+- [bzs_shared](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzs_shared) This is the crate which contains stuff which is used in more than one crate
+- [bzsc_bytecode](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_bytecode) This is the crate for the actual Bytecode Generation
+- [bzsc_lexer](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_lexer) This is the crate which lexes the file and returns tokens
+- [bzsc_parser](https://github.com/BlazifyOrg/blazescript/tree/main/crates/bzsc_parser) This is the crate which parses a sequence of token and forms a AST tree
 
 After running "./build.sh"
 

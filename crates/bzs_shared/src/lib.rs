@@ -116,6 +116,17 @@ pub enum Constants {
     Object(HashMap<usize, ByteCode>),
 }
 
+impl Constants {
+    pub fn property_edit(&mut self, i: usize, val: ByteCode) {
+        match self {
+            Self::Object(map) => {
+                map.insert(i, val);
+            }
+            _ => panic!("property_edit called on unexpected type"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Error {
     pub name: &'static str,
