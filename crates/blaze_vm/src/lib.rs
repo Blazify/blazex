@@ -12,7 +12,7 @@
 */
 
 use bzs_shared::{ByteCode, Constants};
-use std::{cell::RefCell, mem::MaybeUninit, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, mem::MaybeUninit, rc::Rc};
 
 const STACK_SIZE: usize = 512;
 const SYM_ARR_SIZE: usize = 50;
@@ -75,7 +75,43 @@ impl VM {
                     );
                     ip += 2;
                     let k = self.bytecode.constants[idx].clone();
-                    self.push(make_k(k));
+                    match k {
+                        Constants::RawArray(e) => {
+                            let mut arr = vec![];
+                            let vm = VM::new(
+                                ByteCode {
+                                    instructions: vec![],
+                                    constants: vec![],
+                                },
+                                Some(self.symbols.clone()),
+                            );
+                            for i in &e {
+                                let mut v_cl = vm.clone();
+                                v_cl.bytecode = i.clone();
+                                v_cl.run();
+                                arr.push(v_cl.stack[0].borrow().clone());
+                            }
+                            self.push(make_k(Constants::Array(arr)));
+                        }
+                        Constants::RawObject(map) => {
+                            let mut props = HashMap::new();
+                            let vm = VM::new(
+                                ByteCode {
+                                    instructions: vec![],
+                                    constants: vec![],
+                                },
+                                Some(self.symbols.clone()),
+                            );
+                            for (k, v) in &map {
+                                let mut v_clone = vm.clone();
+                                v_clone.bytecode = v.clone();
+                                v_clone.run();
+                                props.insert(k.clone(), v_clone.stack[0].borrow().clone());
+                            }
+                            self.push(make_k(Constants::Object(props)))
+                        }
+                        _ => self.push(make_k(k)),
+                    }
                 }
                 0x02 => {
                     self.pop();
@@ -354,12 +390,9 @@ impl VM {
                     _ => panic!("Unknown Types applied to OpCall"),
                 },
                 0x2F => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(i), Constants::Array(a)) => {
-                        let e = a.get(i as usize).expect("Index out of bounds").clone();
-                        let mut vm = VM::new(e, Some(self.symbols.clone()));
-                        vm.run();
-                        self.push(vm.pop());
-                    }
+                    (Constants::Int(i), Constants::Array(a)) => self.push(make_k(
+                        a.get(i as usize).expect("Index out of bound").clone(),
+                    )),
                     _ => panic!("Unknown types applied to OpIndexArray"),
                 },
                 0x3A => match self.pop().borrow().clone() {
@@ -369,10 +402,7 @@ impl VM {
                             self.bytecode.instructions[ip + 1],
                         );
                         ip += 2;
-                        let btc = a.get(&i).expect("Unknown key").clone();
-                        let mut vm = VM::new(btc, Some(self.symbols.clone()));
-                        vm.run();
-                        self.push(vm.pop());
+                        self.push(make_k(a.get(&i).expect("Property not found").clone()));
                     }
                     _ => panic!("Unknown types applied to OpPropertyAcess"),
                 },
@@ -386,11 +416,7 @@ impl VM {
                     );
                     ip += 2;
 
-                    let btc = ByteCode {
-                        instructions: vec![1, 0, 0],
-                        constants: vec![val.borrow().clone()],
-                    };
-                    obj.borrow_mut().property_edit(i, btc);
+                    obj.borrow_mut().property_edit(i, val.borrow().clone());
                 }
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",

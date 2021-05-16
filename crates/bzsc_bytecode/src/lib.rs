@@ -334,7 +334,7 @@ impl ByteCodeGen {
                     array_btc.compile_node(element);
                     array.push(array_btc.bytecode);
                 }
-                let idx = self.add_constant(Constants::Array(array));
+                let idx = self.add_constant(Constants::RawArray(array));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
             Node::ArrayAcess { array, index } => {
@@ -352,7 +352,7 @@ impl ByteCodeGen {
                     self.variables = val_btc.variables.clone();
                     compiled_properties.insert(id as usize, val_btc.bytecode);
                 }
-                let idx = self.add_constant(Constants::Object(compiled_properties));
+                let idx = self.add_constant(Constants::RawObject(compiled_properties));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
             Node::ObjectPropAccess { object, property } => {

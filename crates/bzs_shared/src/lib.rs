@@ -112,12 +112,14 @@ pub enum Constants {
     Char(char),
     Boolean(bool),
     Function(Vec<u16>, ByteCode),
-    Array(Vec<ByteCode>),
-    Object(HashMap<usize, ByteCode>),
+    RawArray(Vec<ByteCode>),
+    RawObject(HashMap<usize, ByteCode>),
+    Array(Vec<Constants>),
+    Object(HashMap<usize, Constants>),
 }
 
 impl Constants {
-    pub fn property_edit(&mut self, i: usize, val: ByteCode) {
+    pub fn property_edit(&mut self, i: usize, val: Constants) {
         match self {
             Self::Object(map) => {
                 map.insert(i, val);
