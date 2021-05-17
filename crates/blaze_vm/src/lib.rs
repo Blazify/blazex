@@ -17,7 +17,7 @@ use std::{cell::RefCell, collections::HashMap, mem::MaybeUninit, rc::Rc};
 const STACK_SIZE: usize = 512;
 const SYM_ARR_SIZE: usize = 50;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Konstants {
     None,
     Null,
@@ -54,13 +54,13 @@ pub fn convert_to_usize(int1: u8, int2: u8) -> usize {
     ((int1 as usize) << 8) | int2 as usize
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct VM {
     bytecode: ByteCode,
     stack: [K; STACK_SIZE],
     stack_ptr: usize,
     symbols: Vec<[Symbol; SYM_ARR_SIZE]>,
-    return_val: Box<Konstants>,
+    return_val: Rc<RefCell<Konstants>>,
 }
 
 impl VM {
@@ -83,7 +83,7 @@ impl VM {
             } else {
                 symbols.unwrap()
             },
-            return_val: Box::new(Konstants::None),
+            return_val: make_k(Konstants::None),
         }
     }
 
@@ -139,6 +139,22 @@ impl VM {
                         Constants::Function(args, body) => {
                             let fun_vm = VM::new(body, Some(self.symbols.clone()));
                             Konstants::Function(args, fun_vm)
+                        }
+                        Constants::RawClass(params, mut klass) => {
+                            let btc = klass.get(&(0 as usize)).unwrap().clone();
+                            klass.remove(&(0));
+                            let mut vm = VM::new(btc.clone(), Some(self.symbols.clone()));
+                            let mut props = HashMap::new();
+                            for (k, v) in &klass {
+                                let mut v_clone = vm.clone();
+                                v_clone.bytecode = v.clone();
+                                v_clone.run();
+                                props.insert(k.clone(), v_clone.stack[0].borrow().clone());
+                            }
+                            let soul = make_k(Konstants::Object(props));
+                            vm.symbols.last_mut().unwrap()[1] = Some((soul.clone(), false));
+                            vm.return_val = soul.clone();
+                            Konstants::Function(params, vm)
                         }
                         Constants::None => Konstants::None,
                         Constants::Null => Konstants::Null,
@@ -429,10 +445,9 @@ impl VM {
                         } else {
                             panic!("Unknown args")
                         }
-
                         vm.run();
                         self.symbols = vm.symbols.clone();
-                        self.push(make_k(*vm.return_val));
+                        self.push(vm.return_val.clone());
                     }
                     _ => panic!("Unknown Types applied to OpCall"),
                 },
@@ -466,7 +481,9 @@ impl VM {
                     obj.borrow_mut().property_edit(i, val.borrow().clone());
                 }
                 0x3C => {
-                    self.return_val = Box::new(self.pop().borrow().clone());
+                    if self.return_val.borrow().clone() == Konstants::None {
+                        self.return_val = self.pop().clone();
+                    }
                     return;
                 }
                 _ => panic!(

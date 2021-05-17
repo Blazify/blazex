@@ -32,7 +32,6 @@ pub fn get_keywords() -> Vec<String> {
         string("return"),
         string("class"),
         string("new"),
-        string("soul"),
     ]
 }
 

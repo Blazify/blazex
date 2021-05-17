@@ -142,7 +142,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] Functions
   - [x] Arrays
   - [x] Objects
-  - [ ] Classes
+  - [x] Classes
   - [ ] Proper Mutability
 
 - [ ] VM Interpreter

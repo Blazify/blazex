@@ -1347,29 +1347,23 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        while self.current_token.r#type != Tokens::EOF
-            && self.current_token.r#type != Tokens::RightCurlyBraces
-        {
+        while self.current_token.r#type != Tokens::RightCurlyBraces {
             while self.current_token.r#type == Tokens::Newline {
                 res.register_advancement();
                 self.advance();
             }
-
-            let expr = res.register(self.expr());
+            if self.current_token.r#type == Tokens::RightCurlyBraces {
+                break;
+            }
+            let stnts = res.register(self.expr());
             if res.error.is_some() {
                 return res;
             }
-
-            while self.current_token.r#type == Tokens::Newline {
-                res.register_advancement();
-                self.advance();
-            }
-
-            let expr_ = expr.clone().unwrap().clone();
-
-            match expr_.clone() {
+            let a = stnts.unwrap();
+            match a.clone() {
+                Node::VarAssignNode { name, value, .. } => properties.push((name.clone(), *value.clone())),
                 Node::FunDef { name, .. } => {
-                    if name.is_none() {
+                    if name.as_ref().is_none() {
                         if constructor.is_some() {
                             return res.failure(Error::new(
                                 "Invalid Syntax",
@@ -1378,12 +1372,11 @@ impl Parser {
                                 "Constructor defined",
                             ));
                         }
-                        constructor = Some(expr_);
+                        constructor = Some(a.clone());
                     } else {
-                        methods.push((name.unwrap(), expr_))
+                        methods.push((name.as_ref().unwrap().clone(), a.clone()));
                     }
                 }
-                Node::VarAssignNode { name, .. } => properties.push((name, expr_)),
                 _ => {
                     return res.failure(Error::new(
                         "Invalid Syntax",

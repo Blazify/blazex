@@ -103,7 +103,7 @@ impl DynType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Constants {
     None,
     Null,
@@ -115,6 +115,7 @@ pub enum Constants {
     Function(Vec<u16>, ByteCode),
     RawArray(Vec<ByteCode>),
     RawObject(HashMap<usize, ByteCode>),
+    RawClass(Vec<u16>, HashMap<usize, ByteCode>),
 }
 
 #[derive(Debug, Clone)]
@@ -359,7 +360,7 @@ pub enum Node {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ByteCode {
     pub instructions: Vec<u8>,
     pub constants: Vec<Constants>,

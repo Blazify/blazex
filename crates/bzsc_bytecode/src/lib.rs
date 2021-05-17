@@ -103,9 +103,12 @@ pub struct ByteCodeGen {
 
 impl ByteCodeGen {
     pub fn new() -> Self {
+        let mut variables = HashMap::new();
+        variables.insert(String::from(""), 0);
+        variables.insert(String::from("soul"), 1);
         Self {
             bytecode: ByteCode::new(),
-            variables: HashMap::new(),
+            variables,
         }
     }
 
@@ -302,8 +305,7 @@ impl ByteCodeGen {
                 body_node,
                 arg_tokens,
             } => {
-                let mut func_byte = ByteCodeGen::new();
-                func_byte.variables = self.variables.clone();
+                let mut func_byte = self.clear();
                 let mut args: Vec<u16> = vec![];
                 for arg in arg_tokens {
                     let id = func_byte.variable(arg.value.into_string());
@@ -321,11 +323,10 @@ impl ByteCodeGen {
                 }
             }
             Node::CallNode { node_to_call, args } => {
-                self.add_instruction(OpCode::OpBlockStart);
                 let mut array = vec![];
+                self.add_instruction(OpCode::OpBlockStart);
                 for arg in &args {
-                    let mut array_btc = ByteCodeGen::new();
-                    array_btc.variables = self.variables.clone();
+                    let mut array_btc = self.clear();
                     array_btc.compile_node(arg.clone());
                     array.push(array_btc.bytecode);
                     self.variables = array_btc.variables;
@@ -339,8 +340,7 @@ impl ByteCodeGen {
             Node::ArrayNode { element_nodes } => {
                 let mut array = vec![];
                 for element in element_nodes {
-                    let mut array_btc = ByteCodeGen::new();
-                    array_btc.variables = self.variables.clone();
+                    let mut array_btc = self.clear();
                     array_btc.compile_node(element);
                     array.push(array_btc.bytecode);
                     self.variables = array_btc.variables;
@@ -357,8 +357,7 @@ impl ByteCodeGen {
                 let mut compiled_properties = HashMap::new();
                 for (k, v) in &properties {
                     let id = self.variable(k.value.into_string());
-                    let mut val_btc = ByteCodeGen::new();
-                    val_btc.variables = self.variables.clone();
+                    let mut val_btc = self.clear();
                     val_btc.compile_node(v.clone());
                     compiled_properties.insert(id as usize, val_btc.bytecode);
                     self.variables = val_btc.variables.clone();
@@ -390,11 +389,64 @@ impl ByteCodeGen {
 
                 self.add_instruction(OpCode::OpReturn);
             }
-            Node::ClassDefNode { .. } => {
-                todo!("Node::ClassDefNode")
+            Node::ClassDefNode {
+                constructor,
+                methods,
+                name,
+                properties,
+            } => {
+                let mut props = HashMap::new();
+                let mut btc = self.clear();
+                let mut args = vec![];
+                if constructor.is_some() {
+                    btc.compile_node(constructor.unwrap());
+                    let func = btc.bytecode.constants.last().unwrap().clone();
+                    match func {
+                        Constants::Function(i, _) => {
+                            args.extend(i);
+                        }
+                        _ => panic!("Expected function as constructor"),
+                    }
+                    props.insert(0, btc.bytecode.clone());
+                    btc = btc.clear();
+                }
+
+                let mut prop_temp = properties.clone();
+                prop_temp.extend(methods);
+
+                for (name, body) in &prop_temp {
+                    btc = btc.clear();
+                    let id = btc.variable(name.value.into_string()) as usize;
+                    btc.compile_node(body.clone());
+                    props.insert(id, btc.bytecode.clone());
+                }
+
+                self.variables = btc.variables;
+                let idx = self.add_constant(Constants::RawClass(args, props));
+                self.add_instruction(OpCode::OpConstant(idx));
+                let id = self.variable(name.value.into_string());
+                let idx_2 = self.add_constant(Constants::Boolean(false));
+                self.add_instruction(OpCode::OpConstant(idx_2));
+                self.add_instruction(OpCode::OpVarAssign(id));
             }
-            Node::ClassInitNode { .. } => {
-                todo!("Node::ClassInitNode")
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+            } => {
+                self.add_instruction(OpCode::OpBlockStart);
+                let mut array = vec![];
+                for arg in &constructor_params {
+                    let mut array_btc = self.clear();
+                    array_btc.compile_node(arg.clone());
+                    array.push(array_btc.bytecode);
+                    self.variables = array_btc.variables;
+                }
+                let idx = self.add_constant(Constants::RawArray(array));
+                self.add_instruction(OpCode::OpConstant(idx));
+                let id = self.variable(name.value.into_string());
+                self.add_instruction(OpCode::OpVarAccess(id));
+                self.add_instruction(OpCode::OpCall);
+                self.add_instruction(OpCode::OpBlockEnd);
             }
         }
     }
@@ -419,5 +471,11 @@ impl ByteCodeGen {
         };
         self.bytecode.instructions[(idx + 1) as usize] = jump_temp[1];
         self.bytecode.instructions[(idx + 2) as usize] = jump_temp[2];
+    }
+
+    pub fn clear(&self) -> Self {
+        let mut cl = self.clone();
+        cl.bytecode = ByteCode::new();
+        cl
     }
 }
