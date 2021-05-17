@@ -1,4 +1,10 @@
-fun a(i) => {
-	fun() => { i }
+var obj = {
+	"a": 23 * 3,
+	"b": fun(i) => {
+		return [23 * i];
+	},
+	"c": fun(i) => {
+		return fun() => { return 23 * i };
+	}
 };
-a(5)()
+obj.c(3)()

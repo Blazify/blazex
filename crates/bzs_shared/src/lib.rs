@@ -106,6 +106,7 @@ impl DynType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Constants {
     None,
+    Null,
     Int(i128),
     Float(f64),
     String(String),

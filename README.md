@@ -135,14 +135,11 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] Booleans
   - [x] Binary Operations
   - [x] Unary Operations
-  - [x] Variable Assignment
-  - [x] Variable Reassignment
-  - [x] Variable Access
+  - [x] Variables
   - [x] If else
   - [x] For loop
   - [x] While loop
   - [x] Functions
-  - [x] Calling functions
   - [x] Arrays
   - [x] Objects
   - [ ] Classes

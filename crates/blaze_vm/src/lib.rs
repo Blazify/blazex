@@ -20,6 +20,7 @@ const SYM_ARR_SIZE: usize = 50;
 #[derive(Debug, Clone)]
 pub enum Konstants {
     None,
+    Null,
     Int(i128),
     Float(f64),
     String(String),
@@ -59,6 +60,7 @@ pub struct VM {
     stack: [K; STACK_SIZE],
     stack_ptr: usize,
     symbols: Vec<[Symbol; SYM_ARR_SIZE]>,
+    return_val: Box<Konstants>,
 }
 
 impl VM {
@@ -81,6 +83,7 @@ impl VM {
             } else {
                 symbols.unwrap()
             },
+            return_val: Box::new(Konstants::None),
         }
     }
 
@@ -138,6 +141,7 @@ impl VM {
                             Konstants::Function(args, fun_vm)
                         }
                         Constants::None => Konstants::None,
+                        Constants::Null => Konstants::Null,
                         Constants::Int(x) => Konstants::Int(x),
                         Constants::Float(x) => Konstants::Float(x),
                         Constants::String(x) => Konstants::String(x),
@@ -417,7 +421,7 @@ impl VM {
                         }
                         vm.run();
                         self.symbols = vm.symbols.clone();
-                        self.push(vm.pop_last());
+                        self.push(make_k(*vm.return_val));
                     }
                     _ => panic!("Unknown Types applied to OpCall"),
                 },
@@ -449,6 +453,10 @@ impl VM {
                     ip += 2;
 
                     obj.borrow_mut().property_edit(i, val.borrow().clone());
+                }
+                0x3C => {
+                    self.return_val = Box::new(self.pop().borrow().clone());
+                    return;
                 }
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
