@@ -415,10 +415,21 @@ impl VM {
                 }
                 0x2E => match self.pop().borrow().clone() {
                     Konstants::Function(args, mut vm) => {
-                        for arg in args {
-                            let eval_arg = self.pop();
-                            vm.symbols.last_mut().unwrap()[arg as usize] = Some((eval_arg, true));
+                        let eval_args = self.pop().borrow().clone();
+                        if let Konstants::Array(a) = eval_args {
+                            if a.len() != args.len() {
+                                panic!("Expected {} args but found {}", args.len(), a.len());
+                            }
+                            let mut i = 0;
+                            for arg in args {
+                                vm.symbols.last_mut().unwrap()[arg as usize] =
+                                    Some((make_k(a.get(i).unwrap().clone()), true));
+                                i += 1;
+                            }
+                        } else {
+                            panic!("Unknown args")
                         }
+
                         vm.run();
                         self.symbols = vm.symbols.clone();
                         self.push(make_k(*vm.return_val));

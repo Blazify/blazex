@@ -322,9 +322,16 @@ impl ByteCodeGen {
             }
             Node::CallNode { node_to_call, args } => {
                 self.add_instruction(OpCode::OpBlockStart);
-                for arg in args {
-                    self.compile_node(arg);
+                let mut array = vec![];
+                for arg in &args {
+                    let mut array_btc = ByteCodeGen::new();
+                    array_btc.variables = self.variables.clone();
+                    array_btc.compile_node(arg.clone());
+                    array.push(array_btc.bytecode);
+                    self.variables = array_btc.variables;
                 }
+                let idx = self.add_constant(Constants::RawArray(array));
+                self.add_instruction(OpCode::OpConstant(idx));
                 self.compile_node(*node_to_call);
                 self.add_instruction(OpCode::OpCall);
                 self.add_instruction(OpCode::OpBlockEnd);
