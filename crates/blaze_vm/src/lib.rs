@@ -17,9 +17,33 @@ use std::{cell::RefCell, collections::HashMap, mem::MaybeUninit, rc::Rc};
 const STACK_SIZE: usize = 512;
 const SYM_ARR_SIZE: usize = 50;
 
-type K = Rc<RefCell<Constants>>;
+#[derive(Debug, Clone)]
+pub enum Konstants {
+    None,
+    Int(i128),
+    Float(f64),
+    String(String),
+    Char(char),
+    Boolean(bool),
+    Array(Vec<Konstants>),
+    Object(HashMap<usize, Konstants>),
+    Function(Vec<u16>, VM),
+}
 
-fn make_k(k: Constants) -> K {
+impl Konstants {
+    pub fn property_edit(&mut self, i: usize, val: Konstants) {
+        match self {
+            Self::Object(map) => {
+                map.insert(i, val);
+            }
+            _ => panic!("property_edit called on unexpected type"),
+        }
+    }
+}
+
+type K = Rc<RefCell<Konstants>>;
+
+fn make_k(k: Konstants) -> K {
     Rc::new(RefCell::new(k))
 }
 
@@ -41,15 +65,14 @@ impl VM {
     pub fn new(bytecode: ByteCode, symbols: Option<Vec<[Symbol; SYM_ARR_SIZE]>>) -> Self {
         Self {
             bytecode,
-            stack: {
-                let mut data: [MaybeUninit<K>; STACK_SIZE] =
-                    unsafe { MaybeUninit::uninit().assume_init() };
+            stack: unsafe {
+                let mut data: [MaybeUninit<K>; STACK_SIZE] = MaybeUninit::uninit().assume_init();
 
                 for elem in &mut data[..] {
-                    *elem = MaybeUninit::new(make_k(Constants::None));
+                    *elem = MaybeUninit::new(make_k(Konstants::None));
                 }
 
-                unsafe { std::mem::transmute::<_, [K; STACK_SIZE]>(data) }
+                std::mem::transmute::<_, [K; STACK_SIZE]>(data)
             },
             stack_ptr: 0,
             symbols: if symbols.is_none() {
@@ -75,7 +98,7 @@ impl VM {
                     );
                     ip += 2;
                     let k = self.bytecode.constants[idx].clone();
-                    match k {
+                    let konstant = match k {
                         Constants::RawArray(e) => {
                             let mut arr = vec![];
                             let vm = VM::new(
@@ -91,7 +114,7 @@ impl VM {
                                 v_cl.run();
                                 arr.push(v_cl.stack[0].borrow().clone());
                             }
-                            self.push(make_k(Constants::Array(arr)));
+                            Konstants::Array(arr)
                         }
                         Constants::RawObject(map) => {
                             let mut props = HashMap::new();
@@ -108,65 +131,75 @@ impl VM {
                                 v_clone.run();
                                 props.insert(k.clone(), v_clone.stack[0].borrow().clone());
                             }
-                            self.push(make_k(Constants::Object(props)))
+                            Konstants::Object(props)
                         }
-                        _ => self.push(make_k(k)),
-                    }
+                        Constants::Function(args, body) => {
+                            let fun_vm = VM::new(body, Some(self.symbols.clone()));
+                            Konstants::Function(args, fun_vm)
+                        }
+                        Constants::None => Konstants::None,
+                        Constants::Int(x) => Konstants::Int(x),
+                        Constants::Float(x) => Konstants::Float(x),
+                        Constants::String(x) => Konstants::String(x),
+                        Constants::Char(x) => Konstants::Char(x),
+                        Constants::Boolean(x) => Konstants::Boolean(x),
+                    };
+                    self.push(make_k(konstant));
                 }
                 0x02 => {
                     self.pop();
                 }
                 0x03 => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Int(lhs + rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Int(lhs + rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Float(lhs + rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Float(lhs + rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::String(lhs + &rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::String(lhs + &rhs)))
                     }
                     _ => panic!("Unknown types to OpAdd"),
                 },
                 0x04 => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Int(lhs - rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Int(lhs - rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Float(lhs - rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Float(lhs - rhs)))
                     }
                     _ => panic!("Unknown types to OpSub"),
                 },
                 0x05 => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Int(lhs * rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Int(lhs * rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Float(lhs * rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Float(lhs * rhs)))
                     }
-                    (Constants::Int(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::String(lhs.repeat(rhs as usize))))
+                    (Konstants::Int(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::String(lhs.repeat(rhs as usize))))
                     }
                     _ => panic!("Unknown types to OpMultiply"),
                 },
                 0x06 => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Int(lhs / rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Int(lhs / rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Float(lhs / rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Float(lhs / rhs)))
                     }
-                    (Constants::Int(rhs), Constants::String(lhs)) => self.push(make_k(
-                        Constants::String((lhs.as_bytes()[rhs as usize] as char).to_string()),
+                    (Konstants::Int(rhs), Konstants::String(lhs)) => self.push(make_k(
+                        Konstants::String((lhs.as_bytes()[rhs as usize] as char).to_string()),
                     )),
                     _ => panic!("Unknown types to OpDivide"),
                 },
                 0x07 => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Int(lhs.pow(rhs as u32))))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Int(lhs.pow(rhs as u32))))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Float(lhs.powf(rhs))))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Float(lhs.powf(rhs))))
                     }
                     _ => panic!("Unknown types to OpPower"),
                 },
@@ -177,7 +210,7 @@ impl VM {
                     );
                 }
                 0x09 => match self.pop().borrow().clone() {
-                    Constants::Boolean(b) => {
+                    Konstants::Boolean(b) => {
                         if !b {
                             ip = convert_to_usize(
                                 self.bytecode.instructions[ip],
@@ -190,141 +223,141 @@ impl VM {
                     _ => panic!("Unknown types to OpJump"),
                 },
                 0x0A => match self.pop().borrow().clone() {
-                    Constants::Int(num) => self.push(make_k(Constants::Int(num * 1))),
-                    Constants::Float(num) => self.push(make_k(Constants::Float(num * 1.0))),
+                    Konstants::Int(num) => self.push(make_k(Konstants::Int(num * 1))),
+                    Konstants::Float(num) => self.push(make_k(Konstants::Float(num * 1.0))),
                     _ => panic!("Unknown arg type to OpPlus"),
                 },
                 0x0B => match self.pop().borrow().clone() {
-                    Constants::Int(num) => self.push(make_k(Constants::Int(num * -1))),
-                    Constants::Float(num) => self.push(make_k(Constants::Float(num * -1.0))),
+                    Konstants::Int(num) => self.push(make_k(Konstants::Int(num * -1))),
+                    Konstants::Float(num) => self.push(make_k(Konstants::Float(num * -1.0))),
                     _ => panic!("Unknown arg type to OpMinus"),
                 },
                 0x0C => match self.pop().borrow().clone() {
-                    Constants::Boolean(boolean) => self.push(make_k(Constants::Boolean(!boolean))),
+                    Konstants::Boolean(boolean) => self.push(make_k(Konstants::Boolean(!boolean))),
                     _ => panic!("Unknown arg type to OpNot"),
                 },
                 0x0D => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs && rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs && rhs)))
                     }
                     _ => panic!("Unknown types to OpAnd"),
                 },
                 0x0E => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs || rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs || rhs)))
                     }
                     _ => panic!("Unknown types to OpOr"),
                 },
                 0x0F => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs == rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs == rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs == rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs == rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs == rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
                     }
                     _ => panic!("Unknown types to OpEquals"),
                 },
                 0x1A => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs != rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs != rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs != rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs != rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs != rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
                     }
                     _ => panic!("Unknown types to OpNotEquals"),
                 },
                 0x1B => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs > rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs > rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs > rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs > rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs > rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs > rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs > rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs > rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs > rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs > rhs)))
                     }
                     _ => panic!("Unknown types to OpGreaterThan"),
                 },
                 0x1C => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs >= rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs >= rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs >= rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs >= rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs >= rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs >= rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs >= rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs >= rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs >= rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs >= rhs)))
                     }
                     _ => panic!("Unknown types to OpGreaterThanEquals"),
                 },
                 0x1D => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs < rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs < rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs < rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs < rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs < rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs < rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs < rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs < rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs < rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs < rhs)))
                     }
                     _ => panic!("Unknown types to OpLessThan"),
                 },
                 0x1E => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(rhs), Constants::Int(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs <= rhs)))
+                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs <= rhs)))
                     }
-                    (Constants::Float(rhs), Constants::Float(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs <= rhs)))
+                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs <= rhs)))
                     }
-                    (Constants::String(rhs), Constants::String(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs <= rhs)))
+                    (Konstants::String(rhs), Konstants::String(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs <= rhs)))
                     }
-                    (Constants::Char(rhs), Constants::Char(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs <= rhs)))
+                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs <= rhs)))
                     }
-                    (Constants::Boolean(rhs), Constants::Boolean(lhs)) => {
-                        self.push(make_k(Constants::Boolean(lhs <= rhs)))
+                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
+                        self.push(make_k(Konstants::Boolean(lhs <= rhs)))
                     }
                     _ => panic!("Unknown types to OpLessThanEquals"),
                 },
                 0x1F => match self.pop().borrow().clone() {
-                    Constants::Boolean(b) => {
+                    Konstants::Boolean(b) => {
                         let i = convert_to_usize(
                             self.bytecode.instructions[ip],
                             self.bytecode.instructions[ip + 1],
@@ -377,26 +410,25 @@ impl VM {
                     self.symbols.pop();
                 }
                 0x2E => match self.pop().borrow().clone() {
-                    Constants::Function(args, body) => {
+                    Konstants::Function(args, mut vm) => {
                         for arg in args {
                             let eval_arg = self.pop();
-                            self.symbols.last_mut().unwrap()[arg as usize] = Some((eval_arg, true));
+                            vm.symbols.last_mut().unwrap()[arg as usize] = Some((eval_arg, true));
                         }
-                        let mut fun_vm = VM::new(body, Some(self.symbols.clone()));
-                        fun_vm.run();
-                        self.push(fun_vm.pop());
-                        self.symbols = fun_vm.symbols;
+                        vm.run();
+                        self.symbols = vm.symbols.clone();
+                        self.push(vm.pop_last());
                     }
                     _ => panic!("Unknown Types applied to OpCall"),
                 },
                 0x2F => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Constants::Int(i), Constants::Array(a)) => self.push(make_k(
+                    (Konstants::Int(i), Konstants::Array(a)) => self.push(make_k(
                         a.get(i as usize).expect("Index out of bound").clone(),
                     )),
                     _ => panic!("Unknown types applied to OpIndexArray"),
                 },
                 0x3A => match self.pop().borrow().clone() {
-                    Constants::Object(a) => {
+                    Konstants::Object(a) => {
                         let i = convert_to_usize(
                             self.bytecode.instructions[ip],
                             self.bytecode.instructions[ip + 1],
