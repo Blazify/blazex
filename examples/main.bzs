@@ -1,7 +1,13 @@
-class A {
+class Klass {
 	var a = 0;
+
 	fun() => {
-		soul.a = 69
+		soul.a = 69;
+	}
+
+	fun editA(x) => {
+		soul.a = x;
+		return soul;
 	}
 }
-new A().a
+new Klass().editA(69420).a;

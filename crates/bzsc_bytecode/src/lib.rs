@@ -104,8 +104,7 @@ pub struct ByteCodeGen {
 impl ByteCodeGen {
     pub fn new() -> Self {
         let mut variables = HashMap::new();
-        variables.insert(String::from(""), 0);
-        variables.insert(String::from("soul"), 1);
+        variables.insert(String::from("soul"), 0);
         Self {
             bytecode: ByteCode::new(),
             variables,
