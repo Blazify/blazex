@@ -16,14 +16,75 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use bincode::{deserialize, serialize};
-use blaze_vm::VM;
+use blaze_vm::{Konstants, VM};
 use bzs_shared::ByteCode;
 use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
 use bzsc_parser::Parser;
-use std::env::args;
 use std::process::exit;
 use std::time::SystemTime;
+use std::{collections::HashMap, env::args};
+
+fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
+    match k {
+        Konstants::None => {
+            format!("None")
+        }
+        Konstants::Null => {
+            format!("Null")
+        }
+        Konstants::Int(i) => {
+            format!("{}", i)
+        }
+        Konstants::Float(i) => {
+            format!("{}", i)
+        }
+        Konstants::String(i) => {
+            format!("{}", i)
+        }
+        Konstants::Char(i) => {
+            format!("{}", i)
+        }
+        Konstants::Boolean(i) => {
+            format!("{}", i)
+        }
+        Konstants::Array(x_arr) => {
+            let mut res = vec![];
+            for x in &x_arr[..] {
+                res.push(format_print(x, props.clone()));
+            }
+            res.join(", ")
+        }
+        Konstants::Object(x) => {
+            let mut str = String::from("{\n    ");
+            for (a, b) in x {
+                str.push_str(
+                    format!(
+                        "{}: {},\n",
+                        props.get(&(*a as u16)).unwrap(),
+                        format_print(b, props.clone())
+                    )
+                    .as_str(),
+                );
+                str.push_str("    ");
+            }
+            str.push_str("\r}");
+            str
+        }
+        Konstants::Function(x, y) => {
+            let mut str = String::from("Function<(");
+            let mut arr = vec![];
+            for a in x {
+                arr.push(props.get(a).unwrap().clone());
+            }
+            str.push_str(arr.join(", ").as_str());
+            str.push(')');
+            str.push_str(format!(" => {}", format_print(&y.return_val.borrow(), props)).as_str());
+            str.push('>');
+            str
+        }
+    }
+}
 
 fn main() {
     let file_name = args().nth(1).expect("no path specified");
@@ -60,6 +121,13 @@ fn main() {
         let serialized =
             serialize(&bytecode_gen.bytecode).expect("serialization of bytecode failed");
         std::fs::write(file_name.clone().replace(".bzs", ".bze"), serialized);
+
+        let mut sym = HashMap::new();
+        for (k, v) in &bytecode_gen.variables {
+            sym.insert(*v, k.clone());
+        }
+        let sym = serialize(&sym).expect("serialization of symbols failed");
+        std::fs::write(file_name.clone().replace(".bzs", ".sym"), sym);
         println!(
             "Compilation Success: Wrote to {}",
             file_name.clone().replace(".bzs", ".bze")
@@ -81,11 +149,18 @@ fn main() {
         println!("Version: 0.0.1");
         println!("File: {}", file_name);
         let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
+        let symb = std::fs::read(file_name.clone().replace(".bze", ".sym"))
+            .expect("could not read symbols");
         let bytecode: ByteCode =
             deserialize(&btc_raw[..]).expect("deserialization of executable failed");
+        let sym: HashMap<u16, String> =
+            deserialize(&symb[..]).expect("deserialization of executable failed");
         let mut vm = VM::new(bytecode, None);
         vm.run();
-        println!("Result: {:?}", vm.pop_last().borrow().clone());
+        println!(
+            "Result: {}",
+            format_print(&vm.pop_last().borrow().clone(), sym)
+        );
         match time.elapsed() {
             Ok(elapsed) => {
                 println!(

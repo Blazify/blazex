@@ -60,7 +60,7 @@ pub struct VM {
     stack: [K; STACK_SIZE],
     stack_ptr: usize,
     symbols: Vec<[Symbol; SYM_ARR_SIZE]>,
-    return_val: Rc<RefCell<Konstants>>,
+    pub return_val: Rc<RefCell<Konstants>>,
 }
 
 impl VM {
@@ -157,22 +157,16 @@ impl VM {
                                 None => (),
                             }
 
-                            let mut props = HashMap::new();
-                            // this code causes recursion
-                            // let mut soul = make_k(Konstants::Object(HashMap::new()));
+                            let soul = make_k(Konstants::Object(HashMap::new()));
                             for (k, v) in &klass {
                                 let mut v_clone = vm.clone();
                                 v_clone.bytecode = v.clone();
-                                // this code causes recursion
-                                // v_clone().symbols.last_mut().unwrap()[0] = Some((soul.clone(), false));
                                 v_clone.symbols.last_mut().unwrap()[0] =
-                                    Some((make_k(Konstants::Object(props.clone())), false));
+                                    Some((soul.clone(), false));
                                 v_clone.run();
-                                // this code causes recursion
-                                // soul.borrow_mut().property_edit(k.clone(), v_clone.stack[0].borrow().clone());
-                                props.insert(k.clone(), v_clone.stack[0].borrow().clone());
+                                soul.borrow_mut()
+                                    .property_edit(k.clone(), v_clone.stack[0].borrow().clone());
                             }
-                            let soul = make_k(Konstants::Object(props));
                             vm.symbols.last_mut().unwrap()[0] = Some((soul.clone(), false));
                             vm.return_val = soul.clone();
                             Konstants::Function(args, vm)

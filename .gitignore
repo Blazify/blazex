@@ -1,3 +1,4 @@
 /target
 *.bze
+*.sym
 bin

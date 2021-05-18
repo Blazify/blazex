@@ -3,6 +3,9 @@ class Klass {
 
 	fun() => {
 		soul.a = 69;
+		if soul.a == 69 {
+			soul.editA(69420);
+		}
 	}
 
 	fun editA(x) => {
@@ -10,4 +13,4 @@ class Klass {
 		return soul;
 	}
 }
-new Klass().editA(69420).a;
+new Klass()

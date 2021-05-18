@@ -333,8 +333,8 @@ impl ByteCodeGen {
                 let idx = self.add_constant(Constants::RawArray(array));
                 self.add_instruction(OpCode::OpConstant(idx));
                 self.compile_node(*node_to_call);
-                self.add_instruction(OpCode::OpCall);
                 self.add_instruction(OpCode::OpBlockEnd);
+                self.add_instruction(OpCode::OpCall);
             }
             Node::ArrayNode { element_nodes } => {
                 let mut array = vec![];
@@ -444,8 +444,8 @@ impl ByteCodeGen {
                 self.add_instruction(OpCode::OpConstant(idx));
                 let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
-                self.add_instruction(OpCode::OpCall);
                 self.add_instruction(OpCode::OpBlockEnd);
+                self.add_instruction(OpCode::OpCall);
             }
         }
     }
