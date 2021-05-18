@@ -142,8 +142,6 @@ impl Error {
             pos_end,
             description,
         }
-        .prettify();
-        std::process::exit(1);
     }
 
     pub fn prettify(&self) {
@@ -168,37 +166,22 @@ impl Error {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
-    pub index: i128,
-    pub line: i128,
-    pub column: i128,
+    pub index: usize,
     pub file_name: &'static str,
     pub file_content: &'static str,
 }
 
 impl Position {
-    pub fn new(
-        index: i128,
-        line: i128,
-        column: i128,
-        file_name: &'static str,
-        file_content: &'static str,
-    ) -> Position {
+    pub fn new(index: usize, file_name: &'static str, file_content: &'static str) -> Position {
         Position {
             index,
-            line,
-            column,
             file_name,
             file_content,
         }
     }
 
-    pub fn advance(&mut self, character: char) -> Self {
+    pub fn advance(&mut self) -> Self {
         self.index += 1;
-        self.column += 1;
-        if character == '\n' {
-            self.line += 1;
-            self.column += 1;
-        }
         self.clone()
     }
 }

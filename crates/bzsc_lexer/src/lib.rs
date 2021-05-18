@@ -13,7 +13,6 @@
 
 #![allow(unused_assignments)]
 use bzs_shared::{DynType, Error, Position, Token, Tokens};
-use std::convert::TryInto;
 
 pub fn get_keywords() -> Vec<String> {
     vec![
@@ -64,22 +63,20 @@ pub struct Lexer {
 
 impl Lexer {
     pub fn new(file_name: &'static str, text: &'static str) -> Lexer {
-        let mut lexer = Lexer {
+        let lexer = Lexer {
             file_name: String::from(file_name),
             text: String::from(text),
-            current_char: None,
-            position: Position::new(-1, 0, -1, file_name, text),
+            current_char: Some(text.chars().collect::<Vec<char>>()[0]),
+            position: Position::new(0, file_name, text),
         };
-        lexer.advance();
         lexer
     }
 
     fn advance(&mut self) {
-        self.position.advance(self.current_char.unwrap_or(' '));
-        if self.text.len() > self.position.index.try_into().unwrap() {
+        self.position.advance();
+        if self.text.len() > self.position.index {
             let split: Vec<char> = self.text.chars().collect::<Vec<char>>();
-            let index: i128 = self.position.index.try_into().unwrap();
-            self.current_char = Some(split[index as usize]);
+            self.current_char = Some(split[self.position.index]);
         } else {
             self.current_char = None;
         }
@@ -91,7 +88,7 @@ impl Lexer {
         while self.current_char.is_some() {
             let start = self.position.clone();
             let mut end = self.position.clone();
-            end.advance(self.current_char.unwrap());
+            end.advance();
 
             if [' ', '\t', '\r'].contains(&self.current_char.unwrap()) {
                 self.advance();
@@ -190,7 +187,7 @@ impl Lexer {
 
             if token_is_unknown {
                 let start_1 = self.position.clone();
-                self.position.advance(' ');
+                self.position.advance();
                 let char = self.current_char.unwrap().to_string();
                 return Err(Error::new(
                     "Illegal Character",
