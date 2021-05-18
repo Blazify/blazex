@@ -105,14 +105,14 @@ fn main() {
                 tokens.extend(lexed);
             }
             Err(error) => {
-                println!("{}", error.prettify());
+                error.prettify();
                 exit(1);
             }
         }
 
         let parsed = Parser::new(tokens).parse();
         if parsed.error.is_some() || parsed.node.is_none() {
-            println!("{}", parsed.error.unwrap().prettify());
+            parsed.error.unwrap().prettify();
             exit(1);
         }
 

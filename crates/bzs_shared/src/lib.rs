@@ -10,11 +10,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
+#![allow(unused_must_use)]
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+use codespan_reporting::term::{self};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Error as E, Formatter};
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Tokens {
     Int,
@@ -139,68 +142,27 @@ impl Error {
             pos_end,
             description,
         }
+        .prettify();
+        std::process::exit(1);
     }
 
-    pub fn prettify(&self) -> String {
-        format!(
-            "\u{001b}[31;1m{}: {}\nFile {}, line {}\n\n {}\u{001b}[0m",
-            self.name,
-            self.description,
-            self.pos_start.file_name,
-            self.pos_start.line + 1,
-            self.string_with_arrows(),
-        )
-    }
+    pub fn prettify(&self) {
+        let mut files = SimpleFiles::new();
 
-    fn string_with_arrows(&self) -> String {
-        let mut res = String::new();
-        let text = self.pos_start.file_content.to_string().clone();
+        let file_id = files.add(self.pos_start.file_name, self.pos_start.file_content);
 
-        let mut idx_start = std::cmp::max(
-            text[0..self.pos_start.index as usize]
-                .rfind("\n")
-                .unwrap_or(0),
-            0,
-        );
-        let mut idx_end = text[(idx_start + 1)..(text.len() - 1)]
-            .find("\n")
-            .unwrap_or(0);
-        if idx_end < 0 as usize {
-            idx_end = text.len();
-        }
-        let line_count = self.pos_end.line - self.pos_start.line + 1;
+        let diagnostic = Diagnostic::error()
+            .with_message(self.name)
+            .with_labels(vec![Label::primary(
+                file_id,
+                (self.pos_start.index as usize)..(self.pos_end.index as usize),
+            )
+            .with_message(self.description)]);
 
-        for i in 0..line_count {
-            let line = &text[idx_start..(idx_end + idx_start)];
+        let writer = StandardStream::stderr(ColorChoice::Always);
+        let config = codespan_reporting::term::Config::default();
 
-            let mut col_start = 0;
-            if i == 0 {
-                col_start = self.pos_start.column;
-            }
-
-            let mut col_end = line.len() as i128 - 1;
-            if i == (line_count - 1) {
-                col_end = self.pos_end.column;
-            }
-
-            res.push_str(line);
-            res.push('\n');
-            res = format!(
-                "{}{}",
-                res,
-                " ".repeat((col_start) as usize) + &*"^".repeat((col_end - col_start) as usize)
-            );
-
-            idx_start = idx_end;
-            idx_end = text[(idx_start + 1)..(text.len() - 1)]
-                .find("\n")
-                .unwrap_or(0);
-            if idx_end < 0 as usize {
-                idx_end = text.len();
-            }
-        }
-
-        res.replacen("\t", "", res.len())
+        term::emit(&mut writer.lock(), &config, &files, &diagnostic);
     }
 }
 
