@@ -115,7 +115,7 @@ pub enum Constants {
     Function(Vec<u16>, ByteCode),
     RawArray(Vec<ByteCode>),
     RawObject(HashMap<usize, ByteCode>),
-    RawClass(Vec<u16>, HashMap<usize, ByteCode>),
+    RawClass(Option<(Vec<u16>, ByteCode)>, HashMap<usize, ByteCode>),
 }
 
 #[derive(Debug, Clone)]
@@ -350,7 +350,7 @@ pub enum Node {
     },
     ClassDefNode {
         name: Token,
-        constructor: Box<Option<Node>>,
+        constructor: Box<Option<(Vec<Token>, Node)>>,
         properties: Vec<(Token, Node)>,
         methods: Vec<(Token, Node)>,
     },

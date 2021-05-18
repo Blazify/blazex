@@ -140,10 +140,22 @@ impl VM {
                             let fun_vm = VM::new(body, Some(self.symbols.clone()));
                             Konstants::Function(args, fun_vm)
                         }
-                        Constants::RawClass(params, mut klass) => {
-                            let btc = klass.get(&(0 as usize)).unwrap().clone();
-                            klass.remove(&(0));
-                            let mut vm = VM::new(btc.clone(), Some(self.symbols.clone()));
+                        Constants::RawClass(constr, klass) => {
+                            let mut vm = VM::new(
+                                ByteCode {
+                                    constants: vec![],
+                                    instructions: vec![],
+                                },
+                                Some(self.symbols.clone()),
+                            );
+                            let mut args = vec![];
+                            match constr.clone() {
+                                Some((a, b)) => {
+                                    vm.bytecode = b;
+                                    args.extend(a);
+                                }
+                                None => (),
+                            }
                             let mut props = HashMap::new();
                             for (k, v) in &klass {
                                 let mut v_clone = vm.clone();
@@ -154,7 +166,7 @@ impl VM {
                             let soul = make_k(Konstants::Object(props));
                             vm.symbols.last_mut().unwrap()[1] = Some((soul.clone(), false));
                             vm.return_val = soul.clone();
-                            Konstants::Function(params, vm)
+                            Konstants::Function(args, vm)
                         }
                         Constants::None => Konstants::None,
                         Constants::Null => Konstants::Null,

@@ -1303,7 +1303,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let mut methods: Vec<(Token, Node)> = vec![];
         let mut properties: Vec<(Token, Node)> = vec![];
-        let mut constructor: Option<Node> = None;
+        let mut constructor: Option<(Vec<Token>, Node)> = None;
 
         if !self
             .current_token
@@ -1361,8 +1361,14 @@ impl Parser {
             }
             let a = stnts.unwrap();
             match a.clone() {
-                Node::VarAssignNode { name, value, .. } => properties.push((name.clone(), *value.clone())),
-                Node::FunDef { name, .. } => {
+                Node::VarAssignNode { name, value, .. } => {
+                    properties.push((name.clone(), *value.clone()))
+                }
+                Node::FunDef {
+                    name,
+                    body_node,
+                    arg_tokens,
+                } => {
                     if name.as_ref().is_none() {
                         if constructor.is_some() {
                             return res.failure(Error::new(
@@ -1372,9 +1378,9 @@ impl Parser {
                                 "Constructor defined",
                             ));
                         }
-                        constructor = Some(a.clone());
+                        constructor = Some((arg_tokens, *body_node.clone()));
                     } else {
-                        methods.push((name.as_ref().unwrap().clone(), a.clone()));
+                        methods.push((name.as_ref().unwrap().clone(), a));
                     }
                 }
                 _ => {

@@ -4,4 +4,4 @@ class A {
 		soul.a = 69
 	}
 }
-new A()
+new A().a

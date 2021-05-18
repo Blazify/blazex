@@ -395,21 +395,21 @@ impl ByteCodeGen {
                 name,
                 properties,
             } => {
+                let mut constr = None;
                 let mut props = HashMap::new();
                 let mut btc = self.clear();
-                let mut args = vec![];
                 if constructor.is_some() {
-                    btc.compile_node(constructor.unwrap());
-                    let func = btc.bytecode.constants.last().unwrap().clone();
-                    match func {
-                        Constants::Function(i, _) => {
-                            args.extend(i);
-                        }
-                        _ => panic!("Expected function as constructor"),
+                    let constr_ = constructor.unwrap();
+                    btc.compile_node(constr_.1);
+                    let mut tok = vec![];
+                    for t in constr_.0 {
+                        let id = self.variable(t.value.into_string());
+                        tok.push(id);
                     }
-                    props.insert(0, btc.bytecode.clone());
+                    let body = btc.bytecode.clone();
                     btc = btc.clear();
-                }
+                    constr = Some((tok, body));
+                };
 
                 let mut prop_temp = properties.clone();
                 prop_temp.extend(methods);
@@ -422,7 +422,7 @@ impl ByteCodeGen {
                 }
 
                 self.variables = btc.variables;
-                let idx = self.add_constant(Constants::RawClass(args, props));
+                let idx = self.add_constant(Constants::RawClass(constr, props));
                 self.add_instruction(OpCode::OpConstant(idx));
                 let id = self.variable(name.value.into_string());
                 let idx_2 = self.add_constant(Constants::Boolean(false));
