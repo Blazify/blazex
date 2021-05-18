@@ -155,7 +155,6 @@ impl Parser {
 
     fn statement(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        let pos_start = self.current_token.clone().pos_start;
 
         if self
             .clone()
@@ -177,12 +176,7 @@ impl Parser {
 
         let expr = res.register(self.expr());
         if res.error.is_some() {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                pos_start,
-                self.current_token.pos_end.clone(),
-                "Expected keywords, variables, etc",
-            ));
+            return res;
         }
         res.success(expr.unwrap())
     }
