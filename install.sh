@@ -33,7 +33,7 @@ curl --fail --location --progress-bar --output "$exe" "$bzs_uri"
 chmod +x "$exe"
 
 if command -v blazescript >/dev/null; then
-    echo "Run 'blazescript [file name][(.bzs)/(.bze)]' to get started"
+    echo "Run 'blazescript path/to/file.bz(s/e)' to get started"
 else
     case $SHELL in
     	/bin/zsh) shell_profile=".zshrc" ;;
@@ -43,5 +43,5 @@ else
     echo "Manually add the directory to your \$HOME/$shell_profile (or similar)"
     echo "  export BZS_INSTALL=\"$bzs_install\""
     echo "  export PATH=\"\$BZS_INSTALL/bin:\$PATH\""
-    echo "Run '$exe [file name].bz(e/s)' to get started"
+    echo "Run '$exe path/to/file.bz(s/e)' to get started"
 fi

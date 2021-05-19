@@ -405,6 +405,7 @@ impl ByteCodeGen {
                         let id = self.variable(t.value.into_string());
                         tok.push(id);
                     }
+                    self.variables = btc.variables.clone();
                     let body = btc.bytecode.clone();
                     btc = btc.clear();
                     constr = Some((tok, body));
@@ -417,10 +418,10 @@ impl ByteCodeGen {
                     btc = btc.clear();
                     let id = btc.variable(name.value.into_string()) as usize;
                     btc.compile_node(body.clone());
+                    self.variables = btc.variables.clone();
                     props.insert(id, btc.bytecode.clone());
                 }
 
-                self.variables = btc.variables;
                 let idx = self.add_constant(Constants::RawClass(constr, props));
                 self.add_instruction(OpCode::OpConstant(idx));
                 let id = self.variable(name.value.into_string());

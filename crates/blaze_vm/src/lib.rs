@@ -115,6 +115,7 @@ impl VM {
                                 let mut v_cl = vm.clone();
                                 v_cl.bytecode = i.clone();
                                 v_cl.run();
+                                self.symbols = v_cl.symbols.clone();
                                 arr.push(v_cl.stack[0].borrow().clone());
                             }
                             Konstants::Array(arr)
@@ -132,6 +133,7 @@ impl VM {
                                 let mut v_clone = vm.clone();
                                 v_clone.bytecode = v.clone();
                                 v_clone.run();
+                                self.symbols = v_clone.symbols.clone();
                                 props.insert(k.clone(), v_clone.stack[0].borrow().clone());
                             }
                             Konstants::Object(props)
@@ -164,6 +166,7 @@ impl VM {
                                 v_clone.symbols.last_mut().unwrap()[0] =
                                     Some((soul.clone(), false));
                                 v_clone.run();
+                                self.symbols = v_clone.symbols.clone();
                                 soul.borrow_mut()
                                     .property_edit(k.clone(), v_clone.stack[0].borrow().clone());
                             }

@@ -146,7 +146,6 @@ impl Error {
 
     pub fn prettify(&self) {
         let mut files = SimpleFiles::new();
-
         let file_id = files.add(self.pos_start.file_name, self.pos_start.file_content);
 
         let diagnostic = Diagnostic::error()

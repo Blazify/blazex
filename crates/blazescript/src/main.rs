@@ -71,7 +71,7 @@ fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
             str.push_str("\r}");
             str
         }
-        Konstants::Function(x, y) => {
+        Konstants::Function(x, _) => {
             let mut str = String::from("Function<(");
             let mut arr = vec![];
             for a in x {
@@ -79,7 +79,6 @@ fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
             }
             str.push_str(arr.join(", ").as_str());
             str.push(')');
-            str.push_str(format!(" => {}", format_print(&y.return_val.borrow(), props)).as_str());
             str.push('>');
             str
         }
@@ -118,16 +117,14 @@ fn main() {
 
         let mut bytecode_gen = ByteCodeGen::new();
         bytecode_gen.compile_node(parsed.node.unwrap());
-        let serialized =
-            serialize(&bytecode_gen.bytecode).expect("serialization of bytecode failed");
-        std::fs::write(file_name.clone().replace(".bzs", ".bze"), serialized);
 
         let mut sym = HashMap::new();
         for (k, v) in &bytecode_gen.variables {
             sym.insert(*v, k.clone());
         }
-        let sym = serialize(&sym).expect("serialization of symbols failed");
-        std::fs::write(file_name.clone().replace(".bzs", ".sym"), sym);
+        let serialized =
+            serialize(&(bytecode_gen.bytecode, sym)).expect("serialization of bytecode failed");
+        std::fs::write(file_name.clone().replace(".bzs", ".bze"), serialized);
         println!(
             "Compilation Success: Wrote to {}",
             file_name.clone().replace(".bzs", ".bze")
@@ -149,17 +146,13 @@ fn main() {
         println!("Version: 0.0.1");
         println!("File: {}", file_name);
         let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
-        let symb = std::fs::read(file_name.clone().replace(".bze", ".sym"))
-            .expect("could not read symbols");
-        let bytecode: ByteCode =
+        let bytecode: (ByteCode, HashMap<u16, String>) =
             deserialize(&btc_raw[..]).expect("deserialization of executable failed");
-        let sym: HashMap<u16, String> =
-            deserialize(&symb[..]).expect("deserialization of executable failed");
-        let mut vm = VM::new(bytecode, None);
+        let mut vm = VM::new(bytecode.0, None);
         vm.run();
         println!(
             "Result: {}",
-            format_print(&vm.pop_last().borrow().clone(), sym)
+            format_print(&vm.pop_last().borrow().clone(), bytecode.1)
         );
         match time.elapsed() {
             Ok(elapsed) => {

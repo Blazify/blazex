@@ -1,5 +1,7 @@
 # BlazeScript
 
+A intermediate compiled and vm interpreted language which is dynamically typed (for now) and object oriented
+
 ## Installation
 
 [Github Releases](https://github.com/BlazifyOrg/blazescript/releases)
@@ -16,16 +18,12 @@ In Windows
 
 ```shell
 $ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh -o install.sh
-$ start install.sh
+$ bash install.sh
 ```
 
 ## Note
 
 This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode) and we are also looking for collaborators
-
-## Announcment
-
-The Bytecode Compiler and the VM are in progress, to use all features of the language use the code from the [70th Commit](https://github.com/BlazifyOrg/blazescript/tree/a2e2186bec75bc05a86ebd3192fa9d931475cb80)
 
 ## Example
 
@@ -94,23 +92,15 @@ println(ins.sum_to_a(5));
 
 ## Dependencies
 
-We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible
+We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible and codespan-reporting for errors. Note the only branch which use dependencies are `blazescript` and `bzs_shared`
 
 ## Contributing
 
-- Please use the given below commands
-
-```shell
-$ npm i -g commitizen
-$ npm i -g cz-conventional-changelog
-$ echo '{ "path": "cz-conventional-changelog" }' > ~/.czrc
-$ npm root -g
-# use the output of the above command instead of PATH
-# edit PATH/commitizen/node_modules/conventional-commit-types/index.json
-# use https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538
-```
-
-For commiting use the command `cz`. But make sure to use `git add .` before that too.
+- Fork the repository
+- Create a branch with the patch/feature you want
+- Make Changes to the code
+- Commit the code (Use the [Emoji Commit Style](https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538))
+- Finally push the code and make a pull request
 
 ## Project Structure
 
@@ -125,7 +115,7 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
 
 # TODO
 
-- [ ] Bytecode Compiler
+- [x] Bytecode Compiler
 
   - [x] Executables
   - [x] Statements
@@ -143,9 +133,9 @@ For commiting use the command `cz`. But make sure to use `git add .` before that
   - [x] Arrays
   - [x] Objects
   - [x] Classes
-  - [ ] Proper Mutability
+  - [x] Proper Mutability
 
-- [ ] VM Interpreter
+- [x] VM Interpreter
 
 - [x] Reading from file
 - [x] Lexer

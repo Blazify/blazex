@@ -13,4 +13,5 @@ class Klass {
 		return soul;
 	}
 }
-new Klass()
+
+new Klass().editA(69420);
