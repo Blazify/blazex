@@ -11,12 +11,12 @@ fi
 cd $bin_dir
 
 if [ "$OS" = "Windows_NT" ]; then
-	target="blazescript-windows"
+	target="x86_64-pc-windows-msvc"
     exe="$bin_dir/blazescript.exe"
 else
 	case $(uname -sm) in
-	"Darwin x86_64") target="blazescript-macos" ;;
-	"Darwin arm64") target="blazescript-macos" ;;
+	"Darwin x86_64") target="x86_64-apple-darwin" ;;
+	"Darwin arm64") target="aarch64-apple-darwin" ;;
 	*) target="blazescript-linux" ;;
 	esac
     exe="$bin_dir/blazescript"

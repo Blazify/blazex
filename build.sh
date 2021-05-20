@@ -2,6 +2,7 @@
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"
     exe="blazescript.exe"
+	exten = ".exe"
     executable="target/$target/release/$exe"
 else
 	case $(uname -sm) in
@@ -10,6 +11,7 @@ else
 	*) target="x86_64-unknown-linux-gnu" ;;
 	esac
     exe="blazescript"
+	exten = ""
     executable="target/$target/release/$exe"
 fi
 
@@ -23,4 +25,4 @@ if [ -f "bin/$exe" ]; then
     rm -r "bin/$exe"
 fi
 
-cp $executable bin/
+cp $executable "bin/$target$exten"
