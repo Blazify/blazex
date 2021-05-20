@@ -81,7 +81,6 @@ fn main() {
                 println!("File: {}", file_name);
             }
             let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
-            println!("{}", cnt);
 
             let name = Box::leak(file_name.to_owned().into_boxed_str());
             let content = Box::leak(cnt.to_owned().into_boxed_str());
@@ -147,12 +146,10 @@ fn main() {
                 deserialize(&btc_raw[..]).expect("deserialization of executable failed");
             let mut vm = VM::new(bytecode.0, None);
             vm.run();
-            if !is_quiet {
-                println!(
-                    "Result: {}",
-                    format_print(&vm.pop_last().borrow().clone(), bytecode.1)
-                );
-            }
+            println!(
+                "{}",
+                format_print(&vm.pop_last().borrow().clone(), bytecode.1)
+            );
             match time.elapsed() {
                 Ok(elapsed) => {
                     if !is_quiet {
@@ -190,6 +187,7 @@ fn main() {
     loop {
         match rx.recv() {
             Ok(DebouncedEvent::Write(_)) => {
+                println!("\u{001b}[32;1mChange Detected!\u{001b}[0m");
                 compile();
             }
             Ok(_) => {}

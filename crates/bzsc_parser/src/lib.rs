@@ -17,8 +17,8 @@ use bzs_shared::{DynType, Error, Node, Token, Tokens};
 pub struct ParseResult {
     pub node: Option<Node>,
     pub error: Option<Error>,
-    pub advance_count: i128,
-    pub to_reverse_count: i128,
+    pub advance_count: usize,
+    pub to_reverse_count: usize,
 }
 
 impl ParseResult {

@@ -14,4 +14,4 @@ class Klass {
 	}
 }
 
-new Klass()
+new Klass().a
