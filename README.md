@@ -21,6 +21,22 @@ $ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/mai
 $ bash install.sh
 ```
 
+Confirm Installation
+
+```shell
+$ blazescript
+```
+
+```
+error: The following required arguments were not provided:
+    <path>
+
+USAGE:
+    blazescript [FLAGS] [OPTIONS] <path>
+
+For more information try --help
+```
+
 ## Note
 
 This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode) and we are also looking for collaborators
@@ -92,7 +108,7 @@ println(ins.sum_to_a(5));
 
 ## Dependencies
 
-We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible and codespan-reporting for errors. Note the only branch which use dependencies are `blazescript` and `bzs_shared`
+We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible and codespan-reporting for errors, structopt for argument parsing and notify for watching files. Note the only branch which use dependencies are `blazescript` and `bzs_shared`
 
 ## Contributing
 

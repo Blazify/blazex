@@ -10,6 +10,7 @@ edition = "2018"
 mimalloc = { version = "0.1.25", default_features = false }
 bincode = "1.3.3"
 structopt = "0.3.21"
+notify = "4.0.17"
 blaze_vm = { path = "../blaze_vm" }
 bzsc_lexer = { path = "../bzsc_lexer" }
 bzsc_parser = { path = "../bzsc_parser" }

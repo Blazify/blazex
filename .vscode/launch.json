@@ -6,12 +6,7 @@
       "request": "launch",
       "name": "Compile",
       "cargo": {
-        "args": [
-          "build",
-          "--release",
-          "--bin=blazescript",
-          "--package=blazescript"
-        ],
+        "args": ["build", "--release"],
         "filter": {
           "name": "blazescript",
           "kind": "bin"

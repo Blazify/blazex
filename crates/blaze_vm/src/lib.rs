@@ -78,8 +78,16 @@ impl VM {
             },
             stack_ptr: 0,
             symbols: if symbols.is_none() {
-                const S: Symbol = None;
-                vec![[S; SYM_ARR_SIZE]]
+                unsafe {
+                    let mut data: [MaybeUninit<Symbol>; SYM_ARR_SIZE] =
+                        MaybeUninit::uninit().assume_init();
+
+                    for elem in &mut data[..] {
+                        *elem = MaybeUninit::new(None);
+                    }
+
+                    vec![std::mem::transmute::<_, [Symbol; SYM_ARR_SIZE]>(data)]
+                }
             } else {
                 symbols.unwrap()
             },
@@ -441,8 +449,17 @@ impl VM {
                     self.get_set_symbols(i, Some((n, true)));
                 }
                 0x2C => {
-                    const S: Symbol = None;
-                    self.symbols.push([S; SYM_ARR_SIZE]);
+                    let ctx = unsafe {
+                        let mut data: [MaybeUninit<Symbol>; SYM_ARR_SIZE] =
+                            MaybeUninit::uninit().assume_init();
+
+                        for elem in &mut data[..] {
+                            *elem = MaybeUninit::new(None);
+                        }
+
+                        std::mem::transmute::<_, [Symbol; SYM_ARR_SIZE]>(data)
+                    };
+                    self.symbols.push(ctx);
                 }
                 0x2D => {
                     self.symbols.pop();
