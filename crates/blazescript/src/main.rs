@@ -21,72 +21,34 @@ use bzs_shared::ByteCode;
 use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
 use bzsc_parser::Parser;
+use std::collections::HashMap;
 use std::process::exit;
 use std::time::SystemTime;
-use std::{collections::HashMap, env::args};
 
-fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
-    match k {
-        Konstants::None => {
-            format!("None")
-        }
-        Konstants::Null => {
-            format!("Null")
-        }
-        Konstants::Int(i) => {
-            format!("{}", i)
-        }
-        Konstants::Float(i) => {
-            format!("{}", i)
-        }
-        Konstants::String(i) => {
-            format!("{}", i)
-        }
-        Konstants::Char(i) => {
-            format!("{}", i)
-        }
-        Konstants::Boolean(i) => {
-            format!("{}", i)
-        }
-        Konstants::Array(x_arr) => {
-            let mut res = vec![];
-            for x in &x_arr[..] {
-                res.push(format_print(x, props.clone()));
-            }
-            res.join(", ")
-        }
-        Konstants::Object(x) => {
-            let mut str = String::from("{\n    ");
-            for (a, b) in x {
-                str.push_str(
-                    format!(
-                        "{}: {},\n",
-                        props.get(&(*a as u16)).unwrap(),
-                        format_print(b, props.clone())
-                    )
-                    .as_str(),
-                );
-                str.push_str("    ");
-            }
-            str.push_str("\r}");
-            str
-        }
-        Konstants::Function(x, _) => {
-            let mut str = String::from("Function<(");
-            let mut arr = vec![];
-            for a in x {
-                arr.push(props.get(a).unwrap().clone());
-            }
-            str.push_str(arr.join(", ").as_str());
-            str.push(')');
-            str.push('>');
-            str
-        }
-    }
+use std::path::PathBuf;
+use structopt::StructOpt;
+#[derive(StructOpt, Debug)]
+struct CmdParams {
+    #[structopt(parse(from_os_str))]
+    pub path: PathBuf,
+
+    #[structopt(long)]
+    pub symbol: Option<bool>,
+
+    #[structopt(long)]
+    pub module: Option<PathBuf>,
+
+    #[structopt(long)]
+    pub out: Option<PathBuf>,
+
+    #[structopt(long)]
+    pub workspace: Option<PathBuf>,
 }
 
 fn main() {
-    let file_name = args().nth(1).expect("no path specified");
+    let cmd_params = CmdParams::from_args();
+
+    let file_name = cmd_params.path.as_os_str().to_str().unwrap().to_string();
     let time = SystemTime::now();
 
     if file_name.ends_with(".bzs") {
@@ -170,4 +132,64 @@ fn main() {
         eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
         exit(1);
     };
+}
+
+fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
+    match k {
+        Konstants::None => {
+            format!("None")
+        }
+        Konstants::Null => {
+            format!("Null")
+        }
+        Konstants::Int(i) => {
+            format!("{}", i)
+        }
+        Konstants::Float(i) => {
+            format!("{}", i)
+        }
+        Konstants::String(i) => {
+            format!("{}", i)
+        }
+        Konstants::Char(i) => {
+            format!("{}", i)
+        }
+        Konstants::Boolean(i) => {
+            format!("{}", i)
+        }
+        Konstants::Array(x_arr) => {
+            let mut res = vec![];
+            for x in &x_arr[..] {
+                res.push(format_print(x, props.clone()));
+            }
+            res.join(", ")
+        }
+        Konstants::Object(x) => {
+            let mut str = String::from("{\n    ");
+            for (a, b) in x {
+                str.push_str(
+                    format!(
+                        "{}: {},\n",
+                        props.get(&(*a as u16)).unwrap(),
+                        format_print(b, props.clone())
+                    )
+                    .as_str(),
+                );
+                str.push_str("    ");
+            }
+            str.push_str("\r}");
+            str
+        }
+        Konstants::Function(x, _) => {
+            let mut str = String::from("Function<(");
+            let mut arr = vec![];
+            for a in x {
+                arr.push(props.get(a).unwrap().clone());
+            }
+            str.push_str(arr.join(", ").as_str());
+            str.push(')');
+            str.push('>');
+            str
+        }
+    }
 }
