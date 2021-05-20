@@ -85,12 +85,11 @@ fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
     }
 }
 
-
-use structopt::StructOpt;
 use std::path::PathBuf;
-#[derive(StructOpt,Debug)]
+use structopt::StructOpt;
+#[derive(StructOpt, Debug)]
 // desc of the program
-struct CmdParams{
+struct CmdParams {
     // description of symbol
     #[structopt(long)]
     pub symbol: bool,
@@ -100,7 +99,7 @@ struct CmdParams{
     pub module: Option<PathBuf>,
     // description of module
     #[structopt(long)]
-    pub out : Option<PathBuf>,
+    pub out: Option<PathBuf>,
     // description of workspace
     #[structopt(long)]
     pub workspace: Option<PathBuf>,
@@ -110,9 +109,9 @@ fn main() {
     let cmd_params = CmdParams::from_args();
 
     println!("{:?}", cmd_params);
-        let file_name = "./blah.bze";
+    let file_name = "./blah.bze";
     // TODO integrate
-   // let file_name = args().nth(1).expect("no path specified");
+    // let file_name = args().nth(1).expect("no path specified");
     let time = SystemTime::now();
 
     if file_name.ends_with(".bzs") {
