@@ -18,7 +18,7 @@ jobs:
           - os: macos-10.15
             artifact_name: x86_64-apple-darwin
           - os: windows-latest
-            artifact_name: x86_64-pc-windows-msvc.exee
+            artifact_name: x86_64-pc-windows-msvc.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,5 +29,5 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: bin/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
+          asset_name: ${{ matrix.artifact_name }}
           tag: ${{ github.event.client_payload.new_version }}

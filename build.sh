@@ -26,3 +26,4 @@ if [ -f "bin/$exe" ]; then
 fi
 
 cp $executable "bin/$target$exten"
+ls bin
