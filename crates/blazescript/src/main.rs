@@ -20,7 +20,7 @@ use blaze_vm::{Konstants, VM};
 use bzs_shared::ByteCode;
 use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
-use bzsc_parser::Parser;
+use bzsc_parser::parser::Parser;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::PathBuf;
