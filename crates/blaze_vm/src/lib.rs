@@ -14,9 +14,15 @@
 use bzs_shared::{ByteCode, Constants};
 use std::{cell::RefCell, collections::HashMap, mem::MaybeUninit, rc::Rc};
 
+// * VM's size of stack array
 const STACK_SIZE: usize = 512;
+
+// * Symbol table's size of the symbol array
 const SYM_ARR_SIZE: usize = 50;
 
+/*
+* Struct for Parsed Constants
+*/
 #[derive(Debug, Clone, PartialEq)]
 pub enum Konstants {
     None,
@@ -42,18 +48,33 @@ impl Konstants {
     }
 }
 
+/*
+* Multiple Ownership and Internal Mutability Constant
+*/
 type K = Rc<RefCell<Konstants>>;
 
+/*
+* Convert a Constant to Multiple Ownered & Internal Mutability Type
+*/
 fn make_k(k: Konstants) -> K {
     Rc::new(RefCell::new(k))
 }
 
+/*
+* Type of Symbol in the Symbol Array
+*/
 type Symbol = Option<(K, bool)>;
 
+/*
+* Convert two 8 bytecode unsigned int to usize
+*/
 pub fn convert_to_usize(int1: u8, int2: u8) -> usize {
     ((int1 as usize) << 8) | int2 as usize
 }
 
+/*
+* The Virtual Machine for interpreting the Bytecode
+*/
 #[derive(Debug, Clone, PartialEq)]
 pub struct VM {
     bytecode: ByteCode,
@@ -64,6 +85,9 @@ pub struct VM {
 }
 
 impl VM {
+    /*
+     * Creates a new Bytecode Virtual Machine
+     */
     pub fn new(bytecode: ByteCode, symbols: Option<Vec<[Symbol; SYM_ARR_SIZE]>>) -> Self {
         Self {
             bytecode,
@@ -95,6 +119,9 @@ impl VM {
         }
     }
 
+    /*
+     * Runs the VM i.e executes the Bytecode
+     */
     pub fn run(&mut self) {
         let mut ip = 0;
         while ip < self.bytecode.instructions.len() {
@@ -531,11 +558,17 @@ impl VM {
         }
     }
 
+    /*
+     * Push a Constant to Stack
+     */
     pub fn push(&mut self, node: K) {
         self.stack[self.stack_ptr] = node;
         self.stack_ptr += 1;
     }
 
+    /*
+     * Pop a Constant from the stack
+     */
     pub fn pop(&mut self) -> K {
         let node = self.stack[if self.stack_ptr == 0 {
             self.stack_ptr
@@ -547,10 +580,16 @@ impl VM {
         node
     }
 
+    /*
+     * Pop the last constant from the stack
+     */
     pub fn pop_last(&self) -> K {
         self.stack[self.stack_ptr].clone()
     }
 
+    /*
+     * Get a symbol from the symbol array
+     */
     pub fn get_symbol(&self, k: usize) -> &Symbol {
         for idx in (0..self.symbols.len()).rev() {
             let sym = &self.symbols.get(idx).unwrap()[k];
@@ -561,6 +600,9 @@ impl VM {
         &None
     }
 
+    /*
+     * Set a symbol in place of s pre-existing symbol
+     */
     pub fn get_set_symbols(&mut self, k: usize, n: Symbol) {
         for idx in (0..self.symbols.len()).rev() {
             let sym = &self.symbols.get(idx).unwrap()[k];

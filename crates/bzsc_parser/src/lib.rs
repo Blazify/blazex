@@ -13,6 +13,9 @@
 
 use bzs_shared::{DynType, Error, Node, Token, Tokens};
 
+/*
+* Result returned after statement(s) are parsed by the error
+*/
 #[derive(Debug, Clone)]
 pub struct ParseResult {
     pub node: Option<Node>,
@@ -22,6 +25,9 @@ pub struct ParseResult {
 }
 
 impl ParseResult {
+    /*
+     * Creates a new instance of Parse Result
+     */
     pub fn new() -> ParseResult {
         ParseResult {
             node: None,
@@ -31,6 +37,9 @@ impl ParseResult {
         }
     }
 
+    /*
+     * Registers node and error of a result into the current
+     */
     pub fn register(&mut self, res: ParseResult) -> Option<Node> {
         self.advance_count += res.advance_count;
         if res.error.is_some() {
@@ -39,6 +48,9 @@ impl ParseResult {
         res.node
     }
 
+    /*
+     * Register a Result if there is no error
+     */
     pub fn try_register(&mut self, res: ParseResult) -> Option<Node> {
         if res.error.is_some() {
             self.to_reverse_count = res.advance_count;
@@ -47,21 +59,33 @@ impl ParseResult {
         self.register(res)
     }
 
+    /*
+     * Advance the Node Array Index by one
+     */
     pub fn register_advancement(&mut self) {
         self.advance_count += 1;
     }
 
+    /*
+     * Return a Result with a node
+     */
     pub fn success(&mut self, node: Node) -> ParseResult {
         self.node = Some(node);
         self.clone()
     }
 
+    /*
+     * Return a Result with a error
+     */
     pub fn failure(&mut self, error: Error) -> ParseResult {
         self.error = Some(error);
         self.clone()
     }
 }
 
+/*
+* Parses Tokens into a Statements Node with child nodes
+*/
 #[derive(Debug, Clone)]
 pub struct Parser {
     pub tokens: Vec<Token>,
@@ -70,6 +94,9 @@ pub struct Parser {
 }
 
 impl Parser {
+    /*
+     * Creates a new Parser instance
+     */
     pub fn new(tokens: Vec<Token>) -> Parser {
         let current_token = tokens.clone()[0].clone();
         Parser {
@@ -79,6 +106,9 @@ impl Parser {
         }
     }
 
+    /*
+     * Parses tokens into a node
+     */
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
         if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
@@ -92,18 +122,27 @@ impl Parser {
         res
     }
 
+    /*
+     * Advances to the next token
+     */
     fn advance(&mut self) -> Token {
         self.token_index += 1;
         self.update_current_token();
         self.current_token.clone()
     }
 
+    /*
+     * Updates the current token based upon the token index
+     */
     fn update_current_token(&mut self) {
         if self.token_index >= 0 as usize && self.token_index < self.tokens.len() {
             self.current_token = self.tokens.clone()[self.clone().token_index].clone();
         }
     }
 
+    /*
+     * Reverse tokens by provided offset
+     */
     fn reverse(&mut self, cnt: usize) -> Token {
         self.token_index -= cnt;
         self.update_current_token();
@@ -111,6 +150,9 @@ impl Parser {
         self.clone().current_token
     }
 
+    /*
+     * Parse Statements
+     */
     fn statements(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut statements: Vec<Node> = vec![];
@@ -153,6 +195,9 @@ impl Parser {
         res.success(Node::Statements { statements })
     }
 
+    /*
+     * Parse a statement
+     */
     fn statement(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
@@ -181,6 +226,9 @@ impl Parser {
         res.success(expr.unwrap())
     }
 
+    /*
+     * Parse a expression
+     */
     fn expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
@@ -284,6 +332,9 @@ impl Parser {
         res.success(left.unwrap())
     }
 
+    /*
+     * Parse a computed expression
+     */
     fn comp_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
@@ -349,6 +400,9 @@ impl Parser {
         res.success(left.unwrap())
     }
 
+    /*
+     * Parse a arithmetic expression
+     */
     fn arith_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
@@ -377,6 +431,9 @@ impl Parser {
         res.success(left.unwrap())
     }
 
+    /*
+     * Parse a term expression
+     */
     fn term(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut left = res.register(self.factor());
@@ -404,6 +461,9 @@ impl Parser {
         res.success(left.unwrap())
     }
 
+    /*
+     * Parse factor expressions
+     */
     fn factor(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
@@ -423,6 +483,9 @@ impl Parser {
         self.power()
     }
 
+    /*
+     * Parses a power expression
+     */
     fn power(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut left = res.register(self.call());
@@ -450,6 +513,9 @@ impl Parser {
         res.success(left.unwrap())
     }
 
+    /*
+     * Parses a function call
+     */
     fn call(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let atom = res.register(self.obj_prop_expr());
@@ -617,6 +683,9 @@ impl Parser {
         res.success(atom.unwrap())
     }
 
+    /*
+     * Parses a object property expression
+     */
     fn obj_prop_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let index = res.register(self.index_expr());
@@ -784,6 +853,9 @@ impl Parser {
         res.success(index.unwrap())
     }
 
+    /*
+     * Parse indexing of arrays
+     */
     fn index_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.pos_start.clone();
@@ -951,6 +1023,9 @@ impl Parser {
         res.success(atom.unwrap())
     }
 
+    /*
+     * Parses a atom expression
+     */
     fn atom(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
@@ -1096,6 +1171,9 @@ impl Parser {
         ))
     }
 
+    /*
+     * Parses a object expression
+     */
     fn obj_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
@@ -1234,6 +1312,9 @@ impl Parser {
         res.success(Node::ObjectDefNode { properties })
     }
 
+    /*
+     * Parses a array
+     */
     fn array_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut element_nodes: Vec<Node> = vec![];
@@ -1293,6 +1374,9 @@ impl Parser {
         res.success(Node::ArrayNode { element_nodes })
     }
 
+    /*
+     * Parses a class definition
+     */
     fn class_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut methods: Vec<(Token, Node)> = vec![];
@@ -1408,6 +1492,9 @@ impl Parser {
         })
     }
 
+    /*
+     * Parses a class initialization expression
+     */
     fn class_init(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         let mut constructor_params: Vec<Node> = vec![];
@@ -1503,6 +1590,9 @@ impl Parser {
         })
     }
 
+    /*
+     * Parses a If Expresion
+     */
     fn if_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self
@@ -1670,6 +1760,9 @@ impl Parser {
         })
     }
 
+    /*
+     * Parses a while loop
+     */
     fn while_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self
@@ -1736,6 +1829,9 @@ impl Parser {
         })
     }
 
+    /*
+     * Parses a For loop
+     */
     fn for_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self
@@ -1872,6 +1968,9 @@ impl Parser {
         })
     }
 
+    /*
+     * Parses a function definition
+     */
     fn fun_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
         if !self

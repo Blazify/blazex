@@ -14,6 +14,9 @@
 use bzs_shared::{ByteCode, Constants, DynType, Node, Tokens};
 use std::collections::HashMap;
 
+/*
+* OpCodes for instruction
+*/
 #[derive(Debug)]
 pub enum OpCode {
     OpConstant(u16),
@@ -49,6 +52,9 @@ pub enum OpCode {
 }
 
 impl OpCode {
+    /*
+     * Return unsigned int 8 byte instructions
+     */
     pub fn make_op(&self) -> Vec<u8> {
         match self {
             Self::OpConstant(arg) => make_three_byte_op(0x01, *arg),
@@ -85,16 +91,25 @@ impl OpCode {
     }
 }
 
+/*
+* Converts a 16 bit unsigned int to two 8 bit unsigned int
+*/
 fn convert_to_u8(integer: u16) -> [u8; 2] {
     [(integer >> 8) as u8, integer as u8]
 }
 
+/*
+* Make a three byte opcode using a code, and a code of 16 bit unsigned int
+*/
 fn make_three_byte_op(code: u8, data: u16) -> Vec<u8> {
     let mut output = vec![code];
     output.extend(&convert_to_u8(data));
     output
 }
 
+/*
+* The Bytecode Compiler
+*/
 #[derive(Debug, Clone)]
 pub struct ByteCodeGen {
     pub bytecode: ByteCode,
@@ -102,6 +117,9 @@ pub struct ByteCodeGen {
 }
 
 impl ByteCodeGen {
+    /*
+     * Creates a new instance of the bytecode compiler
+     */
     pub fn new() -> Self {
         let mut variables = HashMap::new();
         variables.insert(String::from("soul"), 0);
@@ -111,6 +129,9 @@ impl ByteCodeGen {
         }
     }
 
+    /*
+     * Resolve Identifiers to Ints
+     */
     fn variable(&mut self, k: String) -> u16 {
         if self.variables.contains_key(&k) {
             self.variables.get(&k).unwrap().clone()
@@ -122,17 +143,26 @@ impl ByteCodeGen {
         }
     }
 
+    /*
+     * Adds a constant to the bytecode
+     */
     fn add_constant(&mut self, c: Constants) -> u16 {
         self.bytecode.constants.push(c);
         (self.bytecode.constants.len() - 1) as u16
     }
 
+    /*
+     * Adds a instruction to the bytecode
+     */
     fn add_instruction(&mut self, op: OpCode) -> u16 {
         let pos = self.bytecode.instructions.len() as u16;
         self.bytecode.instructions.extend(op.make_op());
         pos
     }
 
+    /*
+     * Compiles node into bytecode
+     */
     pub fn compile_node(&mut self, node: Node) {
         match node {
             Node::Statements { statements } => {
@@ -451,6 +481,9 @@ impl ByteCodeGen {
         }
     }
 
+    /*
+     * Sets the jump to position if conditon is false
+     */
     fn patch_jump_if_false(&mut self, idx: u16, new: Option<u16>) {
         let jump_temp = if new.is_none() {
             let offset = self.bytecode.instructions.len();
@@ -462,6 +495,9 @@ impl ByteCodeGen {
         self.bytecode.instructions[(idx + 2) as usize] = jump_temp[2];
     }
 
+    /*
+     * Sets the jump to location
+     */
     fn patch_jump(&mut self, idx: u16, new: Option<u16>) {
         let jump_temp = if new.is_none() {
             let offset = self.bytecode.instructions.len();
@@ -473,6 +509,9 @@ impl ByteCodeGen {
         self.bytecode.instructions[(idx + 2) as usize] = jump_temp[2];
     }
 
+    /*
+     * Creates a new instance with the pre-existing variables
+     */
     pub fn clear(&self) -> Self {
         let mut cl = self.clone();
         cl.bytecode = ByteCode::new();

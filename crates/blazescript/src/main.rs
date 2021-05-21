@@ -30,21 +30,39 @@ use std::time::Duration;
 use std::time::SystemTime;
 use structopt::StructOpt;
 
+/*
+* Arguments Struct for CLI Argument Parsing
+*/
 #[derive(StructOpt, Debug)]
 struct CmdParams {
+    /*
+     * Path to the BlazeScript or Executable
+     */
     #[structopt(parse(from_os_str))]
     pub path: PathBuf,
 
+    /*
+     * Name of compiled file (Default: input_file.bzs)
+     */
     #[structopt(long, short = "o")]
     pub out: Option<PathBuf>,
 
+    /*
+     * Whether there should be any logging in console (Default: false)
+     */
     #[structopt(long, short = "q")]
     pub quiet: bool,
 
+    /*
+     * Whether the compiler should compile/run on file changes (Default: false)
+     */
     #[structopt(long, short = "w")]
     pub watch: bool,
 }
 
+/*
+* Entry Point of the Compiler
+*/
 fn main() {
     let cmd_params = CmdParams::from_args();
     let file_name = cmd_params.path.as_os_str().to_str().unwrap().to_string();
@@ -72,6 +90,9 @@ fn main() {
     };
     let watch = cmd_params.watch;
 
+    /*
+     * Compiling to Bytecode or Intepreting Bytecode
+     */
     let compile = || {
         let time = SystemTime::now();
         if file_name.ends_with(".bzs") {
@@ -184,6 +205,9 @@ fn main() {
         .watch(file_name.clone(), RecursiveMode::Recursive)
         .unwrap();
 
+    /*
+     * Triggering the compiler on file change
+     */
     loop {
         match rx.recv() {
             Ok(DebouncedEvent::Write(_)) => {
@@ -201,6 +225,9 @@ fn main() {
     }
 }
 
+/*
+* Print Prettified Version of Result
+*/
 fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
     match k {
         Konstants::None => {

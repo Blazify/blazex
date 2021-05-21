@@ -18,6 +18,10 @@ use codespan_reporting::term::{self};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Error as E, Formatter};
+
+/*
+* Enum of all the Token Types
+*/
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Tokens {
     Int,
@@ -54,6 +58,9 @@ pub enum Tokens {
     Unknown,
 }
 
+/*
+* Enum of all the Token Values
+*/
 #[derive(Debug, PartialEq, Clone)]
 pub enum DynType {
     Int(i128),
@@ -65,6 +72,9 @@ pub enum DynType {
 }
 
 impl DynType {
+    /*
+     * Convert a Token value to int if possible
+     */
     pub fn into_int(&self) -> i128 {
         if let DynType::Int(i) = self {
             *i
@@ -73,6 +83,9 @@ impl DynType {
         }
     }
 
+    /*
+     * Convert a Token value to float if possible
+     */
     pub fn into_float(&self) -> f64 {
         if let DynType::Float(i) = self {
             *i
@@ -81,6 +94,9 @@ impl DynType {
         }
     }
 
+    /*
+     * Convert a Token value to string if possible
+     */
     pub fn into_string(&self) -> String {
         if let DynType::String(i) = self {
             i.to_string()
@@ -89,6 +105,9 @@ impl DynType {
         }
     }
 
+    /*
+     * Convert a Token value to charecter if possible
+     */
     pub fn into_char(&self) -> char {
         if let DynType::Char(i) = self {
             *i
@@ -97,6 +116,9 @@ impl DynType {
         }
     }
 
+    /*
+     * Convert a Token value to boolean if possible
+     */
     pub fn into_boolean(&self) -> bool {
         if let DynType::Boolean(i) = self {
             *i
@@ -106,6 +128,9 @@ impl DynType {
     }
 }
 
+/*
+* Raw Constant Enum returned by Bytecode Compiler
+*/
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Constants {
     None,
@@ -121,6 +146,9 @@ pub enum Constants {
     RawClass(Option<(Vec<u16>, ByteCode)>, HashMap<usize, ByteCode>),
 }
 
+/*
+* Custom Error struct for capturing errors
+*/
 #[derive(Debug, Clone)]
 pub struct Error {
     pub name: &'static str,
@@ -130,6 +158,9 @@ pub struct Error {
 }
 
 impl Error {
+    /*
+     * Creates a new Error Struct
+     */
     pub fn new(
         name: &'static str,
         pos_start: Position,
@@ -144,6 +175,9 @@ impl Error {
         }
     }
 
+    /*
+     * Prettifies the Error
+     */
     pub fn prettify(&self) {
         let mut files = SimpleFiles::new();
         let file_id = files.add(self.pos_start.file_name, self.pos_start.file_content);
@@ -163,6 +197,9 @@ impl Error {
     }
 }
 
+/*
+* Position struct for error pretty-printing
+*/
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub index: usize,
@@ -171,6 +208,9 @@ pub struct Position {
 }
 
 impl Position {
+    /*
+     * Creates a new Position Struct
+     */
     pub fn new(index: usize, file_name: &'static str, file_content: &'static str) -> Position {
         Position {
             index,
@@ -179,12 +219,18 @@ impl Position {
         }
     }
 
+    /*
+     * Advances the position by one
+     */
     pub fn advance(&mut self) -> Self {
         self.index += 1;
         self.clone()
     }
 }
 
+/*
+* Token struct for tokens in a program
+*/
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub r#type: Tokens,
@@ -194,6 +240,9 @@ pub struct Token {
 }
 
 impl Token {
+    /*
+     * Creates a new token
+     */
     pub fn new(r#type: Tokens, pos_start: Position, pos_end: Position, value: DynType) -> Token {
         Token {
             r#type,
@@ -203,11 +252,17 @@ impl Token {
         }
     }
 
+    /*
+     * Matches a token based upon it's type and value
+     */
     pub fn matches(&self, r#type: Tokens, value: DynType) -> bool {
         return self.r#type == r#type && self.value == value;
     }
 }
 
+/*
+* Enum Node returned by Parser
+*/
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     WhileNode {
@@ -304,6 +359,9 @@ pub enum Node {
     },
 }
 
+/*
+* Bytecode Struct which contains the actual instructions and constants
+*/
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ByteCode {
     pub instructions: Vec<u8>,
@@ -311,6 +369,9 @@ pub struct ByteCode {
 }
 
 impl ByteCode {
+    /*
+     * Creates a new Bytecode instance
+     */
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),

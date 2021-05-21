@@ -14,6 +14,9 @@
 #![allow(unused_assignments)]
 use bzs_shared::{DynType, Error, Position, Token, Tokens};
 
+/*
+* Returns all the keywords in the language
+*/
 pub fn get_keywords() -> Vec<String> {
     vec![
         string("val"),
@@ -34,26 +37,41 @@ pub fn get_keywords() -> Vec<String> {
     ]
 }
 
+/*
+* Retuns a array of  all numbers from 0 to 9
+*/
 pub fn get_number() -> Vec<u32> {
     vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
 
+/*
+* Converts str to String
+*/
 fn string(str: &str) -> String {
     return String::from(str);
 }
 
+/*
+* Return all ascii charecters
+*/
 pub fn get_ascii_letters() -> Vec<&'static str> {
     "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         .split("")
         .collect::<Vec<&str>>()
 }
 
+/*
+* Returns all ascii charecters with numbers
+*/
 pub fn get_ascii_letters_and_digits() -> Vec<&'static str> {
     "_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         .split("")
         .collect::<Vec<&str>>()
 }
 
+/*
+* Goes through the file and lexes into a Array of token
+*/
 pub struct Lexer {
     pub file_name: String,
     pub text: String,
@@ -62,6 +80,9 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    /*
+     * Creates a new Lexer Instance
+     */
     pub fn new(file_name: &'static str, text: &'static str) -> Lexer {
         let lexer = Lexer {
             file_name: String::from(file_name),
@@ -72,6 +93,9 @@ impl Lexer {
         lexer
     }
 
+    /*
+     * Advance to the next charecter is present
+     */
     fn advance(&mut self) {
         self.position.advance();
         if self.text.len() > self.position.index {
@@ -82,6 +106,9 @@ impl Lexer {
         }
     }
 
+    /*
+     * Lex all charecters into a array of tokens
+     */
     pub fn lex(&mut self) -> Result<Vec<Token>, Error> {
         let mut tokens: Vec<Token> = vec![];
 
@@ -211,6 +238,9 @@ impl Lexer {
         Ok(tokens)
     }
 
+    /*
+     * Makes a number token
+     */
     fn make_number(&mut self) -> Token {
         let mut str_num = String::new();
         let mut dot_count = 0;
@@ -246,6 +276,9 @@ impl Lexer {
         };
     }
 
+    /*
+     * Makes a String Token
+     */
     fn make_string(&mut self) -> Token {
         let mut str_raw = String::new();
         let start = self.position.clone();
@@ -286,6 +319,9 @@ impl Lexer {
         )
     }
 
+    /*
+     * Makes a charecter token
+     */
     fn make_char(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
 
@@ -312,6 +348,9 @@ impl Lexer {
         ))
     }
 
+    /*
+     * Makes a DOUBLE_EQUALS | ARROW | EQUALS Token
+     */
     fn make_equals(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
@@ -332,6 +371,9 @@ impl Lexer {
         Token::new(Tokens::Equals, start, self.position.clone(), DynType::None)
     }
 
+    /*
+     * Makes a LESS_THAN or LESS_THAN_EQUALS Token
+     */
     fn make_less_than(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
@@ -353,6 +395,9 @@ impl Lexer {
         )
     }
 
+    /*
+     * Makes a GREATER_THAN or GREATER_THAN_EQUALS Token
+     */
     fn make_greater_than(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
@@ -374,6 +419,9 @@ impl Lexer {
         )
     }
 
+    /*
+     * Makes a NOT or NOT_EQUALS Token
+     */
     fn make_not(&mut self) -> Token {
         let start = self.position.clone();
         self.advance();
@@ -396,6 +444,9 @@ impl Lexer {
         )
     }
 
+    /*
+     * Makes a NOT Token
+     */
     fn make_or(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
         self.advance();
@@ -418,6 +469,9 @@ impl Lexer {
         ))
     }
 
+    /*
+     * Makes a AND Token
+     */
     fn make_and(&mut self) -> Result<Token, Error> {
         let start = self.position.clone();
         self.advance();
@@ -440,6 +494,9 @@ impl Lexer {
         ))
     }
 
+    /*
+     * Makes a Identifier or Keyword Token
+     */
     fn make_identifiers(&mut self) -> Token {
         let mut identifier = String::new();
         let start = self.position.clone();
@@ -473,6 +530,9 @@ impl Lexer {
         )
     }
 
+    /*
+     * Returns Nothing but skips through comments
+     */
     pub fn skip_comment(&mut self) {
         self.advance();
 
