@@ -443,10 +443,7 @@ impl ByteCodeGen {
                     constr = Some((tok, body));
                 };
 
-                let mut prop_temp = properties.clone();
-                prop_temp.extend(methods);
-
-                for (name, body) in &prop_temp {
+                for (name, body) in &properties {
                     btc = btc.clear();
                     let id = btc.variable(name.value.into_string()) as usize;
                     btc.compile_node(body.clone());
@@ -454,7 +451,21 @@ impl ByteCodeGen {
                     props.insert(id, btc.bytecode.clone());
                 }
 
-                let idx = self.add_constant(Constants::RawClass(constr, props));
+                let mut methods_compiled = HashMap::new();
+                for (name, args, body) in &methods {
+                    btc = btc.clear();
+                    let id = btc.variable(name.value.into_string()) as usize;
+                    btc.compile_node(body.clone());
+                    let mut args_id = vec![];
+                    for arg in args {
+                        let id = btc.variable(arg.value.into_string());
+                        args_id.push(id);
+                    }
+                    self.variables = btc.variables.clone();
+                    methods_compiled.insert(id, (args_id, btc.bytecode.clone()));
+                }
+
+                let idx = self.add_constant(Constants::RawClass(constr, props, methods_compiled));
                 self.add_instruction(OpCode::OpConstant(idx));
                 let id = self.variable(name.value.into_string());
                 let idx_2 = self.add_constant(Constants::Boolean(false));

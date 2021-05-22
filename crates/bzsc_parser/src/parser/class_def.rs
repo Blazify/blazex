@@ -21,7 +21,7 @@ impl Parser {
      */
     pub(crate) fn class_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        let mut methods: Vec<(Token, Node)> = vec![];
+        let mut methods: Vec<(Token, Vec<Token>, Node)> = vec![];
         let mut properties: Vec<(Token, Node)> = vec![];
         let mut constructor: Option<(Vec<Token>, Node)> = None;
 
@@ -100,7 +100,7 @@ impl Parser {
                         }
                         constructor = Some((arg_tokens, *body_node.clone()));
                     } else {
-                        methods.push((name.as_ref().unwrap().clone(), a));
+                        methods.push((name.as_ref().unwrap().clone(), arg_tokens, *body_node));
                     }
                 }
                 _ => {

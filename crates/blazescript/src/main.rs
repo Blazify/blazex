@@ -231,7 +231,7 @@ fn main() {
 fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
     match k {
         Konstants::None => {
-            format!("None")
+            panic!("Unexpected `None`")
         }
         Konstants::Null => {
             format!("Null")
@@ -256,7 +256,8 @@ fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
             for x in &x_arr[..] {
                 res.push(format_print(x, props.clone()));
             }
-            res.join(", ")
+            let a = res.join(", ");
+            format!("[{}]", a)
         }
         Konstants::Object(x) => {
             let mut str = String::from("{\n    ");

@@ -104,20 +104,12 @@ impl VM {
             },
             stack_ptr: 0,
             symbols: if symbols.is_none() {
-                unsafe {
-                    let mut data: [MaybeUninit<Symbol>; SYM_ARR_SIZE] =
-                        MaybeUninit::uninit().assume_init();
-
-                    for elem in &mut data[..] {
-                        *elem = MaybeUninit::new(None);
-                    }
-
-                    vec![std::mem::transmute::<_, [Symbol; SYM_ARR_SIZE]>(data)]
-                }
+                const S: Symbol = None;
+                vec![[S; SYM_ARR_SIZE]]
             } else {
                 symbols.unwrap()
             },
-            return_val: make_k(Konstants::None),
+            return_val: make_k(Konstants::Null),
         }
     }
 
@@ -152,7 +144,6 @@ impl VM {
                                 let mut v_cl = vm.clone();
                                 v_cl.bytecode = i.clone();
                                 v_cl.run();
-                                self.symbols = v_cl.symbols.clone();
                                 arr.push(v_cl.stack[0].borrow().clone());
                             }
                             Konstants::Array(arr)
@@ -170,7 +161,6 @@ impl VM {
                                 let mut v_clone = vm.clone();
                                 v_clone.bytecode = v.clone();
                                 v_clone.run();
-                                self.symbols = v_clone.symbols.clone();
                                 props.insert(k.clone(), v_clone.stack[0].borrow().clone());
                             }
                             Konstants::Object(props)
@@ -179,7 +169,7 @@ impl VM {
                             let fun_vm = VM::new(body, Some(self.symbols.clone()));
                             Konstants::Function(args, fun_vm)
                         }
-                        Constants::RawClass(constr, klass) => {
+                        Constants::RawClass(constr, props, methods) => {
                             let mut vm = VM::new(
                                 ByteCode {
                                     constants: vec![],
@@ -197,17 +187,24 @@ impl VM {
                             }
 
                             let soul = make_k(Konstants::Object(HashMap::new()));
-                            for (k, v) in &klass {
+                            vm.symbols.last_mut().unwrap()[0] = Some((soul.clone(), false));
+
+                            for (k, v) in &props {
                                 let mut v_clone = vm.clone();
                                 v_clone.bytecode = v.clone();
-                                v_clone.symbols.last_mut().unwrap()[0] =
-                                    Some((soul.clone(), false));
                                 v_clone.run();
-                                self.symbols = v_clone.symbols.clone();
                                 soul.borrow_mut()
                                     .property_edit(k.clone(), v_clone.stack[0].borrow().clone());
                             }
-                            vm.symbols.last_mut().unwrap()[0] = Some((soul.clone(), false));
+
+                            for (k, (args, btc)) in &methods {
+                                let fun_vm = VM::new(btc.clone(), Some(vm.symbols.clone()));
+                                soul.borrow_mut().property_edit(
+                                    k.clone(),
+                                    Konstants::Function(args.clone(), fun_vm),
+                                );
+                            }
+
                             vm.return_val = soul.clone();
                             Konstants::Constructor(args, vm)
                         }
@@ -326,40 +323,14 @@ impl VM {
                     _ => panic!("Unknown types to OpOr"),
                 },
                 0x0F => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
+                    (rhs, lhs) => {
+                        self.push(make_k(Konstants::Boolean(lhs == rhs)));
                     }
-                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
-                    }
-                    (Konstants::String(rhs), Konstants::String(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
-                    }
-                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
-                    }
-                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs == rhs)))
-                    }
-                    _ => panic!("Unknown types to OpEquals"),
                 },
                 0x1A => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
-                    (Konstants::Int(rhs), Konstants::Int(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
+                    (rhs, lhs) => {
+                        self.push(make_k(Konstants::Boolean(lhs != rhs)));
                     }
-                    (Konstants::Float(rhs), Konstants::Float(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
-                    }
-                    (Konstants::String(rhs), Konstants::String(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
-                    }
-                    (Konstants::Char(rhs), Konstants::Char(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
-                    }
-                    (Konstants::Boolean(rhs), Konstants::Boolean(lhs)) => {
-                        self.push(make_k(Konstants::Boolean(lhs != rhs)))
-                    }
-                    _ => panic!("Unknown types to OpNotEquals"),
                 },
                 0x1B => match (self.pop().borrow().clone(), self.pop().borrow().clone()) {
                     (Konstants::Int(rhs), Konstants::Int(lhs)) => {
@@ -482,17 +453,8 @@ impl VM {
                     self.push(n);
                 }
                 0x2C => {
-                    let ctx = unsafe {
-                        let mut data: [MaybeUninit<Symbol>; SYM_ARR_SIZE] =
-                            MaybeUninit::uninit().assume_init();
-
-                        for elem in &mut data[..] {
-                            *elem = MaybeUninit::new(None);
-                        }
-
-                        std::mem::transmute::<_, [Symbol; SYM_ARR_SIZE]>(data)
-                    };
-                    self.symbols.push(ctx);
+                    const S: Symbol = None;
+                    self.symbols.push([S; SYM_ARR_SIZE]);
                 }
                 0x2D => {
                     self.symbols.pop();
@@ -551,7 +513,7 @@ impl VM {
                     ));
                 }
                 0x3C => {
-                    if self.return_val.borrow().clone() == Konstants::None {
+                    if self.return_val.borrow().clone() == Konstants::Null {
                         self.return_val = self.pop().clone();
                     }
                     return;
@@ -626,7 +588,7 @@ impl VM {
     }
 
     /*
-     * Set a symbol in place of s pre-existing symbol
+     * Set a symbol in place of pre-existing symbol
      */
     pub fn get_set_symbols(&mut self, k: usize, n: Symbol) {
         for idx in (0..self.symbols.len()).rev() {

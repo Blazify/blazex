@@ -1,15 +1,13 @@
 class Klass {
-	var a = 0;
+	var a = [0];
 
 	fun() => {
-		soul.a = 69;
-		if soul.a == 69 {
-			soul.editA(69420);
-		}
+		soul.a = [69];
+		soul.editA(69420);
 	}
 
 	fun editA(x) => {
-		soul.a = x;
+		soul.a = [soul.a[0], x];
 		return soul;
 	}
 }
