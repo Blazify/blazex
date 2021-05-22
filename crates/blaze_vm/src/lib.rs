@@ -35,6 +35,7 @@ pub enum Konstants {
     Array(Vec<Konstants>),
     Object(HashMap<usize, Konstants>),
     Function(Vec<u16>, VM),
+    Constructor(Vec<u16>, VM),
 }
 
 impl Konstants {
@@ -208,7 +209,7 @@ impl VM {
                             }
                             vm.symbols.last_mut().unwrap()[0] = Some((soul.clone(), false));
                             vm.return_val = soul.clone();
-                            Konstants::Function(args, vm)
+                            Konstants::Constructor(args, vm)
                         }
                         Constants::None => Konstants::None,
                         Constants::Null => Konstants::Null,
@@ -555,6 +556,28 @@ impl VM {
                     }
                     return;
                 }
+                0x3D => match self.pop().borrow().clone() {
+                    Konstants::Constructor(args, mut vm) => {
+                        let eval_args = self.pop().borrow().clone();
+                        if let Konstants::Array(a) = eval_args {
+                            if a.len() != args.len() {
+                                panic!("Expected {} args but found {}", args.len(), a.len());
+                            }
+                            let mut i = 0;
+                            for arg in args {
+                                vm.symbols.last_mut().unwrap()[arg as usize] =
+                                    Some((make_k(a.get(i).unwrap().clone()), true));
+                                i += 1;
+                            }
+                        } else {
+                            panic!("Unknown args")
+                        }
+                        vm.run();
+                        self.symbols = vm.symbols.clone();
+                        self.push(vm.return_val.clone());
+                    }
+                    _ => panic!("Unknown Types applied to OpInitClass"),
+                },
                 _ => panic!(
                     "\nPrevious instruction {}\nCurrent Instruction: {}\nNext Instruction: {}\n",
                     self.bytecode.instructions[address - 1],

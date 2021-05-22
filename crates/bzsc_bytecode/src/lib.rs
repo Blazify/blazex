@@ -48,6 +48,7 @@ pub enum OpCode {
     OpPropertyAccess(u16),
     OpPropertyAssign(u16),
     OpReturn,
+    OpInitClass,
     OpPop,
 }
 
@@ -87,6 +88,7 @@ impl OpCode {
             Self::OpPropertyAccess(i) => make_three_byte_op(0x3A, *i),
             Self::OpPropertyAssign(i) => make_three_byte_op(0x3B, *i),
             Self::OpReturn => vec![0x3C],
+            Self::OpInitClass => vec![0x3D],
         }
     }
 }
@@ -476,7 +478,7 @@ impl ByteCodeGen {
                 let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
                 self.add_instruction(OpCode::OpBlockEnd);
-                self.add_instruction(OpCode::OpCall);
+                self.add_instruction(OpCode::OpInitClass);
             }
         }
     }

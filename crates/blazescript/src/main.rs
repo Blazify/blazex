@@ -42,9 +42,9 @@ struct CmdParams {
     pub path: PathBuf,
 
     /*
-     * Name of compiled file (Default: input_file.bzs)
+     * Name of compiled file (Default: input_file.bze)
      */
-    #[structopt(long, short = "o")]
+    #[structopt(parse(from_os_str), long, short = "o")]
     pub out: Option<PathBuf>,
 
     /*
@@ -274,7 +274,7 @@ fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
             str.push_str("\r}");
             str
         }
-        Konstants::Function(x, _) => {
+        Konstants::Function(x, _) | Konstants::Constructor(x, _) => {
             let mut str = String::from("Function<(");
             let mut arr = vec![];
             for a in x {
