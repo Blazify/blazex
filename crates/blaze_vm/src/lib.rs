@@ -38,10 +38,11 @@ pub enum Konstants {
 }
 
 impl Konstants {
-    pub fn property_edit(&mut self, i: usize, val: Konstants) {
+    pub fn property_edit(&mut self, i: usize, val: Konstants) -> Konstants {
         match self {
             Self::Object(map) => {
-                map.insert(i, val);
+                map.insert(i, val.clone());
+                val
             }
             _ => panic!("property_edit called on unexpected type"),
         }
@@ -285,11 +286,13 @@ impl VM {
                 0x09 => match self.pop().borrow().clone() {
                     Konstants::Boolean(b) => {
                         if !b {
+                            self.push(make_k(Konstants::Boolean(b)));
                             ip = convert_to_usize(
                                 self.bytecode.instructions[ip],
                                 self.bytecode.instructions[ip + 1],
                             );
                         } else {
+                            self.push(make_k(Konstants::Boolean(b)));
                             ip += 2;
                         }
                     }
@@ -440,7 +443,8 @@ impl VM {
                             panic!("Variable already assigned")
                         }
                         let n = self.pop();
-                        self.symbols.last_mut().unwrap()[i] = Some((n, b));
+                        self.symbols.last_mut().unwrap()[i] = Some((n.clone(), b));
+                        self.push(n);
                     }
                     _ => panic!("Unknown types to OpVarAssign"),
                 },
@@ -473,7 +477,8 @@ impl VM {
                     }
 
                     let n = self.pop();
-                    self.get_set_symbols(i, Some((n, true)));
+                    self.get_set_symbols(i, Some((n.clone(), true)));
+                    self.push(n);
                 }
                 0x2C => {
                     let ctx = unsafe {
@@ -540,7 +545,9 @@ impl VM {
                     );
                     ip += 2;
 
-                    obj.borrow_mut().property_edit(i, val.borrow().clone());
+                    self.push(make_k(
+                        obj.borrow_mut().property_edit(i, val.borrow().clone()),
+                    ));
                 }
                 0x3C => {
                     if self.return_val.borrow().clone() == Konstants::None {
@@ -570,13 +577,8 @@ impl VM {
      * Pop a Constant from the stack
      */
     pub fn pop(&mut self) -> K {
-        let node = self.stack[if self.stack_ptr == 0 {
-            self.stack_ptr
-        } else {
-            self.stack_ptr - 1
-        }]
-        .clone();
-        self.stack_ptr -= if self.stack_ptr == 0 { 0 } else { 1 };
+        let node = self.stack[self.stack_ptr - 1].clone();
+        self.stack_ptr -= 1;
         node
     }
 
