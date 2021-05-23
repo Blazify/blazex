@@ -32,3 +32,21 @@ jobs:
           file: bin/${{ matrix.artifact_name }}
           asset_name: ${{ matrix.artifact_name }}
           tag: ${{ github.event.client_payload.new_version }}
+      - name: Generate Benches Graph
+        run: |
+          cargo +nightly bench
+          mkdir -p ${{ github.event.client_payload.new_version }}/${{ matrix.os }}
+          cp -r target/criterion ${{ github.event.client_payload.new_version }}/${{ matrix.os }}
+      - name: Checkout the benches branch
+        run: |
+          git fetch
+          git checkout benches -f
+      - name: Configure git identity
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - name: Stage, commit & push changes
+        run: |
+          git add ${{ github.event.client_payload.new_version }}
+          git commit -m  "Benches update triggered by ${{ steps.bump_version.outputs.new_tag }}"
+          git push origin benches
