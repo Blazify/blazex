@@ -37,8 +37,13 @@ jobs:
     name: Benchmarmks
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Generate Benches Graph
         run: |
+          rustup toolchain install nightly
+          rustup override set nightly
+          rustup component add rust-src
           cargo +nightly bench
           mkdir -p ${{ github.event.client_payload.new_version }}
           cp -r target/criterion/ ${{ github.event.client_payload.new_version }}
