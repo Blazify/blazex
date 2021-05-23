@@ -16,3 +16,15 @@ bzsc_lexer = { path = "../bzsc_lexer" }
 bzsc_parser = { path = "../bzsc_parser" }
 bzsc_bytecode = { path = "../bzsc_bytecode" }
 bzs_shared = { path = "../bzs_shared" }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = 'abort'
+debug = false
+
+[profile.release.package."*"]
+debug = 0
+opt-level = 3
+codegen-units = 1
