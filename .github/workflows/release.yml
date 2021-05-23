@@ -32,11 +32,16 @@ jobs:
           file: bin/${{ matrix.artifact_name }}
           asset_name: ${{ matrix.artifact_name }}
           tag: ${{ github.event.client_payload.new_version }}
+
+  bench:
+    name: Benchmarmks
+    runs-on: ubuntu-latest
+    steps:
       - name: Generate Benches Graph
         run: |
           cargo +nightly bench
-          mkdir -p ${{ github.event.client_payload.new_version }}/${{ matrix.os }}
-          cp -r target/criterion ${{ github.event.client_payload.new_version }}/${{ matrix.os }}
+          mkdir -p ${{ github.event.client_payload.new_version }}
+          cp -r target/criterion/ ${{ github.event.client_payload.new_version }}
       - name: Checkout the benches branch
         run: |
           git fetch
@@ -48,5 +53,5 @@ jobs:
       - name: Stage, commit & push changes
         run: |
           git add ${{ github.event.client_payload.new_version }}
-          git commit -m  "Benches update triggered by ${{ steps.bump_version.outputs.new_tag }}"
+          git commit -m  "Benches update triggered by ${{ github.event.client_payload.new_version }}"
           git push origin benches
