@@ -18,7 +18,7 @@ mod tests {
     fn bench_classes(b: &mut Bencher) {
         b.iter(|| {
             run_program(
-                String::from("loop"),
+                String::from("class"),
                 String::from(
                     r#"
 class Klass {

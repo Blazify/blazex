@@ -15,7 +15,7 @@ else
 	executable="target/$target/release/$exe"
 fi
 
-cargo build --locked --target $target --release
+rustup run nightly cargo build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then
