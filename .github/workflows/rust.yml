@@ -30,4 +30,4 @@ jobs:
       - name: Build project
         run: bash build
       - name: Benchmark
-        run: rustup run nightly cargo bench
+        run: cargo +nightly bench --package blazescript

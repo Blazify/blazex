@@ -17,6 +17,14 @@ bzsc_parser = { path = "../bzsc_parser" }
 bzsc_bytecode = { path = "../bzsc_bytecode" }
 bzs_shared = { path = "../bzs_shared" }
 
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "blazescript"
+harness = false
+
 [profile.release]
 opt-level = 3
 lto = "fat"

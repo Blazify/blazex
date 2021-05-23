@@ -5,48 +5,9 @@ use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
 use bzsc_parser::parser::Parser;
 use std::collections::HashMap;
-use std::{process::exit, time::SystemTime};
+use std::process::exit;
 
-extern crate test;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_classes(b: &mut Bencher) {
-        b.iter(|| {
-            run_program(
-                String::from("class"),
-                String::from(
-                    r#"
-class Klass {
-	var a = [0];
-
-	fun() => {
-		soul.a = [69];
-		soul.editA(69420);
-	}
-
-	fun editA(x) => {
-		soul.a = [soul.a[0], x];
-		return soul;
-	}
-}
-
-new Klass().a
-                "#,
-                ),
-            );
-        })
-    }
-}
-
-fn run_program(name: String, program: String) {
-    println!("Running Benchmark: {}", name);
-    let time = SystemTime::now();
-
+pub fn run_program(name: String, program: String) {
     let lexed = Lexer::new(
         Box::leak(name.to_owned().into_boxed_str()),
         Box::leak(program.to_owned().into_boxed_str()),
@@ -58,7 +19,6 @@ fn run_program(name: String, program: String) {
         Ok(tok) => tokens.extend(tok),
         Err(e) => {
             e.prettify();
-            println!("Benchmark failed: {}", name);
             exit(1);
         }
     }
@@ -66,7 +26,6 @@ fn run_program(name: String, program: String) {
     let parsed = Parser::new(tokens).parse();
     if parsed.error.is_some() {
         parsed.error.unwrap().prettify();
-        println!("Benchmark failed: {}", name);
         exit(1);
     }
 
@@ -80,16 +39,6 @@ fn run_program(name: String, program: String) {
     for (k, v) in &bytecode.variables {
         var.insert(v.clone(), k.clone());
     }
-
-    println!(
-        "Passed benchmark: {}",
-        format_print(&vm.pop_last().borrow(), var)
-    );
-
-    println!(
-        "Time taken for benchmark: {} nm",
-        time.elapsed().ok().unwrap().as_nanos()
-    );
 }
 
 /*

@@ -7,3 +7,4 @@ members = [
     "crates/blaze_vm",
     "crates/bzs_shared"
 ]
+
