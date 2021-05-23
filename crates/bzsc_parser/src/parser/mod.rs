@@ -33,6 +33,7 @@ mod power;
 mod statement;
 mod statements;
 mod term;
+mod var_expr;
 mod while_expr;
 
 /*

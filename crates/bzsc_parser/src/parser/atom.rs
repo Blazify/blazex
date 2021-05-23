@@ -48,27 +48,11 @@ impl Parser {
                 token: token.clone(),
             });
         } else if token.r#type == Tokens::Identifier {
-            res.register_advancement();
-            self.advance();
-
-            if self.current_token.r#type == Tokens::Equals {
-                res.register_advancement();
-                self.advance();
-
-                let new_value = res.register(self.expr());
-                if res.error.is_some() {
-                    return res;
-                }
-
-                return res.success(Node::VarReassignNode {
-                    name: token.clone(),
-                    value: Box::new(new_value.clone().unwrap()),
-                });
+            let var_expr = res.register(self.var_expr());
+            if res.error.is_some() {
+                return res;
             }
-
-            return res.success(Node::VarAccessNode {
-                token: token.clone(),
-            });
+            return res.success(var_expr.unwrap());
         } else if token.r#type == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
