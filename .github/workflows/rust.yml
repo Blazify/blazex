@@ -29,7 +29,5 @@ jobs:
         uses: actions/checkout@v2
       - name: Build project
         run: bash ./build.sh
-      - name: Compile
-        run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
-      - name: Interpret
-        run: ./bin/${{ matrix.artifact_name }} examples/main.bze
+      - name: Benchmark
+        run: rustup run nightly cargo bench

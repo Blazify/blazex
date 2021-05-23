@@ -16,7 +16,8 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use bincode::{deserialize, serialize};
-use blaze_vm::{Konstants, VM};
+use blaze_vm::VM;
+use blazescript::format_print;
 use bzs_shared::ByteCode;
 use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
@@ -221,70 +222,6 @@ fn main() {
                     exit(1);
                 }
             }
-        }
-    }
-}
-
-/*
-* Print Prettified Version of Result
-*/
-fn format_print(k: &Konstants, props: HashMap<u16, String>) -> String {
-    match k {
-        Konstants::None => {
-            panic!("Unexpected `None`")
-        }
-        Konstants::Null => {
-            format!("Null")
-        }
-        Konstants::Int(i) => {
-            format!("{}", i)
-        }
-        Konstants::Float(i) => {
-            format!("{}", i)
-        }
-        Konstants::String(i) => {
-            format!("{}", i)
-        }
-        Konstants::Char(i) => {
-            format!("{}", i)
-        }
-        Konstants::Boolean(i) => {
-            format!("{}", i)
-        }
-        Konstants::Array(x_arr) => {
-            let mut res = vec![];
-            for x in &x_arr[..] {
-                res.push(format_print(x, props.clone()));
-            }
-            let a = res.join(", ");
-            format!("[{}]", a)
-        }
-        Konstants::Object(x) => {
-            let mut str = String::from("{\n    ");
-            for (a, b) in x {
-                str.push_str(
-                    format!(
-                        "{}: {},\n",
-                        props.get(&(*a as u16)).unwrap(),
-                        format_print(b, props.clone())
-                    )
-                    .as_str(),
-                );
-                str.push_str("    ");
-            }
-            str.push_str("\r}");
-            str
-        }
-        Konstants::Function(x, _) | Konstants::Constructor(x, _) => {
-            let mut str = String::from("Function<(");
-            let mut arr = vec![];
-            for a in x {
-                arr.push(props.get(a).unwrap().clone());
-            }
-            str.push_str(arr.join(", ").as_str());
-            str.push(')');
-            str.push('>');
-            str
         }
     }
 }
