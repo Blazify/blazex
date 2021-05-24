@@ -5,6 +5,7 @@ members = [
     "crates/bzsc_parser",
     "crates/bzsc_bytecode",
     "crates/blaze_vm",
-    "crates/bzs_shared"
+    "crates/bzs_shared",
+    "crates/bzsc_llvm"
 ]
 

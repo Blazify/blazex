@@ -92,11 +92,13 @@ impl DynType {
      * Convert a Token value to float if possible
      */
     pub fn into_float(&self) -> f64 {
-        if let DynType::Float(i) = self {
+        return if let DynType::Float(i) = self {
             *i
+        } else if let DynType::Int(i) = self {
+            *i as f64
         } else {
             panic!()
-        }
+        };
     }
 
     /*

@@ -22,6 +22,7 @@ use bzs_shared::ByteCode;
 use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
 use bzsc_parser::parser::Parser;
+use cfg_if::cfg_if;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -59,6 +60,12 @@ struct CmdParams {
      */
     #[structopt(long, short = "w")]
     pub watch: bool,
+
+    /*
+     * Whether the compiler should compile to llvm (Default: false)
+     */
+    #[structopt(long, short = "l")]
+    pub llvm: bool,
 }
 
 /*
@@ -90,6 +97,7 @@ fn main() {
         file_name.clone().replace(".bzs", ".bze")
     };
     let watch = cmd_params.watch;
+    let is_llvm = cmd_params.llvm;
 
     /*
      * Compiling to Bytecode or Intepreting Bytecode
@@ -125,6 +133,32 @@ fn main() {
                 parsed.error.unwrap().prettify();
                 if !watch {
                     exit(1);
+                }
+            }
+
+            cfg_if! {
+                if #[cfg(feature = "llvm-jit")] {
+                    use bzsc_llvm::init_compiler;
+                    if is_llvm {
+                        init_compiler(parsed.node.unwrap());
+
+                        match time.elapsed() {
+                            Ok(elapsed) => {
+                                if !is_quiet {
+                                    println!(
+                                        "Time taken for Compilation Process: {} milliseconds",
+                                        elapsed.as_millis()
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Error: {:?}", e);
+                                exit(1);
+                            }
+                        }
+
+                        exit(0);
+                    }
                 }
             }
 

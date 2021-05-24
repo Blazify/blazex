@@ -127,6 +127,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 |   [bzsc_parser](crates/bzsc_parser)   |               Parser for AST Tree               |
 | [bzsc_bytecode](crates/bzsc_bytecode) |               Bytecode Generator                |
 |      [blaze_vm](crates/blaze_vm)      |            The bytecode interpreter             |
+|     [bzsc_llvm](crates/blaze_vm)      |           WIP LLVM IR Code Generation           |
 |    [bzs_shared](crates/bzs_shared)    | Structs, Methods, etc Shared among other crates |
 
 # TODO
@@ -157,6 +158,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 - [x] Lexer
 - [x] Parser
 - [x] AST
+- [ ] LLVM
 
 ## Author
 
