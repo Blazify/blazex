@@ -8,21 +8,21 @@ fn criterion_benchmark(c: &mut Criterion) {
                 String::from("class"),
                 String::from(
                     r#"
-class Klass {
-	var a = [0];
+                    class Klass {
+	                    var a = [0];
 
-	fun() => {
-		soul.a = [69];
-		soul.editA(69420);
-	}
+	                    fun() => {
+                            soul.a = [69];
+		                    soul.editA(69420);
+	                    }
 
-	fun editA(x) => {
-		soul.a = [soul.a[0], x];
-		return soul;
-	}
-}
+                        fun editA(x) => {
+                            soul.a = [soul.a[0], x];
+                            return soul;
+                        }
+                    }
 
-new Klass().a
+                    new Klass().a
                 "#,
                 ),
             );

@@ -129,28 +129,6 @@ impl DynType {
 }
 
 /*
-* Raw Constant Enum returned by Bytecode Compiler
-*/
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum Constants {
-    None,
-    Null,
-    Int(i128),
-    Float(f64),
-    String(String),
-    Char(char),
-    Boolean(bool),
-    Function(Vec<u16>, ByteCode),
-    RawArray(Vec<ByteCode>),
-    RawObject(HashMap<usize, ByteCode>),
-    RawClass(
-        Option<(Vec<u16>, ByteCode)>,
-        HashMap<usize, ByteCode>,
-        HashMap<usize, (Vec<u16>, ByteCode)>,
-    ),
-}
-
-/*
 * Custom Error struct for capturing errors
 */
 #[derive(Debug, Clone)]
@@ -321,7 +299,7 @@ pub enum Node {
     BooleanNode {
         token: Token,
     },
-    BinOpNode {
+    BinaryNode {
         left: Box<Node>,
         right: Box<Node>,
         op_token: Token,
@@ -361,6 +339,28 @@ pub enum Node {
         name: Token,
         constructor_params: Vec<Node>,
     },
+}
+
+/*
+* Raw Constant Enum returned by Bytecode Compiler
+*/
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum Constants {
+    None,
+    Null,
+    Int(i128),
+    Float(f64),
+    String(String),
+    Char(char),
+    Boolean(bool),
+    Function(Vec<u16>, ByteCode),
+    RawArray(Vec<ByteCode>),
+    RawObject(HashMap<usize, ByteCode>),
+    RawClass(
+        Option<(Vec<u16>, ByteCode)>,
+        HashMap<usize, ByteCode>,
+        HashMap<usize, (Vec<u16>, ByteCode)>,
+    ),
 }
 
 /*

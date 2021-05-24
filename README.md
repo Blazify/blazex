@@ -11,14 +11,14 @@ A intermediate compiled and vm interpreted language which is dynamically typed (
 In Ubuntu Or MacOS
 
 ```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh | sh
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install | bash
 ```
 
 In Windows
 
 ```shell
-$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install.sh -o install.sh
-$ bash install.sh
+$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install -o install
+$ bash install
 ```
 
 Confirm Installation
@@ -115,7 +115,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 - Fork the repository
 - Create a branch with the patch/feature you want
 - Make Changes to the code
-- Commit the code (Use the [Emoji Commit Style](https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538))
+- Commit the code (Use the [Emoji Commit Style](https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538)) and the message should NOT contain the word "release"
 - Finally push the code and make a pull request
 
 ## Project Structure
@@ -131,6 +131,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 
 # TODO
 
+- [ ] Bugs Fixed
 - [x] Bytecode Compiler
 
   - [x] Executables
@@ -152,7 +153,6 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] Proper Mutability
 
 - [x] VM Interpreter
-
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser

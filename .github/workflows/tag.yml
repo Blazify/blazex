@@ -1,4 +1,4 @@
-name: Bump version, create new tag and release point
+name: Bump version, create new tag and release point if a commit message ends with "release"
 on:
   push:
     branches:
@@ -11,6 +11,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Get Commit message
+        run: echo ::set-env name=commitmsg::$(git log --format=%B -n 1 ${{ github.event.after }})
+      - name: show Commit Message
+        run : echo $commitmsg
       - name: Bump version and push tag/create release point
         id: bump_version
         uses: anothrNick/github-tag-action@1.17.2
@@ -18,9 +22,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
+          if: contains( env.commitmsg , 'release' )
       - name: Repository dispatch tag created event
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           event-type: tag-created
           client-payload: '{"new_version": "${{ steps.bump_version.outputs.new_tag }}"}'
+          if: ${{  }}

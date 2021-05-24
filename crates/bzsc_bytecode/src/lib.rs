@@ -194,7 +194,7 @@ impl ByteCodeGen {
                 let idx = self.add_constant(Constants::Boolean(token.value.into_boolean()));
                 self.add_instruction(OpCode::OpConstant(idx));
             }
-            Node::BinOpNode {
+            Node::BinaryNode {
                 left,
                 right,
                 op_token,

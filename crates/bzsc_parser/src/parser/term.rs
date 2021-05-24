@@ -36,7 +36,7 @@ impl Parser {
                 return res;
             }
 
-            left = Option::from(Node::BinOpNode {
+            left = Option::from(Node::BinaryNode {
                 left: Box::new(left.clone().unwrap()),
                 right: Box::new(right.clone().unwrap()),
                 op_token,
