@@ -22,11 +22,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
-          if: contains( env.commitmsg , 'release' )
+          if: ${{ contains( env.commitmsg , 'release' ) }}
       - name: Repository dispatch tag created event
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           event-type: tag-created
           client-payload: '{"new_version": "${{ steps.bump_version.outputs.new_tag }}"}'
-          if: ${{  }}
+          if: ${{ contains( env.commitmsg , 'release' ) }}s
