@@ -11,8 +11,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get Commit message
-        run: echo ::set-env name=commitmsg::$(git log --format=%B -n 1 ${{ github.event.after }})
+      - name: Get Commit message and set to env
+        run: echo $commitmsg=$(git log --format=%B -n 1 ${{ github.event.after }}) >> $GITHUB_PATH
       - name: show Commit Message
         run : echo $commitmsg
       - name: Bump version and push tag/create release point
