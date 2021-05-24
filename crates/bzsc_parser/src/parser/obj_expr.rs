@@ -24,7 +24,7 @@ impl Parser {
         let pos_start = self.current_token.clone().pos_start;
         let mut properties: Vec<(Token, Node)> = vec![];
 
-        if self.current_token.r#type != Tokens::LeftCurlyBraces {
+        if self.current_token.typee != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid syntax",
                 pos_start,
@@ -36,12 +36,12 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        if self.current_token.r#type == Tokens::Newline {
+        if self.current_token.typee == Tokens::Newline {
             res.register_advancement();
             self.advance();
         }
 
-        if self.current_token.r#type == Tokens::RightCurlyBraces {
+        if self.current_token.typee == Tokens::RightCurlyBraces {
             res.register_advancement();
             self.advance();
         } else {
@@ -67,7 +67,7 @@ impl Parser {
                 ));
             }
 
-            if self.current_token.r#type != Tokens::Colon {
+            if self.current_token.typee != Tokens::Colon {
                 return res.failure(Error::new(
                     "Invalid syntax",
                     pos_start,
@@ -86,11 +86,11 @@ impl Parser {
 
             properties.push((tok, expr.unwrap()));
 
-            while self.current_token.r#type == Tokens::Comma {
+            while self.current_token.typee == Tokens::Comma {
                 self.advance();
                 res.register_advancement();
 
-                if self.current_token.r#type == Tokens::Newline {
+                if self.current_token.typee == Tokens::Newline {
                     res.register_advancement();
                     self.advance();
                 }
@@ -116,7 +116,7 @@ impl Parser {
                     ));
                 }
 
-                if self.current_token.r#type != Tokens::Colon {
+                if self.current_token.typee != Tokens::Colon {
                     return res.failure(Error::new(
                         "Invalid syntax",
                         pos_start,
@@ -136,12 +136,12 @@ impl Parser {
                 properties.push((tok, expr.unwrap()));
             }
 
-            if self.current_token.r#type == Tokens::Newline {
+            if self.current_token.typee == Tokens::Newline {
                 self.advance();
                 res.register_advancement()
             }
 
-            if self.current_token.r#type != Tokens::RightCurlyBraces {
+            if self.current_token.typee != Tokens::RightCurlyBraces {
                 return res.failure(Error::new(
                     "Invalid syntax",
                     pos_start,

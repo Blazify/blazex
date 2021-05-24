@@ -41,7 +41,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::Identifier {
+        if self.current_token.typee != Tokens::Identifier {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -55,7 +55,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::LeftCurlyBraces {
+        if self.current_token.typee != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -67,12 +67,12 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        while self.current_token.r#type != Tokens::RightCurlyBraces {
-            while self.current_token.r#type == Tokens::Newline {
+        while self.current_token.typee != Tokens::RightCurlyBraces {
+            while self.current_token.typee == Tokens::Newline {
                 res.register_advancement();
                 self.advance();
             }
-            if self.current_token.r#type == Tokens::RightCurlyBraces {
+            if self.current_token.typee == Tokens::RightCurlyBraces {
                 break;
             }
             let stnts = res.register(self.expr());
@@ -114,7 +114,7 @@ impl Parser {
             }
         }
 
-        if self.current_token.r#type != Tokens::RightCurlyBraces {
+        if self.current_token.typee != Tokens::RightCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

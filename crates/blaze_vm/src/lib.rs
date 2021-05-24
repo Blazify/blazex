@@ -284,14 +284,14 @@ impl VM {
                 0x09 => match self.pop().borrow().clone() {
                     Konstants::Boolean(b) => {
                         if !b {
-                            self.push(make_k(Konstants::Boolean(b)));
                             ip = convert_to_usize(
                                 self.bytecode.instructions[ip],
                                 self.bytecode.instructions[ip + 1],
                             );
-                        } else {
                             self.push(make_k(Konstants::Boolean(b)));
+                        } else {
                             ip += 2;
+                            self.push(make_k(Konstants::Boolean(b)));
                         }
                     }
                     _ => panic!("Unknown types to OpJump"),
@@ -562,8 +562,8 @@ impl VM {
      * Pop a Constant from the stack
      */
     pub fn pop(&mut self) -> K {
-        let node = self.stack[self.stack_ptr - 1].clone();
         self.stack_ptr -= 1;
+        let node = self.stack[self.stack_ptr].clone();
         node
     }
 

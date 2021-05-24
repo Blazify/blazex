@@ -38,13 +38,13 @@ impl Parser {
         self.advance();
 
         let mut fun_name: Option<Token> = None;
-        if self.current_token.r#type == Tokens::Identifier {
+        if self.current_token.typee == Tokens::Identifier {
             fun_name = Some(self.current_token.clone());
 
             res.register_advancement();
             self.advance();
 
-            if self.current_token.r#type != Tokens::LeftParenthesis {
+            if self.current_token.typee != Tokens::LeftParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -52,7 +52,7 @@ impl Parser {
                     "Expected '('",
                 ));
             }
-        } else if self.current_token.r#type != Tokens::LeftParenthesis {
+        } else if self.current_token.typee != Tokens::LeftParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -65,18 +65,18 @@ impl Parser {
         self.advance();
 
         let mut args_name_tokens: Vec<Token> = vec![];
-        if self.current_token.r#type == Tokens::Identifier {
+        if self.current_token.typee == Tokens::Identifier {
             let name = self.current_token.clone();
             args_name_tokens.push(name);
 
             res.register_advancement();
             self.advance();
 
-            while self.current_token.r#type == Tokens::Comma {
+            while self.current_token.typee == Tokens::Comma {
                 res.register_advancement();
                 self.advance();
 
-                if self.current_token.r#type == Tokens::Identifier {
+                if self.current_token.typee == Tokens::Identifier {
                     let new_arg_token = self.current_token.clone();
                     args_name_tokens.push(new_arg_token);
                     res.register_advancement();
@@ -91,7 +91,7 @@ impl Parser {
                 }
             }
 
-            if self.current_token.r#type != Tokens::RightParenthesis {
+            if self.current_token.typee != Tokens::RightParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -99,7 +99,7 @@ impl Parser {
                     "Expected ')' or ','",
                 ));
             }
-        } else if self.current_token.r#type != Tokens::RightParenthesis {
+        } else if self.current_token.typee != Tokens::RightParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -111,7 +111,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::Arrow {
+        if self.current_token.typee != Tokens::Arrow {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

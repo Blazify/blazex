@@ -25,7 +25,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let mut statements: Vec<Node> = vec![];
 
-        while self.current_token.r#type == Tokens::Newline {
+        while self.current_token.typee == Tokens::Newline {
             res.register_advancement();
             self.advance();
         }
@@ -39,7 +39,7 @@ impl Parser {
 
         loop {
             let mut newline_ct = 0;
-            while self.current_token.r#type == Tokens::Newline {
+            while self.current_token.typee == Tokens::Newline {
                 res.register_advancement();
                 self.advance();
                 newline_ct += 1;

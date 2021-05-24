@@ -135,17 +135,12 @@ impl Lexer {
             }
 
             let token = match self.current_char.unwrap() {
-                '+' => Tokens::Plus,
-                '-' => Tokens::Minus,
-                '*' => Tokens::Multiply,
-                '/' => Tokens::Divide,
                 '(' => Tokens::LeftParenthesis,
                 ')' => Tokens::RightParenthesis,
                 '{' => Tokens::LeftCurlyBraces,
                 '}' => Tokens::RightCurlyBraces,
                 '[' => Tokens::LeftSquareBraces,
                 ']' => Tokens::RightSquareBraces,
-                '^' => Tokens::Power,
                 ':' => Tokens::Colon,
                 ',' => Tokens::Comma,
                 '.' => Tokens::Dot,
@@ -155,6 +150,13 @@ impl Lexer {
             let mut token_is_unknown = false;
             if token == Tokens::Unknown {
                 match self.current_char.unwrap() {
+                    '+' => tokens.push(self.make_arith_ops(Tokens::Plus, Tokens::PlusEquals)),
+                    '-' => tokens.push(self.make_arith_ops(Tokens::Minus, Tokens::MinusEquals)),
+                    '*' => {
+                        tokens.push(self.make_arith_ops(Tokens::Multiply, Tokens::MultiplyEquals))
+                    }
+                    '/' => tokens.push(self.make_arith_ops(Tokens::Divide, Tokens::DivideEquals)),
+                    '^' => tokens.push(self.make_arith_ops(Tokens::Power, Tokens::PowerEquals)),
                     '@' => self.skip_comment(),
                     '"' => tokens.push(self.make_string()),
                     '!' => tokens.push(self.make_not()),
@@ -236,6 +238,21 @@ impl Lexer {
             DynType::None,
         ));
         Ok(tokens)
+    }
+
+    /*
+     * Makes a PLUS or PLUS_EQUALS
+     */
+    fn make_arith_ops(&mut self, no_eq: Tokens, eq: Tokens) -> Token {
+        let start = self.position.clone();
+        self.advance();
+
+        if self.current_char.unwrap_or(' ') == '=' {
+            self.advance();
+            return Token::new(eq, start, self.position, DynType::None);
+        }
+
+        return Token::new(no_eq, start, self.position, DynType::None);
     }
 
     /*

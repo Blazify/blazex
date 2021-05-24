@@ -26,7 +26,7 @@ impl Parser {
             return res;
         }
 
-        while [Tokens::Multiply, Tokens::Divide].contains(&self.current_token.r#type) {
+        while [Tokens::Multiply, Tokens::Divide].contains(&self.current_token.typee) {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();

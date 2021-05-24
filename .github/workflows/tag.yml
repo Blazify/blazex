@@ -1,4 +1,4 @@
-name: Bump version, create new tag and release point if a commit message ends with "release"
+name: Bump version, create new tag and release point if a commit message includes "release"
 on:
   push:
     branches:
@@ -26,4 +26,3 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           event-type: tag-created
           client-payload: '{"new_version": "${{ steps.bump_version.outputs.new_tag }}"}'
-          if: ${{ contains( env.commitmsg , 'release' ) }}s

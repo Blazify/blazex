@@ -5,10 +5,13 @@ use crate::parse_result::ParseResult;
 use super::Parser;
 
 impl Parser {
+    /*
+     * Variable related expressions
+     */
     pub(crate) fn var_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
-        if self.current_token.r#type != Tokens::Identifier {
+        if self.current_token.typee != Tokens::Identifier {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -21,7 +24,17 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        if self.current_token.r#type == Tokens::Equals {
+        let type_tok = self.current_token.clone();
+        if [
+            Tokens::Equals,
+            Tokens::PlusEquals,
+            Tokens::MinusEquals,
+            Tokens::MultiplyEquals,
+            Tokens::DivideEquals,
+            Tokens::PowerEquals,
+        ]
+        .contains(&type_tok.typee)
+        {
             res.register_advancement();
             self.advance();
 
@@ -32,6 +45,7 @@ impl Parser {
 
             return res.success(Node::VarReassignNode {
                 name: tok,
+                typee: type_tok,
                 value: Box::new(expr.unwrap()),
             });
         }

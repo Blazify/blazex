@@ -174,7 +174,7 @@ impl ByteCodeGen {
                 }
             }
             Node::NumberNode { token } => {
-                if token.r#type == Tokens::Int {
+                if token.typee == Tokens::Int {
                     let idx = self.add_constant(Constants::Int(token.value.into_int()));
                     self.add_instruction(OpCode::OpConstant(idx));
                 } else {
@@ -202,7 +202,7 @@ impl ByteCodeGen {
                 self.compile_node(*left);
                 self.compile_node(*right);
 
-                match op_token.r#type {
+                match op_token.typee {
                     Tokens::Plus => self.add_instruction(OpCode::OpAdd),
                     Tokens::Minus => self.add_instruction(OpCode::OpSubtract),
                     Tokens::Multiply => self.add_instruction(OpCode::OpMultiply),
@@ -226,7 +226,7 @@ impl ByteCodeGen {
             Node::UnaryNode { node, op_token } => {
                 self.compile_node(*node);
 
-                match op_token.r#type {
+                match op_token.typee {
                     Tokens::Plus => self.add_instruction(OpCode::OpPlus),
                     Tokens::Minus => self.add_instruction(OpCode::OpMinus),
                     _ => 0,
@@ -247,13 +247,38 @@ impl ByteCodeGen {
                 let id = self.variable(name.value.into_string());
                 self.add_instruction(OpCode::OpVarAssign(id));
             }
-            Node::VarAccessNode { token, .. } => {
+            Node::VarAccessNode { token } => {
                 let id = self.variable(token.value.into_string());
                 self.add_instruction(OpCode::OpVarAccess(id));
             }
-            Node::VarReassignNode { name, value, .. } => {
+            Node::VarReassignNode { name, value, typee } => {
                 self.compile_node(*value);
                 let id = self.variable(name.value.into_string());
+
+                match typee.typee {
+                    Tokens::PlusEquals => {
+                        self.add_instruction(OpCode::OpVarAccess(id));
+                        self.add_instruction(OpCode::OpAdd);
+                    }
+                    Tokens::MinusEquals => {
+                        self.add_instruction(OpCode::OpVarAccess(id));
+                        self.add_instruction(OpCode::OpSubtract);
+                    }
+                    Tokens::MultiplyEquals => {
+                        self.add_instruction(OpCode::OpVarAccess(id));
+                        self.add_instruction(OpCode::OpMultiply);
+                    }
+                    Tokens::DivideEquals => {
+                        self.add_instruction(OpCode::OpVarAccess(id));
+                        self.add_instruction(OpCode::OpDivide);
+                    }
+                    Tokens::PowerEquals => {
+                        self.add_instruction(OpCode::OpVarAccess(id));
+                        self.add_instruction(OpCode::OpPower);
+                    }
+                    _ => (),
+                }
+
                 self.add_instruction(OpCode::OpVarReassign(id));
             }
             Node::IfNode { cases, else_case } => {

@@ -47,6 +47,11 @@ pub enum Tokens {
     Keyword,
     Identifier,
     Equals,
+    PlusEquals,
+    MinusEquals,
+    MultiplyEquals,
+    DivideEquals,
+    PowerEquals,
     DoubleEquals,
     NotEquals,
     LessThan,
@@ -215,7 +220,7 @@ impl Position {
 */
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    pub r#type: Tokens,
+    pub typee: Tokens,
     pub value: DynType,
     pub pos_start: Position,
     pub pos_end: Position,
@@ -225,9 +230,9 @@ impl Token {
     /*
      * Creates a new token
      */
-    pub fn new(r#type: Tokens, pos_start: Position, pos_end: Position, value: DynType) -> Token {
+    pub fn new(typee: Tokens, pos_start: Position, pos_end: Position, value: DynType) -> Token {
         Token {
-            r#type,
+            typee,
             value,
             pos_start,
             pos_end,
@@ -237,8 +242,8 @@ impl Token {
     /*
      * Matches a token based upon it's type and value
      */
-    pub fn matches(&self, r#type: Tokens, value: DynType) -> bool {
-        return self.r#type == r#type && self.value == value;
+    pub fn matches(&self, typee: Tokens, value: DynType) -> bool {
+        return self.typee == typee && self.value == value;
     }
 }
 
@@ -253,6 +258,7 @@ pub enum Node {
     },
     VarReassignNode {
         name: Token,
+        typee: Token,
         value: Box<Node>,
     },
     VarAssignNode {

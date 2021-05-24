@@ -56,7 +56,7 @@ impl Parser {
             Tokens::GreaterThan,
             Tokens::GreaterThanEquals,
         ]
-        .contains(&self.current_token.r#type)
+        .contains(&self.current_token.typee)
         {
             let op_token = self.current_token.clone();
             res.register_advancement();

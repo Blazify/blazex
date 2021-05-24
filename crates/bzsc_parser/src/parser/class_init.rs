@@ -39,7 +39,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::Identifier {
+        if self.current_token.typee != Tokens::Identifier {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -53,11 +53,11 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type == Tokens::LeftParenthesis {
+        if self.current_token.typee == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
 
-            if self.current_token.r#type == Tokens::RightParenthesis {
+            if self.current_token.typee == Tokens::RightParenthesis {
                 res.register_advancement();
                 self.advance();
             } else {
@@ -72,7 +72,7 @@ impl Parser {
                 }
                 constructor_params.push(expr.unwrap());
 
-                while self.current_token.r#type == Tokens::Comma {
+                while self.current_token.typee == Tokens::Comma {
                     res.register_advancement();
                     self.advance();
 
@@ -88,7 +88,7 @@ impl Parser {
                     constructor_params.push(expr.unwrap());
                 }
 
-                if self.current_token.r#type != Tokens::RightParenthesis {
+                if self.current_token.typee != Tokens::RightParenthesis {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),

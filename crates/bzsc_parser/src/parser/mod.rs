@@ -64,7 +64,7 @@ impl Parser {
      */
     pub fn parse(&mut self) -> ParseResult {
         let mut res = self.statements();
-        if res.error.is_none() && self.current_token.r#type != Tokens::EOF {
+        if res.error.is_none() && self.current_token.typee != Tokens::EOF {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

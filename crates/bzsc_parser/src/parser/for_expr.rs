@@ -37,7 +37,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::Identifier {
+        if self.current_token.typee != Tokens::Identifier {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -50,7 +50,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.r#type != Tokens::Equals {
+        if self.current_token.typee != Tokens::Equals {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

@@ -23,44 +23,44 @@ impl Parser {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
 
-        if [Tokens::Int, Tokens::Float].contains(&token.r#type) {
+        if [Tokens::Int, Tokens::Float].contains(&token.typee) {
             res.register_advancement();
             self.advance();
             return res.success(Node::NumberNode {
                 token: token.clone(),
             });
-        } else if token.r#type == Tokens::Boolean {
+        } else if token.typee == Tokens::Boolean {
             res.register_advancement();
             self.advance();
             return res.success(Node::BooleanNode {
                 token: token.clone(),
             });
-        } else if token.r#type == Tokens::String {
+        } else if token.typee == Tokens::String {
             res.register_advancement();
             self.advance();
             return res.success(Node::StringNode {
                 token: token.clone(),
             });
-        } else if token.r#type == Tokens::Char {
+        } else if token.typee == Tokens::Char {
             res.register_advancement();
             self.advance();
             return res.success(Node::CharNode {
                 token: token.clone(),
             });
-        } else if token.r#type == Tokens::Identifier {
+        } else if token.typee == Tokens::Identifier {
             let var_expr = res.register(self.var_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(var_expr.unwrap());
-        } else if token.r#type == Tokens::LeftParenthesis {
+        } else if token.typee == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
             let expr = res.register(self.expr());
             if res.error.is_some() {
                 return res;
             }
-            if self.current_token.clone().r#type != Tokens::RightParenthesis {
+            if self.current_token.clone().typee != Tokens::RightParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.clone().pos_start,
@@ -72,13 +72,13 @@ impl Parser {
             res.register_advancement();
             self.advance();
             return res.success(expr.unwrap());
-        } else if token.r#type == Tokens::LeftSquareBraces {
+        } else if token.typee == Tokens::LeftSquareBraces {
             let array_expr = res.register(self.array_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(array_expr.unwrap());
-        } else if token.r#type == Tokens::LeftCurlyBraces {
+        } else if token.typee == Tokens::LeftCurlyBraces {
             let obj_expr = res.register(self.obj_expr());
             if res.error.is_some() {
                 return res;
