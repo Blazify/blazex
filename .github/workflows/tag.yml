@@ -11,19 +11,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get Commit message and set to env
-        run: echo $commitmsg=$(git log --format=%B -n 1 ${{ github.event.after }}) >> $GITHUB_PATH
-      - name: show Commit Message
-        run : echo $commitmsg
       - name: Bump version and push tag/create release point
+        if: contains(github.event.head_commit.message, 'release')
         id: bump_version
         uses: anothrNick/github-tag-action@1.17.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
-          if: ${{ contains( env.commitmsg , 'release' ) }}
       - name: Repository dispatch tag created event
+        if: contains(github.event.head_commit.message, 'release')
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
