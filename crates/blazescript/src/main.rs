@@ -97,7 +97,7 @@ fn main() {
         file_name.clone().replace(".bzs", ".bze")
     };
     let watch = cmd_params.watch;
-    let is_llvm = cmd_params.llvm;
+    let _is_llvm = cmd_params.llvm;
 
     /*
      * Compiling to Bytecode or Intepreting Bytecode
@@ -139,7 +139,7 @@ fn main() {
             cfg_if! {
                 if #[cfg(feature = "llvm-jit")] {
                     use bzsc_llvm::init_compiler;
-                    if is_llvm {
+                    if _is_llvm {
                         init_compiler(parsed.node.unwrap());
 
                         match time.elapsed() {

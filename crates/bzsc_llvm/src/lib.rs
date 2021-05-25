@@ -1,28 +1,73 @@
+#![allow(dead_code, unused_variables)]
+use std::collections::HashMap;
+
 use bzs_shared::{Node, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
     module::Module,
     passes::PassManager,
-    values::{FloatValue, FunctionValue},
+    types::BasicTypeEnum,
+    values::{AnyValue, BasicValue, FloatValue, FunctionValue, PointerValue},
+    FloatPredicate,
 };
+
+/// Defines the prototype (name and parameters) of a function.
+#[derive(Debug)]
+pub struct Prototype {
+    pub name: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct Function {
+    pub prototype: Prototype,
+    pub body: Option<Node>,
+}
 
 pub struct Compiler<'a, 'ctx> {
     pub context: &'ctx Context,
     pub builder: &'a Builder<'ctx>,
     pub module: &'a Module<'ctx>,
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
+    pub function: &'a Function,
+
+    variables: HashMap<String, PointerValue<'ctx>>,
+    fn_value_opt: Option<FunctionValue<'ctx>>,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    #[inline]
+    fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
+        self.module.get_function(name)
+    }
+
+    #[inline]
+    fn fn_value(&self) -> FunctionValue<'ctx> {
+        self.fn_value_opt.unwrap()
+    }
+
+    fn create_entry_block_alloca(&self, name: &str) -> PointerValue<'ctx> {
+        let builder = self.context.create_builder();
+
+        let entry = self.fn_value().get_first_basic_block().unwrap();
+
+        match entry.get_first_instruction() {
+            Some(first_instr) => builder.position_before(&first_instr),
+            None => builder.position_at_end(entry),
+        }
+
+        builder.build_alloca(self.context.f64_type(), name)
+    }
+
     fn compile_node(&mut self, node: Node) -> Result<FloatValue<'ctx>, &'static str> {
         match node {
             Node::Statements { statements } => {
+                let mut ret = None;
                 for statement in statements {
-                    // TODO: Implement multiple statements
-                    return self.compile_node(statement);
+                    ret = Some(self.compile_node(statement)?);
                 }
-                Err("")
+                return ret.ok_or("Empty program");
             }
             Node::NumberNode { token } => Ok(self
                 .context
@@ -41,22 +86,176 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     Tokens::Minus => Ok(self.builder.build_float_sub(lhs, rhs, "tmpsub")),
                     Tokens::Multiply => Ok(self.builder.build_float_mul(lhs, rhs, "tmpmul")),
                     Tokens::Divide => Ok(self.builder.build_float_div(lhs, rhs, "tmpdiv")),
+                    Tokens::LessThan => Ok({
+                        let cmp = self.builder.build_float_compare(
+                            FloatPredicate::ULT,
+                            lhs,
+                            rhs,
+                            "tmpcmp",
+                        );
+
+                        self.builder.build_unsigned_int_to_float(
+                            cmp,
+                            self.context.f64_type(),
+                            "tmpbool",
+                        )
+                    }),
+                    Tokens::GreaterThan => Ok({
+                        let cmp = self.builder.build_float_compare(
+                            FloatPredicate::ULT,
+                            rhs,
+                            lhs,
+                            "tmpcmp",
+                        );
+
+                        self.builder.build_unsigned_int_to_float(
+                            cmp,
+                            self.context.f64_type(),
+                            "tmpbool",
+                        )
+                    }),
                     _ => Err("Unknown op"),
                 }
             }
-            _ => Err("Not implemented please don't use -l argument for this program"),
+            Node::UnaryNode { node, op_token } => {
+                let val = self.compile_node(*node)?;
+
+                match op_token.typee {
+                    Tokens::Plus => Ok(val),
+                    Tokens::Minus => Ok(val.const_neg()),
+                    _ => Err("Unknown unary op"),
+                }
+            }
+            Node::VarAssignNode {
+                name,
+                value,
+                reassignable: _,
+            } => {
+                let var_name = name.value.into_string();
+                let initial_val = self.compile_node(*value)?;
+                let alloca = self.create_entry_block_alloca(var_name.as_str());
+
+                self.builder.build_store(alloca, initial_val);
+
+                self.variables.insert(var_name, alloca);
+                Ok(initial_val)
+            }
+            Node::VarReassignNode {
+                name,
+                value,
+                typee: _,
+            } => {
+                let name = name.value.into_string();
+                let val = self.compile_node(*value)?;
+
+                let var = self
+                    .variables
+                    .get(name.as_str())
+                    .ok_or("Undefined variable.")?;
+
+                self.builder.build_store(*var, val);
+
+                Ok(val)
+            }
+            Node::VarAccessNode { token } => {
+                match self.variables.get(token.value.into_string().as_str()) {
+                    Some(var) => Ok(self
+                        .builder
+                        .build_load(*var, token.value.into_string().as_str())
+                        .into_float_value()),
+                    None => Err("Could not find a matching variable."),
+                }
+            }
+            Node::WhileNode {
+                condition_node,
+                body_node,
+            } => Err("Please don't use -l "),
+            Node::StringNode { token } => Err("Please don't use -l "),
+            Node::IfNode { cases, else_case } => Err("Please don't use -l "),
+            Node::FunDef {
+                name,
+                body_node,
+                arg_tokens,
+            } => Err("Please don't use -l "),
+            Node::ForNode {
+                var_name_token,
+                start_value,
+                end_value,
+                body_node,
+                step_value_node,
+            } => Err("Please don't use -l "),
+            Node::CharNode { token } => Err("Please don't use -l "),
+            Node::CallNode { node_to_call, args } => Err("Please don't use -l "),
+            Node::BooleanNode { token } => Err("Please don't use -l "),
+            Node::ArrayNode { element_nodes } => Err("Please don't use -l "),
+            Node::ArrayAcess { array, index } => Err("Please don't use -l "),
+            Node::ReturnNode { ref value } => Err("Please don't use -l "),
+            Node::ObjectDefNode { properties } => Err("Please don't use -l "),
+            Node::ObjectPropAccess { object, property } => Err("Please don't use -l "),
+            Node::ObjectPropEdit {
+                object,
+                property,
+                new_val,
+            } => Err("Please don't use -l "),
+            Node::ClassDefNode {
+                name,
+                constructor,
+                properties,
+                methods,
+            } => Err("Please don't use -l "),
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+            } => Err("Please don't use -l "),
         }
     }
 
-    fn compile_top(&mut self, node: Node) -> Result<FunctionValue<'ctx>, &'static str> {
-        let f_64 = self.context.f64_type();
-        let fn_type = f_64.fn_type(&[], false);
-        let function = self.module.add_function("main", fn_type, None);
-        let basic_block = self.context.append_basic_block(function, "entry");
+    fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, &'static str> {
+        let ret_type = self.context.f64_type();
+        let args_types = std::iter::repeat(ret_type)
+            .take(proto.args.len())
+            .map(|f| f.into())
+            .collect::<Vec<BasicTypeEnum>>();
+        let args_types = args_types.as_slice();
 
-        self.builder.position_at_end(basic_block);
+        let fn_type = self.context.f64_type().fn_type(args_types, false);
+        let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
 
-        self.builder.build_return(Some(&self.compile_node(node)?));
+        for (i, arg) in fn_val.get_param_iter().enumerate() {
+            arg.into_float_value().set_name(proto.args[i].as_str());
+        }
+
+        Ok(fn_val)
+    }
+
+    fn compile_fn(&mut self) -> Result<FunctionValue<'ctx>, &'static str> {
+        let proto = &self.function.prototype;
+        let function = self.compile_prototype(proto)?;
+
+        if self.function.body.is_none() {
+            return Ok(function);
+        }
+
+        let entry = self.context.append_basic_block(function, "entry");
+
+        self.builder.position_at_end(entry);
+
+        self.fn_value_opt = Some(function);
+
+        self.variables.reserve(proto.args.len());
+
+        for (i, arg) in function.get_param_iter().enumerate() {
+            let arg_name = proto.args[i].as_str();
+            let alloca = self.create_entry_block_alloca(arg_name);
+
+            self.builder.build_store(alloca, arg);
+
+            self.variables.insert(proto.args[i].clone(), alloca);
+        }
+
+        let body = self.compile_node(self.function.body.as_ref().unwrap().clone())?;
+
+        self.builder.build_return(Some(&body));
 
         if function.verify(true) {
             self.fpm.run_on(&function);
@@ -76,22 +275,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder: &'a Builder<'ctx>,
         module: &'a Module<'ctx>,
         fpm: &'a PassManager<FunctionValue<'ctx>>,
-        node: Node,
+        function: &Function,
     ) -> Result<FunctionValue<'ctx>, &'static str> {
         let mut compiler = Compiler {
             builder,
             context,
             module,
             fpm,
+            variables: HashMap::new(),
+            function,
+            fn_value_opt: None,
         };
 
-        compiler.compile_top(node)
+        compiler.compile_fn()
     }
 }
 
 pub fn init_compiler(node: Node) {
     let context = Context::create();
-    let module = context.create_module("repl");
+    let module = context.create_module("Blazescript");
     let builder = context.create_builder();
 
     let fpm = PassManager::create(&module);
@@ -107,10 +309,18 @@ pub fn init_compiler(node: Node) {
 
     fpm.initialize();
 
-    match Compiler::compile(&context, &builder, &module, &fpm, node) {
+    let func = Function {
+        body: Some(node),
+        prototype: Prototype {
+            name: String::from("main"),
+            args: vec![],
+        },
+    };
+
+    match Compiler::compile(&context, &builder, &module, &fpm, &func) {
         Ok(function) => {
             println!("Expression compiled to IR:");
-            function.print_to_stderr();
+            println!("{}", function.print_to_string().to_string());
         }
         Err(err) => {
             println!("Error compiling function: {}", err);
