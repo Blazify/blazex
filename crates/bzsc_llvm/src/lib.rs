@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_variables)]
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use bzs_shared::{Node, Tokens};
 use inkwell::{
@@ -7,9 +7,10 @@ use inkwell::{
     context::Context,
     module::Module,
     passes::PassManager,
+    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
     types::BasicTypeEnum,
-    values::{AnyValue, BasicValue, FloatValue, FunctionValue, PointerValue},
-    FloatPredicate,
+    values::{BasicValue, FloatValue, FunctionValue, PointerValue},
+    FloatPredicate, OptimizationLevel,
 };
 
 /// Defines the prototype (name and parameters) of a function.
@@ -291,7 +292,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 }
 
-pub fn init_compiler(node: Node) {
+pub fn compile(node: Node, output: String) {
     let context = Context::create();
     let module = context.create_module("Blazescript");
     let builder = context.create_builder();
@@ -319,8 +320,25 @@ pub fn init_compiler(node: Node) {
 
     match Compiler::compile(&context, &builder, &module, &fpm, &func) {
         Ok(function) => {
-            println!("Expression compiled to IR:");
-            println!("{}", function.print_to_string().to_string());
+            println!("Wrote object file to {}", output);
+            let path = Path::new(&output);
+
+            Target::initialize_all(&InitializationConfig::default());
+            let target = Target::from_name("x86-64").unwrap();
+            let target_machine = target
+                .create_target_machine(
+                    &TargetMachine::get_default_triple(),
+                    "x86-64",
+                    TargetMachine::get_host_cpu_features().to_string().as_str(),
+                    OptimizationLevel::Default,
+                    RelocMode::Default,
+                    CodeModel::Default,
+                )
+                .unwrap();
+
+            target_machine
+                .write_to_file(&module, FileType::Object, &path)
+                .ok();
         }
         Err(err) => {
             println!("Error compiling function: {}", err);

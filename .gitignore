@@ -1,5 +1,14 @@
+# Ignore Rust Build directory
 /target
+
+# Ignore Blaze Executables
 *.bze
+
+# Ignore Binary Folder
 bin
-*.ll
+
+# Ignore object files
 *.o
+
+# Ignore Executables
+*.out

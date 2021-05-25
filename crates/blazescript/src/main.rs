@@ -138,9 +138,9 @@ fn main() {
 
             cfg_if! {
                 if #[cfg(feature = "llvm-jit")] {
-                    use bzsc_llvm::init_compiler;
+                    use bzsc_llvm::compile;
                     if _is_llvm {
-                        init_compiler(parsed.node.unwrap());
+                        compile(parsed.node.unwrap(), out_file.replace(".bze", ".o"));
 
                         match time.elapsed() {
                             Ok(elapsed) => {

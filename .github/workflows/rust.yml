@@ -27,8 +27,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "11.0.1"
+          directory: ${{ runner.temp }}/llvm
       - name: Build project
-        run: bash build
+        run: LLVM_SYS_110_PREFIX=${{ runner.temp }}/llvm bash build
       - name: Compile
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
       - name: Interpret
