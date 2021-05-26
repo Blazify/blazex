@@ -33,7 +33,7 @@ jobs:
           version: "11.0"
           directory: ${{ runner.temp }}/llvm
       - name: Build project
-        run: LLVM_SYS_110_PREFIX=${{ runner.temp }}/llvm bash build
+        run: bash build ${{ runner.temp }}/llvm
       - name: Compile
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
       - name: Interpret

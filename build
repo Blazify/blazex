@@ -1,11 +1,7 @@
 #!/bin/sh
 set -e
 
-if [ $# -eq 0 ]; then
-	LLVM_SYS_110_PREFIX="${0}"
-fi
-
-echo "$LLVM_SYS_110_PREFIX"
+llvm_path="${1}"
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"
@@ -26,7 +22,7 @@ fi
 rustup toolchain install nightly
 rustup override set nightly
 rustup component add rust-src
-cargo +nightly build --locked --target $target --release
+LLVM_SYS_110_PREFIX="$llvm_path" cargo +nightly build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then

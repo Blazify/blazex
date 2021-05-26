@@ -26,10 +26,10 @@ jobs:
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
-          version: "11.0.1"
+          version: "11.0"
           directory: ${{ runner.temp }}/llvm
       - name: Build project
-        run: LLVM_SYS_110_PREFIX=${{ runner.temp }}/llvm bash build
+        run: bash build ${{ runner.temp }}/llvm
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
