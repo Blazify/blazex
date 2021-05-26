@@ -12,3 +12,6 @@ bin
 
 # Ignore Executables
 *.out
+
+# LLVM IR
+*.ll

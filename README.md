@@ -136,7 +136,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 # TODO
 
 - [ ] Bugs Fixed
-- [x] LLVM
+- [ ] LLVM
 
   - [x] Executables
   - [x] Statements
@@ -149,7 +149,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] Variables
   - [ ] If else
   - [x] For loop
-  - [ ] While loop
+  - [x] While loop
   - [ ] Functions
   - [ ] Arrays
   - [ ] Objects

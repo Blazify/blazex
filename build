@@ -2,6 +2,7 @@
 set -e
 
 llvm_path="${1}"
+ls "$llvm_path"
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"

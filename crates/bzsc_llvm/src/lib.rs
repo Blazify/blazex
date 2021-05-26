@@ -258,11 +258,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.variables.insert(var_name, alloca);
                 Ok(initial_val)
             }
-            Node::VarReassignNode {
-                name,
-                value,
-                typee: _,
-            } => {
+            Node::VarReassignNode { name, value, typee } => {
                 let name = name.value.into_string();
                 let val = self.compile_node(*value)?;
 
@@ -270,8 +266,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .variables
                     .get(name.as_str())
                     .ok_or("Undefined variable.")?;
-                self.builder.build_store(*var, val);
-                Ok(val)
+                match typee.typee {
+                    Tokens::Equals => {
+                        self.builder.build_store(*var, val);
+                        Ok(val)
+                    }
+                    _ => Err("Unknown compound assignment"),
+                }
             }
             Node::VarAccessNode { token } => {
                 match self.variables.get(token.value.into_string().as_str()) {
@@ -364,7 +365,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::WhileNode {
                 condition_node,
                 body_node,
-            } => Err("Please don't use -l "),
+            } => {
+                let parent = self.fn_value();
+                let loop_block = self.context.append_basic_block(parent, "while_loop");
+
+                let after_block = self.context.append_basic_block(parent, "afterloop");
+
+                self.builder.build_conditional_branch(
+                    self.compile_node(*condition_node.clone())?.into_int_value(),
+                    loop_block,
+                    after_block,
+                );
+
+                self.builder.position_at_end(loop_block);
+                self.compile_node(*body_node)?;
+                self.builder.build_conditional_branch(
+                    self.compile_node(*condition_node.clone())?.into_int_value(),
+                    loop_block,
+                    after_block,
+                );
+                self.builder.position_at_end(after_block);
+
+                Ok(BasicValueEnum::IntValue(
+                    self.context.i128_type().const_int(0, false),
+                ))
+            }
             Node::IfNode { cases, else_case } => Err("Please don't use -l "),
             Node::FunDef {
                 name,
@@ -507,17 +532,9 @@ pub fn compile(node: Node, output: String) {
             println!("LLVM IR:\n{}", function.print_to_string().to_string());
 
             /*
-            * Uncomment if you want to test what the output is...
-            let jit_engine = module
-                .create_jit_execution_engine(OptimizationLevel::None)
-                .unwrap();
-
-            unsafe {
-                let main: JitFunction<unsafe extern "C" fn() -> i128> =
-                    jit_engine.get_function("main").unwrap();
-                println!("{}", main.call());
-            }
-            */
+             * Uncomment if you want to test what the output is...
+             */
+            jit(&module, function);
 
             let path = Path::new(&output);
 
@@ -528,7 +545,7 @@ pub fn compile(node: Node, output: String) {
                     &TargetMachine::get_default_triple(),
                     "x86-64",
                     TargetMachine::get_host_cpu_features().to_string().as_str(),
-                    OptimizationLevel::Default,
+                    OptimizationLevel::Aggressive,
                     RelocMode::Default,
                     CodeModel::Default,
                 )
@@ -543,5 +560,17 @@ pub fn compile(node: Node, output: String) {
         Err(err) => {
             println!("Error compiling function: {}", err);
         }
+    }
+}
+
+fn jit<'ctx>(module: &'ctx Module, fn_val: FunctionValue) {
+    let jit_engine = module
+        .create_jit_execution_engine(OptimizationLevel::Aggressive)
+        .unwrap();
+
+    unsafe {
+        let main: JitFunction<unsafe extern "C" fn() -> i128> =
+            jit_engine.get_function("main").unwrap();
+        println!("{}", main.call());
     }
 }
