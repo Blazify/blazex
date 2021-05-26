@@ -6,33 +6,22 @@
       "request": "launch",
       "name": "Compile",
       "cargo": {
-        "args": ["build", "--release"],
-        "filter": {
-          "name": "blazescript",
-          "kind": "bin"
-        }
-      },
-      "args": ["examples/main.bzs"],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Interpret",
-      "cargo": {
         "args": [
           "build",
           "--release",
-          "--bin=blazescript",
-          "--package=blazescript"
+          "--features",
+          "llvm"
         ],
         "filter": {
           "name": "blazescript",
           "kind": "bin"
         }
       },
-      "args": ["examples/main.bze"],
+      "args": [
+        "examples/main.bzs",
+        "-l"
+      ],
       "cwd": "${workspaceFolder}"
-    }
+    },
   ]
 }

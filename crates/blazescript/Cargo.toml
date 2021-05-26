@@ -25,7 +25,7 @@ criterion = "0.3"
 
 [features]
 default = []
-llvm-jit = ["bzsc_llvm"]
+llvm = ["bzsc_llvm"]
 
 [[bench]]
 name = "blazescript"

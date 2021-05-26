@@ -5,11 +5,12 @@ use bzs_shared::{DynType, Node, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
+    execution_engine::JitFunction,
     module::Module,
     passes::PassManager,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    types::BasicTypeEnum,
-    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    types::{BasicType, BasicTypeEnum},
+    values::{AnyValue, BasicValue, BasicValueEnum, FunctionValue, PointerValue},
     FloatPredicate, IntPredicate, OptimizationLevel,
 };
 
@@ -47,7 +48,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.fn_value_opt.unwrap()
     }
 
-    fn create_entry_block_alloca(&self, name: &str) -> PointerValue<'ctx> {
+    fn create_entry_block_alloca<T: BasicType<'ctx>>(
+        &self,
+        name: &str,
+        ty: T,
+    ) -> PointerValue<'ctx> {
         let builder = self.context.create_builder();
 
         let entry = self.fn_value().get_first_basic_block().unwrap();
@@ -57,7 +62,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None => builder.position_at_end(entry),
         }
 
-        builder.build_alloca(self.context.f64_type(), name)
+        builder.build_alloca(ty, name)
     }
 
     fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, &'static str> {
@@ -67,7 +72,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 for statement in statements {
                     ret = Some(self.compile_node(statement)?);
                 }
-                return ret.ok_or("Empty program");
+
+                if ret.is_some() {
+                    let val = ret.unwrap();
+                    if val.is_int_value() {
+                        return Ok(val);
+                    }
+                }
+
+                return Ok(BasicValueEnum::IntValue(
+                    self.context.i128_type().const_int(0, false),
+                ));
             }
             Node::NumberNode { token } => {
                 if let DynType::Float(i) = token.value {
@@ -105,7 +120,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         Tokens::GreaterThan => {
                             self.builder
-                                .build_int_compare(IntPredicate::ULT, rhs, lhs, "tmpcmp")
+                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::LessThanEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::GreaterThanEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
                         }
                         _ => return Err("Unknown op"),
                     };
@@ -137,7 +160,35 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         Tokens::GreaterThan => {
                             let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ULT,
+                                FloatPredicate::UGT,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::LessThanEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ULE,
+                                lhs,
+                                rhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::GreaterThanEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::OGE,
                                 rhs,
                                 lhs,
                                 "tmpcmp",
@@ -199,7 +250,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             } => {
                 let var_name = name.value.into_string();
                 let initial_val = self.compile_node(*value)?;
-                let alloca = self.create_entry_block_alloca(var_name.as_str());
+                let alloca =
+                    self.create_entry_block_alloca(var_name.as_str(), initial_val.get_type());
 
                 self.builder.build_store(alloca, initial_val);
 
@@ -238,26 +290,88 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .i8_type()
                     .const_int(token.value.into_char() as u64, false),
             )),
-            Node::WhileNode {
-                condition_node,
-                body_node,
-            } => Err("Please don't use -l "),
-
-            Node::IfNode { cases, else_case } => Err("Please don't use -l "),
-            Node::FunDef {
-                name,
-                body_node,
-                arg_tokens,
-            } => Err("Please don't use -l "),
+            Node::BooleanNode { token } => Ok(BasicValueEnum::IntValue(
+                self.context
+                    .bool_type()
+                    .const_int(token.value.into_boolean() as u64, false),
+            )),
             Node::ForNode {
                 var_name_token,
                 start_value,
                 end_value,
                 body_node,
                 step_value_node,
+            } => {
+                let parent = self.fn_value();
+
+                let start = self.compile_node(*start_value)?;
+                let start_alloca = self.create_entry_block_alloca(
+                    &var_name_token.value.into_string(),
+                    start.get_type(),
+                );
+
+                self.builder.build_store(start_alloca, start);
+
+                let loop_block = self.context.append_basic_block(parent, "for_loop");
+
+                self.builder.build_unconditional_branch(loop_block);
+                self.builder.position_at_end(loop_block);
+
+                let old_val = self.variables.remove(&var_name_token.value.into_string());
+
+                self.variables
+                    .insert(var_name_token.value.into_string(), start_alloca);
+
+                self.compile_node(*body_node)?;
+                let step = self.compile_node(*step_value_node)?;
+                let end_condition = self.compile_node(*end_value)?;
+
+                let curr_var = self
+                    .builder
+                    .build_load(start_alloca, &var_name_token.value.into_string());
+
+                let next_var = self.builder.build_int_add(
+                    curr_var.into_int_value(),
+                    step.into_int_value(),
+                    "nextvar",
+                );
+
+                self.builder.build_store(start_alloca, next_var);
+
+                let end_condition = self.builder.build_int_compare(
+                    IntPredicate::NE,
+                    next_var,
+                    end_condition.into_int_value(),
+                    "loopcond",
+                );
+
+                let after_block = self.context.append_basic_block(parent, "afterloop");
+
+                self.builder
+                    .build_conditional_branch(end_condition, loop_block, after_block);
+                self.builder.position_at_end(after_block);
+                self.variables.remove(&var_name_token.value.into_string());
+
+                if let Some(val) = old_val {
+                    self.variables
+                        .insert(var_name_token.value.into_string(), val);
+                }
+
+                Ok(BasicValueEnum::IntValue(
+                    self.context.i128_type().const_int(0, false),
+                ))
+            }
+            Node::WhileNode {
+                condition_node,
+                body_node,
+            } => Err("Please don't use -l "),
+            Node::IfNode { cases, else_case } => Err("Please don't use -l "),
+            Node::FunDef {
+                name,
+                body_node,
+                arg_tokens,
             } => Err("Please don't use -l "),
             Node::CallNode { node_to_call, args } => Err("Please don't use -l "),
-            Node::BooleanNode { token } => Err("Please don't use -l "),
             Node::ArrayNode { element_nodes } => Err("Please don't use -l "),
             Node::ArrayAcess { array, index } => Err("Please don't use -l "),
             Node::ReturnNode { ref value } => Err("Please don't use -l "),
@@ -282,14 +396,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, &'static str> {
-        let ret_type = self.context.f64_type();
+        let ret_type = self.context.i128_type();
         let args_types = std::iter::repeat(ret_type)
             .take(proto.args.len())
             .map(|f| f.into())
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
-        let fn_type = self.context.void_type().fn_type(args_types, false);
+        let fn_type = ret_type.fn_type(args_types, false);
         let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
@@ -317,7 +431,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for (i, arg) in function.get_param_iter().enumerate() {
             let arg_name = proto.args[i].as_str();
-            let alloca = self.create_entry_block_alloca(arg_name);
+            let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
 
             self.builder.build_store(alloca, arg);
 
@@ -326,7 +440,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let body = self.compile_node(self.function.body.as_ref().unwrap().clone())?;
 
-        self.builder.build_return(None);
+        self.builder.build_return(Some(&body));
 
         if function.verify(true) {
             self.fpm.run_on(&function);
@@ -390,7 +504,21 @@ pub fn compile(node: Node, output: String) {
 
     match Compiler::compile(&context, &builder, &module, &fpm, &func) {
         Ok(function) => {
-            println!("Wrote object file to {}", output);
+            println!("LLVM IR:\n{}", function.print_to_string().to_string());
+
+            /*
+            * Uncomment if you want to test what the output is...
+            let jit_engine = module
+                .create_jit_execution_engine(OptimizationLevel::None)
+                .unwrap();
+
+            unsafe {
+                let main: JitFunction<unsafe extern "C" fn() -> i128> =
+                    jit_engine.get_function("main").unwrap();
+                println!("{}", main.call());
+            }
+            */
+
             let path = Path::new(&output);
 
             Target::initialize_all(&InitializationConfig::default());
@@ -409,6 +537,8 @@ pub fn compile(node: Node, output: String) {
             target_machine
                 .write_to_file(&module, FileType::Object, &path)
                 .ok();
+
+            println!("Wrote object file to {}", output);
         }
         Err(err) => {
             println!("Error compiling function: {}", err);

@@ -137,7 +137,7 @@ fn main() {
             }
 
             cfg_if! {
-                if #[cfg(feature = "llvm-jit")] {
+                if #[cfg(feature = "llvm")] {
                     use bzsc_llvm::compile;
                     if _is_llvm {
                         compile(parsed.node.unwrap(), out_file.replace(".bze", ".o"));

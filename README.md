@@ -1,6 +1,9 @@
 # BlazeScript
 
-A intermediate compiled and vm interpreted language which is dynamically typed (for now) and object oriented
+> A intermediate compiled and vm interpreted language which is dynamically typed (for now) and object oriented
+
+## Note
+> We are moving to LLVM as the VM wasn't performant, to build the code with llvm support use --features llvm and to compile to llvm use -l or --llvm flag
 
 ## Installation
 
@@ -127,13 +130,13 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 |   [bzsc_parser](crates/bzsc_parser)   |               Parser for AST Tree               |
 | [bzsc_bytecode](crates/bzsc_bytecode) |               Bytecode Generator                |
 |      [blaze_vm](crates/blaze_vm)      |            The bytecode interpreter             |
-|     [bzsc_llvm](crates/blaze_vm)      |           WIP LLVM IR Code Generation           |
+|     [bzsc_llvm](crates/blaze_vm)      |         W.I.P. LLVM IR Code Generation          |
 |    [bzs_shared](crates/bzs_shared)    | Structs, Methods, etc Shared among other crates |
 
 # TODO
 
 - [ ] Bugs Fixed
-- [x] Bytecode Compiler
+- [x] LLVM
 
   - [x] Executables
   - [x] Statements
@@ -144,21 +147,19 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] Binary Operations
   - [x] Unary Operations
   - [x] Variables
-  - [x] If else
+  - [ ] If else
   - [x] For loop
-  - [x] While loop
-  - [x] Functions
-  - [x] Arrays
-  - [x] Objects
-  - [x] Classes
-  - [x] Proper Mutability
+  - [ ] While loop
+  - [ ] Functions
+  - [ ] Arrays
+  - [ ] Objects
+  - [ ] Classes
+  - [ ] Proper Mutability
 
-- [x] VM Interpreter
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
 - [x] AST
-- [ ] LLVM
 
 ## Author
 
