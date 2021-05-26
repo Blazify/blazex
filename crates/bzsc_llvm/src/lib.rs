@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables)]
 use std::{collections::HashMap, path::Path};
 
-use bzs_shared::{Node, Tokens};
+use bzs_shared::{DynType, Node, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
@@ -9,11 +9,10 @@ use inkwell::{
     passes::PassManager,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
     types::BasicTypeEnum,
-    values::{BasicValue, FloatValue, FunctionValue, PointerValue},
-    FloatPredicate, OptimizationLevel,
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    FloatPredicate, IntPredicate, OptimizationLevel,
 };
 
-/// Defines the prototype (name and parameters) of a function.
 #[derive(Debug)]
 pub struct Prototype {
     pub name: String,
@@ -61,7 +60,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder.build_alloca(self.context.f64_type(), name)
     }
 
-    fn compile_node(&mut self, node: Node) -> Result<FloatValue<'ctx>, &'static str> {
+    fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, &'static str> {
         match node {
             Node::Statements { statements } => {
                 let mut ret = None;
@@ -70,62 +69,128 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
                 return ret.ok_or("Empty program");
             }
-            Node::NumberNode { token } => Ok(self
-                .context
-                .f64_type()
-                .const_float(token.value.into_float())),
+            Node::NumberNode { token } => {
+                if let DynType::Float(i) = token.value {
+                    Ok(BasicValueEnum::FloatValue(
+                        self.context.f64_type().const_float(i),
+                    ))
+                } else {
+                    Ok(BasicValueEnum::IntValue(
+                        self.context
+                            .i128_type()
+                            .const_int(token.value.into_int() as u64, false),
+                    ))
+                }
+            }
             Node::BinaryNode {
                 left,
                 op_token,
                 right,
             } => {
-                let lhs = self.compile_node(*left)?;
-                let rhs = self.compile_node(*right)?;
+                let left_val = self.compile_node(*left)?;
+                let right_val = self.compile_node(*right)?;
 
-                match op_token.typee {
-                    Tokens::Plus => Ok(self.builder.build_float_add(lhs, rhs, "tmpadd")),
-                    Tokens::Minus => Ok(self.builder.build_float_sub(lhs, rhs, "tmpsub")),
-                    Tokens::Multiply => Ok(self.builder.build_float_mul(lhs, rhs, "tmpmul")),
-                    Tokens::Divide => Ok(self.builder.build_float_div(lhs, rhs, "tmpdiv")),
-                    Tokens::LessThan => Ok({
-                        let cmp = self.builder.build_float_compare(
-                            FloatPredicate::ULT,
-                            lhs,
-                            rhs,
-                            "tmpcmp",
-                        );
+                if left_val.is_int_value() && right_val.is_int_value() {
+                    let lhs = left_val.into_int_value();
+                    let rhs = right_val.into_int_value();
 
-                        self.builder.build_unsigned_int_to_float(
-                            cmp,
-                            self.context.f64_type(),
-                            "tmpbool",
-                        )
-                    }),
-                    Tokens::GreaterThan => Ok({
-                        let cmp = self.builder.build_float_compare(
-                            FloatPredicate::ULT,
-                            rhs,
-                            lhs,
-                            "tmpcmp",
-                        );
-
-                        self.builder.build_unsigned_int_to_float(
-                            cmp,
-                            self.context.f64_type(),
-                            "tmpbool",
-                        )
-                    }),
-                    _ => Err("Unknown op"),
+                    let ret = match op_token.typee {
+                        Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
+                        Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
+                        Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
+                        Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
+                        Tokens::LessThan => {
+                            self.builder
+                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::GreaterThan => {
+                            self.builder
+                                .build_int_compare(IntPredicate::ULT, rhs, lhs, "tmpcmp")
+                        }
+                        _ => return Err("Unknown op"),
+                    };
+                    return Ok(BasicValueEnum::IntValue(ret));
                 }
+
+                if left_val.is_float_value() && right_val.is_float_value() {
+                    let lhs = left_val.into_float_value();
+                    let rhs = right_val.into_float_value();
+
+                    let ret = match op_token.typee {
+                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd"),
+                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub"),
+                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul"),
+                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv"),
+                        Tokens::LessThan => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ULT,
+                                lhs,
+                                rhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::GreaterThan => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ULT,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        _ => return Err("Unknown op"),
+                    };
+                    return Ok(BasicValueEnum::FloatValue(ret));
+                }
+
+                Err(Box::leak(
+                    format!(
+                        "{:#?} and {:#?} cannot be operated by {:?}",
+                        left_val, right_val, op_token.typee
+                    )
+                    .into_boxed_str()
+                    .to_owned(),
+                ))
             }
             Node::UnaryNode { node, op_token } => {
                 let val = self.compile_node(*node)?;
 
-                match op_token.typee {
-                    Tokens::Plus => Ok(val),
-                    Tokens::Minus => Ok(val.const_neg()),
-                    _ => Err("Unknown unary op"),
+                if val.is_float_value() {
+                    let built = val.into_float_value();
+                    let ret = match op_token.typee {
+                        Tokens::Plus => built,
+                        Tokens::Minus => built.const_neg(),
+                        _ => return Err("Unknown unary op"),
+                    };
+                    return Ok(BasicValueEnum::FloatValue(ret));
                 }
+
+                if val.is_int_value() {
+                    let built = val.into_int_value();
+                    let ret = match op_token.typee {
+                        Tokens::Plus => built,
+                        Tokens::Minus => built.const_neg(),
+                        _ => return Err("Unknown unary op"),
+                    };
+                    return Ok(BasicValueEnum::IntValue(ret));
+                }
+
+                Err(Box::leak(
+                    format!("{:#?} cannot be operated by {:?}", val, op_token.typee)
+                        .into_boxed_str()
+                        .to_owned(),
+                ))
             }
             Node::VarAssignNode {
                 name,
@@ -153,25 +218,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .variables
                     .get(name.as_str())
                     .ok_or("Undefined variable.")?;
-
                 self.builder.build_store(*var, val);
-
                 Ok(val)
             }
             Node::VarAccessNode { token } => {
                 match self.variables.get(token.value.into_string().as_str()) {
                     Some(var) => Ok(self
                         .builder
-                        .build_load(*var, token.value.into_string().as_str())
-                        .into_float_value()),
+                        .build_load(*var, token.value.into_string().as_str())),
                     None => Err("Could not find a matching variable."),
                 }
             }
+            Node::StringNode { token } => Ok(BasicValueEnum::VectorValue(
+                self.context
+                    .const_string(&token.value.into_string().as_bytes(), false),
+            )),
+            Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
+                self.context
+                    .i8_type()
+                    .const_int(token.value.into_char() as u64, false),
+            )),
             Node::WhileNode {
                 condition_node,
                 body_node,
             } => Err("Please don't use -l "),
-            Node::StringNode { token } => Err("Please don't use -l "),
+
             Node::IfNode { cases, else_case } => Err("Please don't use -l "),
             Node::FunDef {
                 name,
@@ -185,7 +256,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 body_node,
                 step_value_node,
             } => Err("Please don't use -l "),
-            Node::CharNode { token } => Err("Please don't use -l "),
             Node::CallNode { node_to_call, args } => Err("Please don't use -l "),
             Node::BooleanNode { token } => Err("Please don't use -l "),
             Node::ArrayNode { element_nodes } => Err("Please don't use -l "),
@@ -219,7 +289,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
-        let fn_type = self.context.f64_type().fn_type(args_types, false);
+        let fn_type = self.context.void_type().fn_type(args_types, false);
         let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
@@ -256,7 +326,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let body = self.compile_node(self.function.body.as_ref().unwrap().clone())?;
 
-        self.builder.build_return(Some(&body));
+        self.builder.build_return(None);
 
         if function.verify(true) {
             self.fpm.run_on(&function);

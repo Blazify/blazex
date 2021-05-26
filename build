@@ -1,4 +1,12 @@
 #!/bin/sh
+set -e
+
+if [ $# -eq 0 ]; then
+	LLVM_SYS_110_PREFIX="${0}"
+fi
+
+echo "$LLVM_SYS_110_PREFIX"
+
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"
 	exe="blazescript.exe"
