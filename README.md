@@ -136,6 +136,10 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 # TODO
 
 - [ ] Bugs Fixed
+- [ ] Errors
+  - [x] Lexer
+  - [x] Parser
+  - [ ] LLVM 
 - [ ] LLVM
 
   - [x] Executables

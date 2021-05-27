@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables)]
 use std::{collections::HashMap, path::Path};
 
-use bzs_shared::{DynType, Node, Tokens};
+use bzs_shared::{DynType, Error, Node, Position, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
@@ -23,7 +23,7 @@ pub struct Prototype {
 #[derive(Debug)]
 pub struct Function {
     pub prototype: Prototype,
-    pub body: Option<Node>,
+    pub body: Node,
 }
 
 pub struct Compiler<'a, 'ctx> {
@@ -38,6 +38,10 @@ pub struct Compiler<'a, 'ctx> {
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    fn error(&self, pos: (Position, Position), description: &'static str) -> Error {
+        Error::new("Compiler Error", pos.0, pos.1, description)
+    }
+
     #[inline]
     fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
         self.module.get_function(name)
@@ -65,8 +69,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder.build_alloca(ty, name)
     }
 
-    fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, &'static str> {
-        match node {
+    fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, Error> {
+        match node.clone() {
             Node::Statements { statements } => {
                 let mut ret = None;
                 for statement in statements {
@@ -105,6 +109,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let left_val = self.compile_node(*left)?;
                 let right_val = self.compile_node(*right)?;
 
+                match op_token.typee {
+                    Tokens::DoubleEquals => {
+                        return Ok(BasicValueEnum::IntValue(
+                            self.context
+                                .bool_type()
+                                .const_int((left_val == right_val) as u64, false),
+                        ))
+                    }
+                    Tokens::NotEquals => {
+                        return Ok(BasicValueEnum::IntValue(
+                            self.context
+                                .bool_type()
+                                .const_int((left_val != right_val) as u64, false),
+                        ))
+                    }
+                    _ => (),
+                }
+
                 if left_val.is_int_value() && right_val.is_int_value() {
                     let lhs = left_val.into_int_value();
                     let rhs = right_val.into_int_value();
@@ -130,7 +152,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             self.builder
                                 .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
                         }
-                        _ => return Err("Unknown op"),
+                        _ => {
+                            if op_token.matches(Tokens::Keyword, DynType::String("and".to_string()))
+                            {
+                                lhs.const_and(rhs)
+                            } else if op_token
+                                .matches(Tokens::Keyword, DynType::String("or".to_string()))
+                            {
+                                lhs.const_or(rhs)
+                            } else {
+                                return Err(self.error(node.get_pos(), "Unknown operation"));
+                            }
+                        }
                     };
                     return Ok(BasicValueEnum::IntValue(ret));
                 }
@@ -200,29 +233,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpbool",
                             )
                         }
-                        _ => return Err("Unknown op"),
+                        _ => return Err(self.error(node.get_pos(), "Unknown operation")),
                     };
                     return Ok(BasicValueEnum::FloatValue(ret));
                 }
 
-                Err(Box::leak(
-                    format!(
-                        "{:#?} and {:#?} cannot be operated by {:?}",
-                        left_val, right_val, op_token.typee
-                    )
-                    .into_boxed_str()
-                    .to_owned(),
-                ))
+                Err(self.error(node.get_pos(), "Unknown operation"))
             }
-            Node::UnaryNode { node, op_token } => {
-                let val = self.compile_node(*node)?;
+            Node::UnaryNode {
+                node: child,
+                op_token,
+            } => {
+                let val = self.compile_node(*child)?;
 
                 if val.is_float_value() {
                     let built = val.into_float_value();
                     let ret = match op_token.typee {
                         Tokens::Plus => built,
                         Tokens::Minus => built.const_neg(),
-                        _ => return Err("Unknown unary op"),
+                        _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
                     };
                     return Ok(BasicValueEnum::FloatValue(ret));
                 }
@@ -232,16 +261,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     let ret = match op_token.typee {
                         Tokens::Plus => built,
                         Tokens::Minus => built.const_neg(),
-                        _ => return Err("Unknown unary op"),
+                        _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
                     };
                     return Ok(BasicValueEnum::IntValue(ret));
                 }
 
-                Err(Box::leak(
-                    format!("{:#?} cannot be operated by {:?}", val, op_token.typee)
-                        .into_boxed_str()
-                        .to_owned(),
-                ))
+                Err(self.error(node.get_pos(), "Unknown unary operation"))
             }
             Node::StringNode { token } => Ok(BasicValueEnum::VectorValue(
                 self.context
@@ -279,13 +304,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let var = self
                     .variables
                     .get(name.as_str())
-                    .ok_or("Undefined variable.")?;
-                match typee.typee {
-                    Tokens::Equals => {
-                        self.builder.build_store(*var, val);
-                        Ok(val)
-                    }
-                    _ => Err("Unknown compound assignment"),
+                    .ok_or("Undefined variable.");
+                match var {
+                    Ok(var) => match typee.typee.clone() {
+                        Tokens::Equals => {
+                            self.builder.build_store(*var, val);
+                            Ok(val)
+                        }
+                        _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
+                    },
+                    Err(e) => Err(self.error(node.get_pos(), e)),
                 }
             }
             Node::VarAccessNode { token } => {
@@ -293,7 +321,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     Some(var) => Ok(self
                         .builder
                         .build_load(*var, token.value.into_string().as_str())),
-                    None => Err("Could not find a matching variable."),
+                    None => Err(self.error(node.get_pos(), "Variable not found")),
                 }
             }
             Node::IfNode { cases, else_case } => {
@@ -444,32 +472,42 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 name,
                 body_node,
                 arg_tokens,
-            } => Err("Please don't use -l "),
-            Node::CallNode { node_to_call, args } => Err("Please don't use -l "),
-            Node::ArrayNode { element_nodes } => Err("Please don't use -l "),
-            Node::ArrayAcess { array, index } => Err("Please don't use -l "),
-            Node::ReturnNode { value } => Err("Please don't use -l "),
-            Node::ObjectDefNode { properties } => Err("Please don't use -l "),
-            Node::ObjectPropAccess { object, property } => Err("Please don't use -l "),
+            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            Node::CallNode { node_to_call, args } => {
+                Err(self.error(node.get_pos(), "Please don't use -l "))
+            }
+            Node::ArrayNode { element_nodes } => {
+                Err(self.error(node.get_pos(), "Please don't use -l "))
+            }
+            Node::ArrayAcess { array, index } => {
+                Err(self.error(node.get_pos(), "Please don't use -l "))
+            }
+            Node::ReturnNode { value } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            Node::ObjectDefNode { properties } => {
+                Err(self.error(node.get_pos(), "Please don't use -l "))
+            }
+            Node::ObjectPropAccess { object, property } => {
+                Err(self.error(node.get_pos(), "Please don't use -l "))
+            }
             Node::ObjectPropEdit {
                 object,
                 property,
                 new_val,
-            } => Err("Please don't use -l "),
+            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
             Node::ClassDefNode {
                 name,
                 constructor,
                 properties,
                 methods,
-            } => Err("Please don't use -l "),
+            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
             Node::ClassInitNode {
                 name,
                 constructor_params,
-            } => Err("Please don't use -l "),
+            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
         }
     }
 
-    fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, &'static str> {
+    fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, Error> {
         let ret_type = self.context.i128_type();
         let args_types = std::iter::repeat(ret_type)
             .take(proto.args.len())
@@ -487,13 +525,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Ok(fn_val)
     }
 
-    fn compile_fn(&mut self) -> Result<FunctionValue<'ctx>, &'static str> {
+    fn compile_fn(&mut self) -> Result<FunctionValue<'ctx>, Error> {
         let proto = &self.function.prototype;
         let function = self.compile_prototype(proto)?;
-
-        if self.function.body.is_none() {
-            return Ok(function);
-        }
 
         let entry = self.context.append_basic_block(function, "entry");
 
@@ -512,7 +546,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.variables.insert(proto.args[i].clone(), alloca);
         }
 
-        let body = self.compile_node(self.function.body.as_ref().unwrap().clone())?;
+        let body = self.compile_node(self.function.body.clone())?;
 
         self.builder.build_return(Some(&body));
 
@@ -525,7 +559,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 function.delete();
             }
 
-            Err("Invalid generated function.")
+            Err(self.error(self.function.body.get_pos(), "Unknown operation"))
         }
     }
 
@@ -535,7 +569,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         module: &'a Module<'ctx>,
         fpm: &'a PassManager<FunctionValue<'ctx>>,
         function: &Function,
-    ) -> Result<FunctionValue<'ctx>, &'static str> {
+    ) -> Result<FunctionValue<'ctx>, Error> {
         let mut compiler = Compiler {
             builder,
             context,
@@ -569,7 +603,7 @@ pub fn compile(node: Node, output: String) {
     fpm.initialize();
 
     let func = Function {
-        body: Some(node),
+        body: node,
         prototype: Prototype {
             name: String::from("main"),
             args: vec![],
@@ -607,7 +641,7 @@ pub fn compile(node: Node, output: String) {
             println!("Wrote object file to {}", output);
         }
         Err(err) => {
-            println!("Error compiling function: {}", err);
+            err.prettify();
         }
     }
 }

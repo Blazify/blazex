@@ -349,6 +349,115 @@ pub enum Node {
     },
 }
 
+impl Node {
+    pub fn get_pos(&self) -> (Position, Position) {
+        match self {
+            Node::WhileNode {
+                condition_node,
+                body_node,
+            } => (condition_node.get_pos().0, body_node.get_pos().1),
+            Node::VarReassignNode {
+                name,
+                typee: _,
+                value,
+            } => (name.pos_start, value.get_pos().1),
+            Node::VarAssignNode {
+                name,
+                value,
+                reassignable: _,
+            } => (name.pos_start, value.get_pos().1),
+            Node::VarAccessNode { token } => (token.pos_start, token.pos_end),
+            Node::UnaryNode { node, op_token } => (node.get_pos().0, op_token.pos_end),
+            Node::StringNode { token } => (token.pos_start, token.pos_end),
+            Node::NumberNode { token } => (token.pos_start, token.pos_end),
+            Node::IfNode { cases, else_case } => (
+                cases.first().unwrap().0.get_pos().0,
+                if else_case.is_some() {
+                    else_case.clone().unwrap().get_pos().1
+                } else {
+                    cases.last().unwrap().1.get_pos().1
+                },
+            ),
+            Node::FunDef {
+                name,
+                body_node,
+                arg_tokens,
+            } => (
+                if name.is_some() {
+                    name.clone().unwrap().pos_start
+                } else if !arg_tokens.is_empty() {
+                    arg_tokens.first().unwrap().pos_start
+                } else {
+                    body_node.get_pos().0
+                },
+                body_node.get_pos().1,
+            ),
+            Node::ForNode {
+                var_name_token,
+                start_value: _,
+                end_value: _,
+                body_node,
+                step_value_node: _,
+            } => (var_name_token.pos_start, body_node.get_pos().1),
+            Node::CharNode { token } => (token.pos_start, token.pos_end),
+            Node::CallNode { node_to_call, args } => (
+                node_to_call.get_pos().0,
+                if !args.is_empty() {
+                    args.last().unwrap().get_pos().1
+                } else {
+                    node_to_call.get_pos().1
+                },
+            ),
+            Node::BooleanNode { token } => (token.pos_start, token.pos_end),
+            Node::BinaryNode {
+                left,
+                right,
+                op_token: _,
+            } => (left.get_pos().0, right.get_pos().1),
+            Node::ArrayNode { element_nodes } => (
+                element_nodes.first().unwrap().get_pos().0,
+                element_nodes.last().unwrap().get_pos().1,
+            ),
+            Node::ArrayAcess { array, index } => (array.get_pos().0, index.get_pos().1),
+            Node::Statements { statements } => (
+                statements.first().unwrap().get_pos().0,
+                statements.last().unwrap().get_pos().1,
+            ),
+            Node::ReturnNode { value } => (
+                value.clone().unwrap().get_pos().0,
+                value.clone().unwrap().get_pos().1,
+            ),
+            Node::ObjectDefNode { properties } => (
+                properties.first().unwrap().0.pos_start,
+                properties.last().unwrap().1.get_pos().1,
+            ),
+            Node::ObjectPropAccess { object, property } => (object.get_pos().0, property.pos_end),
+            Node::ObjectPropEdit {
+                object,
+                property: _,
+                new_val,
+            } => (object.get_pos().0, new_val.get_pos().1),
+            Node::ClassDefNode {
+                name,
+                constructor: _,
+                properties: _,
+                methods,
+            } => (name.pos_start, methods.last().unwrap().2.get_pos().1),
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+            } => (
+                name.pos_start,
+                if !constructor_params.is_empty() {
+                    constructor_params.last().unwrap().get_pos().1
+                } else {
+                    name.pos_end
+                },
+            ),
+        }
+    }
+}
+
 /*
 * Raw Constant Enum returned by Bytecode Compiler
 */
