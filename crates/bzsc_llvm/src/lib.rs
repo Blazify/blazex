@@ -243,6 +243,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .to_owned(),
                 ))
             }
+            Node::StringNode { token } => Ok(BasicValueEnum::VectorValue(
+                self.context
+                    .const_string(&token.value.into_string().as_bytes(), false),
+            )),
+            Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
+                self.context
+                    .i8_type()
+                    .const_int(token.value.into_char() as u64, false),
+            )),
+            Node::BooleanNode { token } => Ok(BasicValueEnum::IntValue(
+                self.context
+                    .bool_type()
+                    .const_int(token.value.into_boolean() as u64, false),
+            )),
             Node::VarAssignNode {
                 name,
                 value,
@@ -282,20 +296,56 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     None => Err("Could not find a matching variable."),
                 }
             }
-            Node::StringNode { token } => Ok(BasicValueEnum::VectorValue(
-                self.context
-                    .const_string(&token.value.into_string().as_bytes(), false),
-            )),
-            Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
-                self.context
-                    .i8_type()
-                    .const_int(token.value.into_char() as u64, false),
-            )),
-            Node::BooleanNode { token } => Ok(BasicValueEnum::IntValue(
-                self.context
-                    .bool_type()
-                    .const_int(token.value.into_boolean() as u64, false),
-            )),
+            Node::IfNode { cases, else_case } => {
+                let mut blocks = vec![self.builder.get_insert_block().unwrap()];
+                let parent = self.fn_value();
+                for _ in 1..cases.len() {
+                    blocks.push(self.context.append_basic_block(parent, "if_start"));
+                }
+
+                let else_block = if else_case.is_some() {
+                    let result = self.context.append_basic_block(parent, "else");
+                    blocks.push(result);
+                    Some(result)
+                } else {
+                    None
+                };
+
+                let after_block = self.context.append_basic_block(parent, "after");
+                blocks.push(after_block);
+
+                for (i, (cond, body)) in cases.iter().enumerate() {
+                    let then_block = blocks[i];
+                    let else_block = blocks[i + 1];
+
+                    self.builder.position_at_end(then_block);
+
+                    let condition = self.compile_node(cond.clone())?;
+                    let conditional_block = self.context.prepend_basic_block(else_block, "if_body");
+
+                    self.builder.build_conditional_branch(
+                        condition.into_int_value(),
+                        conditional_block,
+                        else_block,
+                    );
+
+                    self.builder.position_at_end(conditional_block);
+                    self.compile_node(body.clone())?;
+                    self.builder.build_unconditional_branch(after_block);
+                }
+
+                if let Some(else_block) = else_block {
+                    self.builder.position_at_end(else_block);
+                    self.compile_node(else_case.unwrap())?;
+                    self.builder.build_unconditional_branch(after_block);
+                }
+
+                self.builder.position_at_end(after_block);
+
+                Ok(BasicValueEnum::IntValue(
+                    self.context.i128_type().const_int(0, false),
+                ))
+            }
             Node::ForNode {
                 var_name_token,
                 start_value,
@@ -390,7 +440,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     self.context.i128_type().const_int(0, false),
                 ))
             }
-            Node::IfNode { cases, else_case } => Err("Please don't use -l "),
             Node::FunDef {
                 name,
                 body_node,
@@ -399,7 +448,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::CallNode { node_to_call, args } => Err("Please don't use -l "),
             Node::ArrayNode { element_nodes } => Err("Please don't use -l "),
             Node::ArrayAcess { array, index } => Err("Please don't use -l "),
-            Node::ReturnNode { ref value } => Err("Please don't use -l "),
+            Node::ReturnNode { value } => Err("Please don't use -l "),
             Node::ObjectDefNode { properties } => Err("Please don't use -l "),
             Node::ObjectPropAccess { object, property } => Err("Please don't use -l "),
             Node::ObjectPropEdit {
@@ -546,8 +595,8 @@ pub fn compile(node: Node, output: String) {
                     "x86-64",
                     TargetMachine::get_host_cpu_features().to_string().as_str(),
                     OptimizationLevel::Aggressive,
-                    RelocMode::Default,
-                    CodeModel::Default,
+                    RelocMode::Static,
+                    CodeModel::Kernel,
                 )
                 .unwrap();
 

@@ -147,7 +147,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] Binary Operations
   - [x] Unary Operations
   - [x] Variables
-  - [ ] If else
+  - [x] If else
   - [x] For loop
   - [x] While loop
   - [ ] Functions
