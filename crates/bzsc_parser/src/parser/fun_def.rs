@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzs_shared::{DynType, Error, Node, Token, Tokens};
+use bzs_shared::{DynType, Error, Node, Token, Tokens, Type};
 
 impl Parser {
     /*
@@ -64,13 +64,16 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        let mut args_name_tokens: Vec<Token> = vec![];
+        let mut args_name_tokens: Vec<(Token, Type)> = vec![];
         if self.current_token.typee == Tokens::Identifier {
             let name = self.current_token.clone();
-            args_name_tokens.push(name);
-
             res.register_advancement();
             self.advance();
+            let typee = self.type_expr(&mut res);
+            match typee {
+                Ok(typ) => args_name_tokens.push((name, typ)),
+                Err(e) => return res.failure(e),
+            }
 
             while self.current_token.typee == Tokens::Comma {
                 res.register_advancement();
@@ -78,9 +81,13 @@ impl Parser {
 
                 if self.current_token.typee == Tokens::Identifier {
                     let new_arg_token = self.current_token.clone();
-                    args_name_tokens.push(new_arg_token);
                     res.register_advancement();
                     self.advance();
+                    let typee = self.type_expr(&mut res);
+                    match typee {
+                        Ok(typ) => args_name_tokens.push((new_arg_token, typ)),
+                        Err(e) => return res.failure(e),
+                    }
                 } else {
                     return res.failure(Error::new(
                         "Invalid Syntax",
@@ -111,17 +118,11 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee != Tokens::Arrow {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                self.current_token.pos_start.clone(),
-                self.current_token.pos_end.clone(),
-                "Expected '=>'",
-            ));
-        }
-
-        res.register_advancement();
-        self.advance();
+        let ret_type = self.type_expr(&mut res);
+        let return_type = match ret_type {
+            Ok(ret) => ret,
+            Err(e) => return res.failure(e),
+        };
 
         if !self
             .current_token
@@ -162,6 +163,7 @@ impl Parser {
             name: fun_name,
             body_node: Box::new(body_node.clone().unwrap()),
             arg_tokens: args_name_tokens,
+            return_type,
         })
     }
 }

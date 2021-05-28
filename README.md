@@ -1,9 +1,9 @@
 # BlazeScript
 
-> A intermediate compiled and vm interpreted language which is dynamically typed (for now) and object oriented
+> A intermediate jit compiled language which is kinda statically typed (for now) and object oriented
 
 ## Note
-> We are moving to LLVM as the VM wasn't performant, to build the code with llvm support use --features llvm and to compile to llvm use -l or --llvm flag and to compile to native executabe you must link to libc
+> We are moving to LLVM as the VM wasn't performant, and to compile to native executabe you must link to libc.
 
 ## Installation
 
@@ -49,7 +49,7 @@ This language is very much work in-progress. We are also working on a [VSCode Ex
 - Printing the famous "Hello World"
 
 ```bzs
-println("Hello World!") @ yep as simple as that
+printf("Hello World!") @ yep as simple as that
 ```
 
 - Comments
@@ -64,12 +64,12 @@ println("Hello World!") @ yep as simple as that
 - Creating and calling functions
 
 ```bzs
-fun sum(a, b) => {
+fun sum(a: int, b: int): int {
     var c = a + b;
     return c;
 }
 
-println(sum(2, 2));
+printf(sum(2, 2));
 ```
 
 - Working around with objects
@@ -82,7 +82,7 @@ var obj = {
 println(obj.prop); @ accessing object property
 
 obj.prop = 10; @ editing object property value
-println(obj.prop) @ 10
+printf(obj.prop) @ 10
 ```
 
 - Classes
@@ -92,21 +92,21 @@ class Main {
     var a = 10; @ this is a property
 
     @ this is constructor
-    fun() {
+    fun(): Main {
         soul.a = 5; @ soul is the current object it's operating on
     }
 
     @ this is a method
-    fun sum_to_a(b) => {
+    fun sum_to_a(b): Main {
         soul.a = soul.a + b;
         return soul;
     }
 }
 
 var ins = new Main(); @ creating/initializing a class, returns a object with the properties
-println(ins);
+printf(ins);
 
-println(ins.sum_to_a(5));
+printf(ins.sum_to_a(5));
 ```
 
 ## Dependencies
@@ -123,15 +123,13 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 
 ## Project Structure
 
-|               Codebase                |                   Description                   |
-| :-----------------------------------: | :---------------------------------------------: |
-|   [blazescript](crates/blazescript)   |                   The binary                    |
-|    [bzsc_lexer](crates/bzsc_lexer)    |              Lexer for Tokenizing               |
-|   [bzsc_parser](crates/bzsc_parser)   |               Parser for AST Tree               |
-| [bzsc_bytecode](crates/bzsc_bytecode) |               Bytecode Generator                |
-|      [blaze_vm](crates/blaze_vm)      |            The bytecode interpreter             |
-|     [bzsc_llvm](crates/bzsc_llvm)     |         W.I.P. LLVM IR Code Generation          |
-|    [bzs_shared](crates/bzs_shared)    | Structs, Methods, etc Shared among other crates |
+|             Codebase              |                   Description                   |
+| :-------------------------------: | :---------------------------------------------: |
+| [blazescript](crates/blazescript) |                   The binary                    |
+|  [bzsc_lexer](crates/bzsc_lexer)  |              Lexer for Tokenizing               |
+| [bzsc_parser](crates/bzsc_parser) |               Parser for AST Tree               |
+|   [bzsc_llvm](crates/bzsc_llvm)   |         W.I.P. LLVM IR Code Generation          |
+|  [bzs_shared](crates/bzs_shared)  | Structs, Methods, etc Shared among other crates |
 
 # TODO
 
@@ -139,7 +137,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 - [ ] Errors
   - [x] Lexer
   - [x] Parser
-  - [ ] LLVM 
+  - [x] LLVM 
 - [ ] LLVM
 
   - [x] Executables
@@ -163,6 +161,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
+- [ ] Type System
 - [x] AST
 
 ## Author

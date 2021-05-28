@@ -38,7 +38,7 @@ jobs:
       - name: Build project
         run: bash build ${{ runner.temp }}/llvm
       - name: Compile to Object Code
-        run: ./bin/${{ matrix.artifact_name }} -l examples/main.bzs
+        run: ./bin/${{ matrix.artifact_name }} examples/main.bzs
       - name: Link to libc and compile to native machine executable
         run: clang -o${{ matrix.exe }} -lc examples/main.o
       - name: Run Native Executable

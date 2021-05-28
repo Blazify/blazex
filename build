@@ -20,7 +20,7 @@ fi
 rustup toolchain install nightly
 rustup override set nightly
 rustup component add rust-src
-LLVM_SYS_110_PREFIX="$llvm_path" cargo +nightly build --locked --target $target --release --features llvm
+LLVM_SYS_110_PREFIX="$llvm_path" cargo +nightly build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then

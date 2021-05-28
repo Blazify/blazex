@@ -11,20 +11,31 @@
  * limitations under the License.
 */
 
-#![allow(unused_must_use)]
+#![allow(unused_must_use, dead_code)]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use bincode::{deserialize, serialize};
-use blaze_vm::VM;
-use blazescript::format_print;
-use bzs_shared::ByteCode;
-use bzsc_bytecode::ByteCodeGen;
 use bzsc_lexer::Lexer;
+use bzsc_llvm::Compiler;
+use bzsc_llvm::Function;
+use bzsc_llvm::Prototype;
 use bzsc_parser::parser::Parser;
-use cfg_if::cfg_if;
+use inkwell::context::Context;
+use inkwell::execution_engine::JitFunction;
+use inkwell::module::Linkage;
+use inkwell::module::Module;
+use inkwell::passes::PassManager;
+use inkwell::targets::CodeModel;
+use inkwell::targets::FileType;
+use inkwell::targets::InitializationConfig;
+use inkwell::targets::RelocMode;
+use inkwell::targets::Target;
+use inkwell::targets::TargetMachine;
+use inkwell::types::BasicTypeEnum;
+use inkwell::AddressSpace;
+use inkwell::OptimizationLevel;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
-use std::collections::HashMap;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
 use std::sync::mpsc::channel;
@@ -60,12 +71,6 @@ struct CmdParams {
      */
     #[structopt(long, short = "w")]
     pub watch: bool,
-
-    /*
-     * Whether the compiler should compile to llvm (Default: false)
-     */
-    #[structopt(long, short = "l")]
-    pub llvm: bool,
 }
 
 /*
@@ -75,29 +80,16 @@ fn main() {
     let cmd_params = CmdParams::from_args();
     let file_name = cmd_params.path.as_os_str().to_str().unwrap().to_string();
     let is_quiet = cmd_params.quiet;
-    let out_file = if cmd_params.out.is_some() {
-        if file_name.ends_with(".bze") {
-            eprintln!("--out is not valid in this scope");
-            exit(1)
+    let out_file = if let Some(out) = cmd_params.out {
+        if out.ends_with(".o") {
+            out.as_os_str().to_str().unwrap().to_string()
         } else {
-            let str_out = cmd_params
-                .out
-                .unwrap()
-                .as_os_str()
-                .to_str()
-                .unwrap()
-                .to_string();
-            if str_out.ends_with(".bze") {
-                str_out
-            } else {
-                str_out + &".bze"
-            }
+            out.as_os_str().to_str().unwrap().to_string() + ".o"
         }
     } else {
-        file_name.clone().replace(".bzs", ".bze")
+        file_name.clone().replace(".bzs", ".o")
     };
     let watch = cmd_params.watch;
-    let _is_llvm = cmd_params.llvm;
 
     /*
      * Compiling to Bytecode or Intepreting Bytecode
@@ -136,45 +128,72 @@ fn main() {
                 }
             }
 
-            cfg_if! {
-                if #[cfg(feature = "llvm")] {
-                    use bzsc_llvm::compile;
-                    if _is_llvm {
-                        compile(parsed.node.unwrap(), out_file.replace(".bze", ".o"));
+            let context = Context::create();
+            let module = context.create_module("Blazescript");
+            let builder = context.create_builder();
 
-                        match time.elapsed() {
-                            Ok(elapsed) => {
-                                if !is_quiet {
-                                    println!(
-                                        "Time taken for Compilation Process: {} milliseconds",
-                                        elapsed.as_millis()
-                                    );
-                                }
-                            }
-                            Err(e) => {
-                                eprintln!("Error: {:?}", e);
-                                exit(1);
-                            }
-                        }
+            let fpm = PassManager::create(&module);
 
-                        exit(0);
-                    }
+            fpm.add_instruction_combining_pass();
+            fpm.add_reassociate_pass();
+            fpm.add_gvn_pass();
+            fpm.add_cfg_simplification_pass();
+            fpm.add_basic_alias_analysis_pass();
+            fpm.add_promote_memory_to_register_pass();
+            fpm.add_instruction_combining_pass();
+            fpm.add_reassociate_pass();
+
+            fpm.initialize();
+
+            let func = Function {
+                body: parsed.node.unwrap(),
+                prototype: Prototype {
+                    name: String::from("main"),
+                    args: vec![],
+                    ret_type: context.i32_type().into(),
+                },
+            };
+
+            let str_type = context.i8_type().ptr_type(AddressSpace::Generic);
+            let i32_type = context.i32_type();
+            let printf_type = i32_type.fn_type(&[BasicTypeEnum::PointerType(str_type)], true);
+            module.add_function("printf", printf_type, Some(Linkage::External));
+
+            match Compiler::compile(&context, &builder, &module, &fpm, &func) {
+                Ok(_) => {
+                    println!("LLVM IR:\n{}", module.print_to_string().to_string());
+
+                    /*
+                     * Uncomment if you want to test what the output is...
+                     */
+                    // jit(&module);
+
+                    let path = Path::new(&out_file);
+
+                    Target::initialize_all(&InitializationConfig::default());
+                    let target = Target::from_name("x86-64").unwrap();
+                    let target_machine = target
+                        .create_target_machine(
+                            &TargetMachine::get_default_triple(),
+                            "x86-64",
+                            TargetMachine::get_host_cpu_features().to_string().as_str(),
+                            OptimizationLevel::Aggressive,
+                            RelocMode::Default,
+                            CodeModel::Default,
+                        )
+                        .unwrap();
+
+                    target_machine
+                        .write_to_file(&module, FileType::Object, &path)
+                        .ok();
+
+                    println!("Wrote object file to {}", out_file);
+                }
+                Err(err) => {
+                    err.prettify();
                 }
             }
 
-            let mut bytecode_gen = ByteCodeGen::new();
-            bytecode_gen.compile_node(parsed.node.unwrap());
-
-            let mut sym = HashMap::new();
-            for (k, v) in &bytecode_gen.variables {
-                sym.insert(*v, k.clone());
-            }
-            let serialized =
-                serialize(&(bytecode_gen.bytecode, sym)).expect("serialization of bytecode failed");
-            std::fs::write(out_file.clone(), serialized);
-            if !is_quiet {
-                println!("Compilation Success: Wrote to {}", out_file);
-            }
             match time.elapsed() {
                 Ok(elapsed) => {
                     if !is_quiet {
@@ -186,48 +205,16 @@ fn main() {
                 }
                 Err(e) => {
                     eprintln!("Error: {:?}", e);
+                    if !watch {
+                        exit(1);
+                    }
                 }
             }
+
             if !watch {
                 exit(0);
             }
-        } else if file_name.ends_with(".bze") {
-            if !is_quiet {
-                println!("----Blaze Virtual Machine----");
-                println!("Version: 0.0.1");
-                println!("File: {}", file_name);
-            }
-            let btc_raw = std::fs::read(file_name.clone()).expect("could not read executable");
-            let bytecode: (ByteCode, HashMap<u16, String>) =
-                deserialize(&btc_raw[..]).expect("deserialization of executable failed");
-            let mut vm = VM::new(bytecode.0, None);
-            vm.run();
-            println!(
-                "{}",
-                format_print(&vm.pop_last().borrow().clone(), bytecode.1)
-            );
-            match time.elapsed() {
-                Ok(elapsed) => {
-                    if !is_quiet {
-                        println!(
-                            "Time taken for Interpretation Process: {} milliseconds",
-                            elapsed.as_millis()
-                        );
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error: {:?}", e);
-                }
-            }
-            if !watch {
-                exit(0)
-            }
-        } else {
-            eprintln!("Error: File name should end with .bzs(Script) or .bze(Executable)");
-            if !watch {
-                exit(1)
-            };
-        };
+        }
     };
 
     compile();
@@ -257,5 +244,17 @@ fn main() {
                 }
             }
         }
+    }
+}
+
+fn jit<'ctx>(module: &'ctx Module<'ctx>) {
+    let jit_engine = module
+        .create_jit_execution_engine(OptimizationLevel::Aggressive)
+        .unwrap();
+
+    unsafe {
+        let main: JitFunction<unsafe extern "C" fn() -> i128> =
+            jit_engine.get_function("main").unwrap();
+        println!("{}", main.call());
     }
 }

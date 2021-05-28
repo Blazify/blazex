@@ -34,6 +34,11 @@ pub fn get_keywords() -> Vec<String> {
         string("return"),
         string("class"),
         string("new"),
+        string("int"),
+        string("float"),
+        string("string"),
+        string("char"),
+        string("boolean"),
     ]
 }
 
@@ -380,9 +385,6 @@ impl Lexer {
                 self.position.clone(),
                 DynType::None,
             );
-        } else if self.current_char.unwrap_or(' ') == '>' {
-            self.advance();
-            return Token::new(Tokens::Arrow, start, self.position.clone(), DynType::None);
         }
 
         Token::new(Tokens::Equals, start, self.position.clone(), DynType::None)

@@ -15,9 +15,9 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use codespan_reporting::term::{self};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt::{Display, Error as E, Formatter};
+use inkwell::context::Context;
+use inkwell::types::AnyTypeEnum;
+use inkwell::AddressSpace;
 
 /*
 * Enum of all the Token Types
@@ -32,7 +32,6 @@ pub enum Tokens {
     Colon,
     Comma,
     Dot,
-    Arrow,
     Plus,
     Minus,
     Multiply,
@@ -63,6 +62,9 @@ pub enum Tokens {
     Unknown,
 }
 
+pub fn to_static_str(string: String) -> &'static str {
+    Box::leak(string.to_owned().into_boxed_str())
+}
 /*
 * Enum of all the Token Values
 */
@@ -288,7 +290,8 @@ pub enum Node {
     FunDef {
         name: Option<Token>,
         body_node: Box<Node>,
-        arg_tokens: Vec<Token>,
+        arg_tokens: Vec<(Token, Type)>,
+        return_type: Type,
     },
     ForNode {
         var_name_token: Token,
@@ -382,11 +385,12 @@ impl Node {
                 name,
                 body_node,
                 arg_tokens,
+                return_type: _,
             } => (
                 if name.is_some() {
                     name.clone().unwrap().pos_start
                 } else if !arg_tokens.is_empty() {
-                    arg_tokens.first().unwrap().pos_start
+                    arg_tokens.first().unwrap().0.pos_start
                 } else {
                     body_node.get_pos().0
                 },
@@ -458,64 +462,27 @@ impl Node {
     }
 }
 
-/*
-* Raw Constant Enum returned by Bytecode Compiler
-*/
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum Constants {
-    None,
-    Null,
-    Int(i128),
-    Float(f64),
-    String(String),
-    Char(char),
-    Boolean(bool),
-    Function(Vec<u16>, ByteCode),
-    RawArray(Vec<ByteCode>),
-    RawObject(HashMap<usize, ByteCode>),
-    RawClass(
-        Option<(Vec<u16>, ByteCode)>,
-        HashMap<usize, ByteCode>,
-        HashMap<usize, (Vec<u16>, ByteCode)>,
-    ),
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Type {
+    Int,
+    Float,
+    Boolean,
+    Char,
+    String,
+    Void,
+    Custom(&'static str),
 }
 
-/*
-* Bytecode Struct which contains the actual instructions and constants
-*/
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ByteCode {
-    pub instructions: Vec<u8>,
-    pub constants: Vec<Constants>,
-}
-
-impl ByteCode {
-    /*
-     * Creates a new Bytecode instance
-     */
-    pub fn new() -> Self {
-        Self {
-            instructions: Vec::new(),
-            constants: Vec::new(),
+impl Type {
+    pub fn to_llvm_type<'ctx>(&self, ctx: &'ctx Context) -> AnyTypeEnum<'ctx> {
+        match self {
+            Type::Int => AnyTypeEnum::IntType(ctx.i128_type()),
+            Type::Float => AnyTypeEnum::FloatType(ctx.f64_type()),
+            Type::Boolean => AnyTypeEnum::IntType(ctx.bool_type()),
+            Type::Char => AnyTypeEnum::IntType(ctx.i8_type()),
+            Type::String => AnyTypeEnum::PointerType(ctx.i8_type().ptr_type(AddressSpace::Generic)),
+            Type::Void => AnyTypeEnum::VoidType(ctx.void_type()),
+            Type::Custom(_) => panic!("Custom types aren't supported yet!"),
         }
-    }
-}
-
-impl Display for ByteCode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), E> {
-        write!(
-            f,
-            "\nInstructions: {}\nConstants: {}\n",
-            self.instructions
-                .iter()
-                .map(|x| format!("{}", x))
-                .collect::<Vec<String>>()
-                .join(" "),
-            self.constants
-                .iter()
-                .map(|x| format!("{:?}", x))
-                .collect::<Vec<String>>()
-                .join(", ")
-        )
     }
 }

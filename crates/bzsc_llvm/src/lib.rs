@@ -1,28 +1,27 @@
 #![allow(dead_code, unused_variables)]
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 use bzs_shared::{DynType, Error, Node, Position, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
-    execution_engine::JitFunction,
-    module::{Linkage, Module},
+    module::Module,
     passes::PassManager,
-    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    types::{BasicType, BasicTypeEnum},
+    types::{AnyTypeEnum, BasicType, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace, FloatPredicate, IntPredicate, OptimizationLevel,
+    AddressSpace, FloatPredicate, IntPredicate,
 };
 
 #[derive(Debug)]
-pub struct Prototype {
+pub struct Prototype<'ctx> {
     pub name: String,
-    pub args: Vec<String>,
+    pub args: Vec<(String, AnyTypeEnum<'ctx>)>,
+    pub ret_type: AnyTypeEnum<'ctx>,
 }
 
 #[derive(Debug)]
-pub struct Function {
-    pub prototype: Prototype,
+pub struct Function<'ctx> {
+    pub prototype: Prototype<'ctx>,
     pub body: Node,
 }
 
@@ -31,7 +30,7 @@ pub struct Compiler<'a, 'ctx> {
     pub builder: &'a Builder<'ctx>,
     pub module: &'a Module<'ctx>,
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
-    pub function: &'a Function,
+    pub function: &'a Function<'ctx>,
 
     variables: HashMap<String, PointerValue<'ctx>>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
@@ -42,12 +41,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Error::new("Compiler Error", pos.0, pos.1, description)
     }
 
-    fn to_func_with_proto(&self, node: Node) -> Result<Function, Error> {
+    fn to_func_with_proto(&self, node: Node) -> Result<Function<'ctx>, Error> {
         match node.clone() {
             Node::FunDef {
                 arg_tokens,
                 body_node,
                 name,
+                return_type,
             } => Ok(Function {
                 prototype: Prototype {
                     name: if name.is_none() {
@@ -55,7 +55,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     } else {
                         name.unwrap().value.into_string()
                     },
-                    args: arg_tokens.iter().map(|x| x.value.into_string()).collect(),
+                    args: arg_tokens
+                        .iter()
+                        .map(|x| (x.0.value.into_string(), x.1.to_llvm_type(&self.context)))
+                        .collect(),
+                    ret_type: return_type.to_llvm_type(&self.context),
                 },
                 body: *body_node,
             }),
@@ -500,9 +504,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 name,
                 body_node,
                 arg_tokens,
+                ..
             } => {
                 let func = self.to_func_with_proto(node.clone())?;
-                let proto = self.compile_prototype(&func.prototype)?;
+                let proto: FunctionValue = self.compile_prototype(&func.prototype)?;
 
                 Ok(BasicValueEnum::PointerValue(
                     proto.as_global_value().as_pointer_value(),
@@ -575,19 +580,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, Error> {
-        let ret_type = self.context.i32_type();
-        let args_types = std::iter::repeat(ret_type)
-            .take(proto.args.len())
-            .map(|f| f.into())
+    fn compile_prototype(&self, proto: &'a Prototype<'ctx>) -> Result<FunctionValue<'ctx>, Error> {
+        let ret_type = proto.ret_type;
+        let args_types = proto
+            .args
+            .iter()
+            .map(|x| try_any_to_basic(x.1))
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
-        let fn_type = ret_type.fn_type(args_types, false);
+        let fn_type = match ret_type {
+            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::FunctionType(x) => panic!("functions can't return functions"),
+            AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
+            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
+        };
         let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
-            arg.into_int_value().set_name(proto.args[i].as_str());
+            arg.into_int_value().set_name(proto.args[i].0.as_str());
         }
 
         Ok(fn_val)
@@ -595,7 +610,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     fn compile_fn(&mut self) -> Result<FunctionValue<'ctx>, Error> {
         let proto = &self.function.prototype;
-        let function = self.compile_prototype(proto)?;
+        let function = self.compile_prototype(&proto)?;
 
         let entry = self.context.append_basic_block(function, "entry");
 
@@ -606,12 +621,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.variables.reserve(proto.args.len());
 
         for (i, arg) in function.get_param_iter().enumerate() {
-            let arg_name = proto.args[i].as_str();
+            let arg_name = proto.args[i].0.as_str();
             let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
 
             self.builder.build_store(alloca, arg);
 
-            self.variables.insert(proto.args[i].clone(), alloca);
+            self.variables.insert(proto.args[i].0.clone(), alloca);
         }
 
         self.compile_node(self.function.body.clone())?;
@@ -637,7 +652,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder: &'a Builder<'ctx>,
         module: &'a Module<'ctx>,
         fpm: &'a PassManager<FunctionValue<'ctx>>,
-        function: &Function,
+        function: &'a Function<'ctx>,
     ) -> Result<FunctionValue<'ctx>, Error> {
         let mut compiler = Compiler {
             builder,
@@ -653,81 +668,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 }
 
-pub fn compile(node: Node, output: String) {
-    let context = Context::create();
-    let module = context.create_module("Blazescript");
-    let builder = context.create_builder();
-
-    let fpm = PassManager::create(&module);
-
-    fpm.add_instruction_combining_pass();
-    fpm.add_reassociate_pass();
-    fpm.add_gvn_pass();
-    fpm.add_cfg_simplification_pass();
-    fpm.add_basic_alias_analysis_pass();
-    fpm.add_promote_memory_to_register_pass();
-    fpm.add_instruction_combining_pass();
-    fpm.add_reassociate_pass();
-
-    fpm.initialize();
-
-    let func = Function {
-        body: node,
-        prototype: Prototype {
-            name: String::from("main"),
-            args: vec![],
-        },
-    };
-
-    let str_type = context.i8_type().ptr_type(AddressSpace::Generic);
-    let i32_type = context.i32_type();
-    let printf_type = i32_type.fn_type(&[BasicTypeEnum::PointerType(str_type)], true);
-    module.add_function("printf", printf_type, Some(Linkage::External));
-
-    match Compiler::compile(&context, &builder, &module, &fpm, &func) {
-        Ok(function) => {
-            println!("LLVM IR:\n{}", module.print_to_string().to_string());
-
-            /*
-             * Uncomment if you want to test what the output is...
-             */
-            // jit(&module, function);
-
-            let path = Path::new(&output);
-
-            Target::initialize_all(&InitializationConfig::default());
-            let target = Target::from_name("x86-64").unwrap();
-            let target_machine = target
-                .create_target_machine(
-                    &TargetMachine::get_default_triple(),
-                    "x86-64",
-                    TargetMachine::get_host_cpu_features().to_string().as_str(),
-                    OptimizationLevel::Aggressive,
-                    RelocMode::Default,
-                    CodeModel::Default,
-                )
-                .unwrap();
-
-            target_machine
-                .write_to_file(&module, FileType::Object, &path)
-                .ok();
-
-            println!("Wrote object file to {}", output);
-        }
-        Err(err) => {
-            err.prettify();
-        }
-    }
-}
-
-fn jit<'ctx>(module: &'ctx Module, fn_val: FunctionValue) {
-    let jit_engine = module
-        .create_jit_execution_engine(OptimizationLevel::Aggressive)
-        .unwrap();
-
-    unsafe {
-        let main: JitFunction<unsafe extern "C" fn() -> i128> =
-            jit_engine.get_function("main").unwrap();
-        println!("{}", main.call());
+fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
+    match k {
+        AnyTypeEnum::ArrayType(x) => BasicTypeEnum::ArrayType(x),
+        AnyTypeEnum::FloatType(x) => BasicTypeEnum::FloatType(x),
+        AnyTypeEnum::FunctionType(x) => panic!("Not convertible"),
+        AnyTypeEnum::IntType(x) => BasicTypeEnum::IntType(x),
+        AnyTypeEnum::PointerType(x) => BasicTypeEnum::PointerType(x),
+        AnyTypeEnum::StructType(x) => BasicTypeEnum::StructType(x),
+        AnyTypeEnum::VectorType(x) => BasicTypeEnum::VectorType(x),
+        AnyTypeEnum::VoidType(x) => panic!("Not convertible"),
     }
 }

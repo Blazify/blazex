@@ -88,6 +88,7 @@ impl Parser {
                     name,
                     body_node,
                     arg_tokens,
+                    return_type: _,
                 } => {
                     if name.as_ref().is_none() {
                         if constructor.is_some() {
@@ -98,9 +99,16 @@ impl Parser {
                                 "Constructor defined",
                             ));
                         }
-                        constructor = Some((arg_tokens, *body_node.clone()));
+                        constructor = Some((
+                            arg_tokens.iter().map(|x| x.clone().0).collect(),
+                            *body_node.clone(),
+                        ));
                     } else {
-                        methods.push((name.as_ref().unwrap().clone(), arg_tokens, *body_node));
+                        methods.push((
+                            name.as_ref().unwrap().clone(),
+                            arg_tokens.iter().map(|x| x.clone().0).collect(),
+                            *body_node,
+                        ));
                     }
                 }
                 _ => {
