@@ -6,12 +6,12 @@ use inkwell::{
     builder::Builder,
     context::Context,
     execution_engine::JitFunction,
-    module::Module,
+    module::{Linkage, Module},
     passes::PassManager,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
     types::{BasicType, BasicTypeEnum},
-    values::{AnyValue, BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    FloatPredicate, IntPredicate, OptimizationLevel,
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    AddressSpace, FloatPredicate, IntPredicate, OptimizationLevel,
 };
 
 #[derive(Debug)]
@@ -268,9 +268,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 Err(self.error(node.get_pos(), "Unknown unary operation"))
             }
-            Node::StringNode { token } => Ok(BasicValueEnum::VectorValue(
-                self.context
-                    .const_string(&token.value.into_string().as_bytes(), false),
+            Node::StringNode { token } => Ok(BasicValueEnum::PointerValue(
+                self.builder.build_pointer_cast(
+                    unsafe {
+                        self.builder
+                            .build_global_string(token.value.into_string().as_str(), "str")
+                            .as_pointer_value()
+                    },
+                    self.context.i8_type().ptr_type(AddressSpace::Generic),
+                    "stri8",
+                ),
             )),
             Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
                 self.context
@@ -473,9 +480,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 body_node,
                 arg_tokens,
             } => Err(self.error(node.get_pos(), "Please don't use -l ")),
-            Node::CallNode { node_to_call, args } => {
-                Err(self.error(node.get_pos(), "Please don't use -l "))
-            }
+            Node::CallNode { node_to_call, args } => match *node_to_call {
+                Node::VarAccessNode { token: tok } => {
+                    let func = self
+                        .get_function(tok.value.into_string().as_str())
+                        .ok_or(self.error(node.get_pos(), "Function not found"))?;
+                    let mut compiled_args = vec![];
+                    for arg in args {
+                        compiled_args.push(self.compile_node(arg)?);
+                    }
+                    Ok(self
+                        .builder
+                        .build_call(func, &compiled_args[..], "tmpcall")
+                        .try_as_basic_value()
+                        .unwrap_left())
+                }
+                _ => Err(self.error(node.get_pos(), "Not Callable")),
+            },
             Node::ArrayNode { element_nodes } => {
                 Err(self.error(node.get_pos(), "Please don't use -l "))
             }
@@ -508,7 +529,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     fn compile_prototype(&self, proto: &Prototype) -> Result<FunctionValue<'ctx>, Error> {
-        let ret_type = self.context.i128_type();
+        let ret_type = self.context.i32_type();
         let args_types = std::iter::repeat(ret_type)
             .take(proto.args.len())
             .map(|f| f.into())
@@ -519,7 +540,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
-            arg.into_float_value().set_name(proto.args[i].as_str());
+            arg.into_int_value().set_name(proto.args[i].as_str());
         }
 
         Ok(fn_val)
@@ -546,9 +567,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.variables.insert(proto.args[i].clone(), alloca);
         }
 
-        let body = self.compile_node(self.function.body.clone())?;
+        self.compile_node(self.function.body.clone())?;
 
-        self.builder.build_return(Some(&body));
+        self.builder
+            .build_return(Some(&self.context.i32_type().const_int(0, false)));
 
         if function.verify(true) {
             self.fpm.run_on(&function);
@@ -610,14 +632,19 @@ pub fn compile(node: Node, output: String) {
         },
     };
 
+    let str_type = context.i8_type().ptr_type(AddressSpace::Generic);
+    let i32_type = context.i32_type();
+    let printf_type = i32_type.fn_type(&[BasicTypeEnum::PointerType(str_type)], true);
+    module.add_function("printf", printf_type, Some(Linkage::External));
+
     match Compiler::compile(&context, &builder, &module, &fpm, &func) {
         Ok(function) => {
-            println!("LLVM IR:\n{}", function.print_to_string().to_string());
+            println!("LLVM IR:\n{}", module.print_to_string().to_string());
 
             /*
              * Uncomment if you want to test what the output is...
              */
-            jit(&module, function);
+            // jit(&module, function);
 
             let path = Path::new(&output);
 
@@ -629,8 +656,8 @@ pub fn compile(node: Node, output: String) {
                     "x86-64",
                     TargetMachine::get_host_cpu_features().to_string().as_str(),
                     OptimizationLevel::Aggressive,
-                    RelocMode::Static,
-                    CodeModel::Kernel,
+                    RelocMode::Default,
+                    CodeModel::Default,
                 )
                 .unwrap();
 

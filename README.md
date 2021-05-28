@@ -3,7 +3,7 @@
 > A intermediate compiled and vm interpreted language which is dynamically typed (for now) and object oriented
 
 ## Note
-> We are moving to LLVM as the VM wasn't performant, to build the code with llvm support use --features llvm and to compile to llvm use -l or --llvm flag
+> We are moving to LLVM as the VM wasn't performant, to build the code with llvm support use --features llvm and to compile to llvm use -l or --llvm flag and to compile to native executabe you must link to libc
 
 ## Installation
 
@@ -130,7 +130,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 |   [bzsc_parser](crates/bzsc_parser)   |               Parser for AST Tree               |
 | [bzsc_bytecode](crates/bzsc_bytecode) |               Bytecode Generator                |
 |      [blaze_vm](crates/blaze_vm)      |            The bytecode interpreter             |
-|     [bzsc_llvm](crates/blaze_vm)      |         W.I.P. LLVM IR Code Generation          |
+|     [bzsc_llvm](crates/bzsc_llvm)     |         W.I.P. LLVM IR Code Generation          |
 |    [bzs_shared](crates/bzs_shared)    | Structs, Methods, etc Shared among other crates |
 
 # TODO
@@ -154,7 +154,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] If else
   - [x] For loop
   - [x] While loop
-  - [ ] Functions
+  - [x] Functions (TODO: User Defined Functions)
   - [ ] Arrays
   - [ ] Objects
   - [ ] Classes
