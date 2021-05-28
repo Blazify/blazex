@@ -1,6 +1,3 @@
-var a = 0;
-for i = 0 to 100 step 1 {
-    a = a + i;
+fun o() => {
+    0
 }
-printf("Hi there!");
-a

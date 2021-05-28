@@ -42,6 +42,27 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Error::new("Compiler Error", pos.0, pos.1, description)
     }
 
+    fn to_func_with_proto(&self, node: Node) -> Result<Function, Error> {
+        match node.clone() {
+            Node::FunDef {
+                arg_tokens,
+                body_node,
+                name,
+            } => Ok(Function {
+                prototype: Prototype {
+                    name: if name.is_none() {
+                        "anonymous".to_string()
+                    } else {
+                        name.unwrap().value.into_string()
+                    },
+                    args: arg_tokens.iter().map(|x| x.value.into_string()).collect(),
+                },
+                body: *body_node,
+            }),
+            _ => Err(self.error(node.get_pos(), "Not a functions")),
+        }
+    }
+
     #[inline]
     fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
         self.module.get_function(name)
@@ -479,24 +500,50 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 name,
                 body_node,
                 arg_tokens,
-            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
-            Node::CallNode { node_to_call, args } => match *node_to_call {
-                Node::VarAccessNode { token: tok } => {
-                    let func = self
-                        .get_function(tok.value.into_string().as_str())
-                        .ok_or(self.error(node.get_pos(), "Function not found"))?;
-                    let mut compiled_args = vec![];
-                    for arg in args {
-                        compiled_args.push(self.compile_node(arg)?);
-                    }
-                    Ok(self
-                        .builder
-                        .build_call(func, &compiled_args[..], "tmpcall")
-                        .try_as_basic_value()
-                        .unwrap_left())
+            } => {
+                let func = self.to_func_with_proto(node.clone())?;
+                let proto = self.compile_prototype(&func.prototype)?;
+
+                Ok(BasicValueEnum::PointerValue(
+                    proto.as_global_value().as_pointer_value(),
+                ))
+            }
+            Node::CallNode { node_to_call, args } => {
+                let mut compiled_args = vec![];
+                let mut compiled_args_type = vec![];
+                for arg in args {
+                    let a = self.compile_node(arg)?;
+                    compiled_args.push(a);
+                    compiled_args_type.push(a.get_type());
                 }
-                _ => Err(self.error(node.get_pos(), "Not Callable")),
-            },
+                match *node_to_call {
+                    Node::VarAccessNode { token: tok } => {
+                        let func = self
+                            .get_function(tok.value.into_string().as_str())
+                            .ok_or(self.error(node.get_pos(), "Function not found"))?;
+                        Ok(self
+                            .builder
+                            .build_call(func, &compiled_args[..], "tmpcall")
+                            .try_as_basic_value()
+                            .unwrap_left())
+                    }
+                    _ => {
+                        let func = self.compile_node(*node_to_call)?;
+                        if !func.is_pointer_value() {
+                            return Err(self.error(
+                                node.get_pos(),
+                                "Expected a Function pointer found something else",
+                            ));
+                        }
+
+                        Ok(self
+                            .builder
+                            .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall")
+                            .try_as_basic_value()
+                            .unwrap_left())
+                    }
+                }
+            }
             Node::ArrayNode { element_nodes } => {
                 Err(self.error(node.get_pos(), "Please don't use -l "))
             }
