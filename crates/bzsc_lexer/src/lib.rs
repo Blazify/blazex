@@ -304,7 +304,7 @@ impl Lexer {
     fn make_string(&mut self) -> Token {
         let mut str_raw = String::new();
         let start = self.position.clone();
-        let mut escape = true;
+        let mut escape = false;
         self.advance();
 
         while self.current_char.is_some() || escape {
@@ -312,16 +312,18 @@ impl Lexer {
                 break;
             }
             if escape {
-                if self.current_char.unwrap_or(' ') == '\n' {
+                if self.current_char.unwrap() == 'n' {
                     str_raw.push('\n');
-                } else if self.current_char.unwrap_or(' ') == '\t' {
+                } else if self.current_char.unwrap() == 't' {
                     str_raw.push('\t');
                 } else {
                     str_raw.push(self.current_char.unwrap());
                 }
             } else {
-                if self.current_char.unwrap_or(' ') == '\\' {
+                if self.current_char.unwrap() == '\\' {
                     escape = true;
+                    self.advance();
+                    continue;
                 } else {
                     str_raw.push(self.current_char.unwrap());
                 }

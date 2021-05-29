@@ -297,7 +297,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.builder.build_pointer_cast(
                     unsafe {
                         self.builder
-                            .build_global_string(token.value.into_string().as_str(), "str")
+                            .build_global_string(&token.value.into_string(), "str")
                             .as_pointer_value()
                     },
                     self.context.i8_type().ptr_type(AddressSpace::Generic),
@@ -336,16 +336,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let var = self
                     .variables
                     .get(name.as_str())
-                    .ok_or("Undefined variable.");
-                match var {
-                    Ok(var) => match typee.typee.clone() {
-                        Tokens::Equals => {
-                            self.builder.build_store(*var, val);
-                            Ok(val)
-                        }
-                        _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
-                    },
-                    Err(e) => Err(self.error(node.get_pos(), e)),
+                    .ok_or(self.error(node.get_pos(), "Variable not found to be reassigned"))?;
+                match typee.typee.clone() {
+                    Tokens::Equals => {
+                        self.builder.build_store(*var, val);
+                        Ok(val)
+                    }
+                    _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
                 }
             }
             Node::VarAccessNode { token } => {
@@ -353,7 +350,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     Some(var) => Ok(self
                         .builder
                         .build_load(*var, token.value.into_string().as_str())),
-                    None => Err(self.error(node.get_pos(), "Variable not found")),
+                    None => {
+                        let func = self.get_function(token.value.into_string().as_str());
+                        match func {
+                            Some(fun) => Ok(fun.as_global_value().as_pointer_value().into()),
+                            None => Err(self.error(node.get_pos(), "Variable not found")),
+                        }
+                    }
                 }
             }
             Node::IfNode { cases, else_case } => {
@@ -515,68 +518,53 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             Node::CallNode { node_to_call, args } => {
                 let mut compiled_args = vec![];
-                let mut compiled_args_type = vec![];
-                for arg in args {
-                    let a = self.compile_node(arg)?;
-                    compiled_args.push(a);
-                    compiled_args_type.push(a.get_type());
-                }
-                match *node_to_call {
-                    Node::VarAccessNode { token: tok } => {
-                        let func = self
-                            .get_function(tok.value.into_string().as_str())
-                            .ok_or(self.error(node.get_pos(), "Function not found"))?;
-                        Ok(self
-                            .builder
-                            .build_call(func, &compiled_args[..], "tmpcall")
-                            .try_as_basic_value()
-                            .unwrap_left())
-                    }
-                    _ => {
-                        let func = self.compile_node(*node_to_call)?;
-                        if !func.is_pointer_value() {
-                            return Err(self.error(
-                                node.get_pos(),
-                                "Expected a Function pointer found something else",
-                            ));
-                        }
 
-                        Ok(self
-                            .builder
-                            .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall")
-                            .try_as_basic_value()
-                            .unwrap_left())
-                    }
+                for arg in args {
+                    compiled_args.push(self.compile_node(arg)?);
                 }
+
+                let func = self.compile_node(*node_to_call)?;
+                if !func.is_pointer_value() {
+                    return Err(self.error(
+                        node.get_pos(),
+                        "Expected a Function pointer found something else",
+                    ));
+                }
+
+                Ok(self
+                    .builder
+                    .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall")
+                    .try_as_basic_value()
+                    .unwrap_left())
             }
             Node::ArrayNode { element_nodes } => {
-                Err(self.error(node.get_pos(), "Please don't use -l "))
+                Err(self.error(node.get_pos(), "Node can't be compiled"))
             }
             Node::ArrayAcess { array, index } => {
-                Err(self.error(node.get_pos(), "Please don't use -l "))
+                Err(self.error(node.get_pos(), "Node can't be compiled"))
             }
-            Node::ReturnNode { value } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            Node::ReturnNode { value } => Err(self.error(node.get_pos(), "Node can't be compiled")),
             Node::ObjectDefNode { properties } => {
-                Err(self.error(node.get_pos(), "Please don't use -l "))
+                Err(self.error(node.get_pos(), "Node can't be compiled"))
             }
             Node::ObjectPropAccess { object, property } => {
-                Err(self.error(node.get_pos(), "Please don't use -l "))
+                Err(self.error(node.get_pos(), "Node can't be compiled"))
             }
             Node::ObjectPropEdit {
                 object,
                 property,
                 new_val,
-            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
             Node::ClassDefNode {
                 name,
                 constructor,
                 properties,
                 methods,
-            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
             Node::ClassInitNode {
                 name,
                 constructor_params,
-            } => Err(self.error(node.get_pos(), "Please don't use -l ")),
+            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
         }
     }
 
@@ -635,9 +623,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         self.builder.build_return(Some(&body));
 
-        if parent.is_some() {
-            self.fn_value_opt = parent
-        };
+        self.fn_value_opt = parent;
 
         if function.verify(true) {
             self.fpm.run_on(&function);
@@ -683,7 +669,9 @@ fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
     match k {
         AnyTypeEnum::ArrayType(x) => BasicTypeEnum::ArrayType(x),
         AnyTypeEnum::FloatType(x) => BasicTypeEnum::FloatType(x),
-        AnyTypeEnum::FunctionType(x) => panic!("Not convertible"),
+        AnyTypeEnum::FunctionType(x) => {
+            BasicTypeEnum::PointerType(x.ptr_type(AddressSpace::Generic))
+        }
         AnyTypeEnum::IntType(x) => BasicTypeEnum::IntType(x),
         AnyTypeEnum::PointerType(x) => BasicTypeEnum::PointerType(x),
         AnyTypeEnum::StructType(x) => BasicTypeEnum::StructType(x),

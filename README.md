@@ -110,8 +110,12 @@ printf(ins.sum_to_a(5));
 ```
 
 ## Dependencies
+- inkwell (Safe LLVM Wrapper)
+- codespan-reporting (Errors)
+- mimalloc (Allocation for the binary)
+- structopt (Argument parsing)
+- notify (Look for file changes)
 
-We don't use any external dependencies for the actual lexing, parsing, compiling or interpreting but we do use serde and bitcode for the intermediate code which is the executable and also mimalloc for allocation so that our language can be fast as possible and codespan-reporting for errors, structopt for argument parsing and notify for watching files. Note the only branch which use dependencies are `blazescript` and `bzs_shared`
 
 ## Contributing
 
@@ -134,7 +138,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
 # TODO
 
 - [ ] Bugs Fixed
-- [ ] Errors
+- [x] Errors
   - [x] Lexer
   - [x] Parser
   - [x] LLVM 
@@ -152,7 +156,7 @@ We don't use any external dependencies for the actual lexing, parsing, compiling
   - [x] If else
   - [x] For loop
   - [x] While loop
-  - [x] Functions (TODO: User Defined Functions)
+  - [x] Functions
   - [ ] Arrays
   - [ ] Objects
   - [ ] Classes
