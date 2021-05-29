@@ -12,14 +12,14 @@ use inkwell::{
     AddressSpace, FloatPredicate, IntPredicate,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
     pub name: String,
     pub args: Vec<(String, AnyTypeEnum<'ctx>)>,
     pub ret_type: AnyTypeEnum<'ctx>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function<'ctx> {
     pub prototype: Prototype<'ctx>,
     pub body: Node,
@@ -30,7 +30,7 @@ pub struct Compiler<'a, 'ctx> {
     pub builder: &'a Builder<'ctx>,
     pub module: &'a Module<'ctx>,
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
-    pub function: &'a Function<'ctx>,
+    pub function: Function<'ctx>,
 
     variables: HashMap<String, PointerValue<'ctx>>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
@@ -507,10 +507,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 ..
             } => {
                 let func = self.to_func_with_proto(node.clone())?;
-                let proto: FunctionValue = self.compile_prototype(&func.prototype)?;
+                let fun: FunctionValue = self.compile_fn(func)?;
 
                 Ok(BasicValueEnum::PointerValue(
-                    proto.as_global_value().as_pointer_value(),
+                    fun.as_global_value().as_pointer_value(),
                 ))
             }
             Node::CallNode { node_to_call, args } => {
@@ -608,8 +608,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Ok(fn_val)
     }
 
-    fn compile_fn(&mut self) -> Result<FunctionValue<'ctx>, Error> {
-        let proto = &self.function.prototype;
+    fn compile_fn(&mut self, func: Function<'ctx>) -> Result<FunctionValue<'ctx>, Error> {
+        let parent = self.fn_value_opt.clone();
+
+        let proto = &func.prototype;
         let function = self.compile_prototype(&proto)?;
 
         let entry = self.context.append_basic_block(function, "entry");
@@ -629,22 +631,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.variables.insert(proto.args[i].0.clone(), alloca);
         }
 
-        self.compile_node(self.function.body.clone())?;
+        let body = self.compile_node(func.body.clone())?;
 
-        self.builder
-            .build_return(Some(&self.context.i32_type().const_int(0, false)));
+        self.builder.build_return(Some(&body));
+
+        if parent.is_some() {
+            self.fn_value_opt = parent
+        };
 
         if function.verify(true) {
             self.fpm.run_on(&function);
 
             Ok(function)
         } else {
+            println!("{}", self.module.print_to_string().to_string());
             unsafe {
                 function.delete();
             }
 
-            Err(self.error(self.function.body.get_pos(), "Unknown operation"))
+            Err(self.error(func.body.get_pos(), "Invalid generated function"))
         }
+    }
+
+    fn compile_top(&mut self) -> Result<FunctionValue<'ctx>, Error> {
+        let func = self.function.clone();
+        self.compile_fn(func)
     }
 
     pub fn compile(
@@ -652,7 +663,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder: &'a Builder<'ctx>,
         module: &'a Module<'ctx>,
         fpm: &'a PassManager<FunctionValue<'ctx>>,
-        function: &'a Function<'ctx>,
+        function: Function<'ctx>,
     ) -> Result<FunctionValue<'ctx>, Error> {
         let mut compiler = Compiler {
             builder,
@@ -664,7 +675,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             fn_value_opt: None,
         };
 
-        compiler.compile_fn()
+        compiler.compile_top()
     }
 }
 

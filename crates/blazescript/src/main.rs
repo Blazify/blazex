@@ -150,7 +150,7 @@ fn main() {
                 prototype: Prototype {
                     name: String::from("main"),
                     args: vec![],
-                    ret_type: context.i32_type().into(),
+                    ret_type: context.i128_type().into(),
                 },
             };
 
@@ -159,7 +159,7 @@ fn main() {
             let printf_type = i32_type.fn_type(&[BasicTypeEnum::PointerType(str_type)], true);
             module.add_function("printf", printf_type, Some(Linkage::External));
 
-            match Compiler::compile(&context, &builder, &module, &fpm, &func) {
+            match Compiler::compile(&context, &builder, &module, &fpm, func) {
                 Ok(_) => {
                     println!("LLVM IR:\n{}", module.print_to_string().to_string());
 
