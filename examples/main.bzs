@@ -1,2 +1,1 @@
-printf("Hello World!\n");
-0
+(fun(): int { printf("<>_<>\n"); 0; })() + (fun(): int { printf("-,-\n"); 0; })()

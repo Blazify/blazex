@@ -14,7 +14,7 @@ use inkwell::{
 
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
-    pub name: String,
+    pub name: Option<String>,
     pub args: Vec<(String, AnyTypeEnum<'ctx>)>,
     pub ret_type: AnyTypeEnum<'ctx>,
 }
@@ -51,9 +51,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             } => Ok(Function {
                 prototype: Prototype {
                     name: if name.is_none() {
-                        "anonymous".to_string()
+                        None
                     } else {
-                        name.unwrap().value.into_string()
+                        Some(name.unwrap().value.into_string())
                     },
                     args: arg_tokens
                         .iter()
@@ -587,7 +587,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
         };
-        let fn_val = self.module.add_function(proto.name.as_str(), fn_type, None);
+        let fn_val = self.module.add_function(
+            proto
+                .name
+                .as_ref()
+                .unwrap_or(&String::from("__anonymous__"))
+                .as_str(),
+            fn_type,
+            None,
+        );
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
             arg.into_int_value().set_name(proto.args[i].0.as_str());
@@ -604,6 +612,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let entry = self.context.append_basic_block(function, "entry");
 
+        let main_block = self.builder.get_insert_block();
         self.builder.position_at_end(entry);
 
         self.fn_value_opt = Some(function);
@@ -622,6 +631,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let body = self.compile_node(func.body.clone())?;
 
         self.builder.build_return(Some(&body));
+
+        if main_block.is_some() {
+            self.builder.position_at_end(main_block.unwrap());
+        }
 
         self.fn_value_opt = parent;
 
