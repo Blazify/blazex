@@ -20,8 +20,11 @@ else
 fi
 
 rustup toolchain install nightly
+sleep 1
 rustup override set nightly
+sleep 1
 rustup component add rust-src
+sleep 1
 LLVM_SYS_110_PREFIX="$llvm_path" cargo +nightly build --locked --target $target --release
 strip $executable
 

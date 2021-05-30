@@ -20,20 +20,15 @@ use bzxc_llvm::Compiler;
 use bzxc_llvm::Function;
 use bzxc_llvm::Prototype;
 use bzxc_parser::parser::Parser;
-use inkwell::context::Context;
-use inkwell::execution_engine::JitFunction;
-use inkwell::module::Linkage;
-use inkwell::module::Module;
-use inkwell::passes::PassManager;
-use inkwell::targets::CodeModel;
-use inkwell::targets::FileType;
-use inkwell::targets::InitializationConfig;
-use inkwell::targets::RelocMode;
-use inkwell::targets::Target;
-use inkwell::targets::TargetMachine;
-use inkwell::types::BasicTypeEnum;
-use inkwell::AddressSpace;
-use inkwell::OptimizationLevel;
+use inkwell::{
+    context::Context,
+    execution_engine::JitFunction,
+    module::{Linkage, Module},
+    passes::PassManager,
+    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
+    types::BasicTypeEnum,
+    AddressSpace, OptimizationLevel,
+};
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use std::path::Path;
 use std::path::PathBuf;
@@ -79,6 +74,10 @@ struct CmdParams {
 fn main() {
     let cmd_params = CmdParams::from_args();
     let file_name = cmd_params.path.as_os_str().to_str().unwrap().to_string();
+    if !file_name.ends_with(".bzx") {
+        eprintln!("Unexpected file {}", file_name);
+        exit(1);
+    }
     let is_quiet = cmd_params.quiet;
     let out_file = if let Some(out) = cmd_params.out {
         if out.ends_with(".o") {
@@ -92,7 +91,7 @@ fn main() {
     let watch = cmd_params.watch;
 
     /*
-     * Compiling to Bytecode or Intepreting Bytecode
+     * Compiling to Object File
      */
     let compile = || {
         let time = SystemTime::now();
@@ -160,7 +159,9 @@ fn main() {
 
         match Compiler::compile(&context, &builder, &module, &fpm, func) {
             Ok(_) => {
-                println!("LLVM IR:\n{}", module.print_to_string().to_string());
+                if !is_quiet {
+                    println!("LLVM IR:\n{}", module.print_to_string().to_string());
+                }
 
                 /*
                  * Uncomment if you want to test what the output is...

@@ -355,6 +355,54 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         self.builder.build_store(*var, val);
                         Ok(val)
                     }
+                    Tokens::PlusEquals => {
+                        let curr_var = self.builder.build_load(*var, &name);
+
+                        let new_var = self.builder.build_int_add(
+                            curr_var.into_int_value(),
+                            val.into_int_value(),
+                            "new_val",
+                        );
+
+                        self.builder.build_store(*var, new_var);
+                        Ok(new_var.into())
+                    }
+                    Tokens::MinusEquals => {
+                        let curr_var = self.builder.build_load(*var, &name);
+
+                        let new_var = self.builder.build_int_sub(
+                            curr_var.into_int_value(),
+                            val.into_int_value(),
+                            "new_val",
+                        );
+
+                        self.builder.build_store(*var, new_var);
+                        Ok(new_var.into())
+                    }
+                    Tokens::MultiplyEquals => {
+                        let curr_var = self.builder.build_load(*var, &name);
+
+                        let new_var = self.builder.build_int_mul(
+                            curr_var.into_int_value(),
+                            val.into_int_value(),
+                            "new_val",
+                        );
+
+                        self.builder.build_store(*var, new_var);
+                        Ok(new_var.into())
+                    }
+                    Tokens::DivideEquals => {
+                        let curr_var = self.builder.build_load(*var, &name);
+
+                        let new_var = self.builder.build_int_unsigned_div(
+                            curr_var.into_int_value(),
+                            val.into_int_value(),
+                            "new_val",
+                        );
+
+                        self.builder.build_store(*var, new_var);
+                        Ok(new_var.into())
+                    }
                     _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
                 }
             }
@@ -593,7 +641,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let fn_type = match ret_type {
             AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::FunctionType(x) => panic!("functions can't return functions"),
+            AnyTypeEnum::FunctionType(x) => {
+                panic!("functions can't return functions but instead can return pointers")
+            }
             AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
@@ -656,7 +706,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             Ok(function)
         } else {
-            println!("{}", self.module.print_to_string().to_string());
             unsafe {
                 function.delete();
             }
@@ -702,6 +751,6 @@ fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
         AnyTypeEnum::PointerType(x) => BasicTypeEnum::PointerType(x),
         AnyTypeEnum::StructType(x) => BasicTypeEnum::StructType(x),
         AnyTypeEnum::VectorType(x) => BasicTypeEnum::VectorType(x),
-        AnyTypeEnum::VoidType(x) => panic!("Not convertible"),
+        AnyTypeEnum::VoidType(x) => panic!("void not convertible to basic type"),
     }
 }

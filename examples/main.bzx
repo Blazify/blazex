@@ -1,6 +1,10 @@
+@@
+    Program that prints "Hello World!" 100 times
+@@
+
 var a = 0;
-while a < 100 {
-    a = a + 1; @ TODO: Make this a += 1 soon
-    printf("Hi there!\n")
+while a < 101 {
+    a += 1;
+    printf("Hello World!\n")
 }
 0
