@@ -1,7 +1,7 @@
 # Ignore Rust Build directory
 /target
 
-# Ignore Blaze Executables
+# Ignore BlazeX Executables
 *.bze
 
 # Ignore Binary Folder

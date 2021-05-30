@@ -5,7 +5,7 @@ llvm_path="$1"
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"
-	exe="blaze.exe"
+	exe="blazex.exe"
 	exten=".exe"
 	executable="target/$target/release/$exe"
 else
@@ -14,7 +14,7 @@ else
 	"Darwin arm64") target="aarch64-apple-darwin" ;;
 	*) target="x86_64-unknown-linux-gnu" ;;
 	esac
-	exe="blaze"
+	exe="blazex"
 	exten=""
 	executable="target/$target/release/$exe"
 fi

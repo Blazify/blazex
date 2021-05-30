@@ -13,12 +13,12 @@
           "llvm"
         ],
         "filter": {
-          "name": "blaze",
+          "name": "blazex",
           "kind": "bin"
         }
       },
       "args": [
-        "examples/main.bz",
+        "examples/main.bzx",
         "-l"
       ],
       "cwd": "${workspaceFolder}"

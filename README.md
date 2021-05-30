@@ -1,4 +1,4 @@
-# Blaze
+# BlazeX
 
 > A intermediate jit compiled language which is kinda statically typed (for now) and object oriented
 
@@ -7,27 +7,27 @@
 
 ## Installation
 
-[Github Releases](https://github.com/BlazifyOrg/blaze/releases)
+[Github Releases](https://github.com/BlazifyOrg/blazex/releases)
 
 ## Installing
 
 In Ubuntu Or MacOS
 
 ```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blaze/main/install | bash
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install | bash
 ```
 
 In Windows
 
 ```shell
-$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blaze/main/install -o install
+$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install -o install
 $ bash install
 ```
 
 Confirm Installation
 
 ```shell
-$ blaze
+$ blazex
 ```
 
 ```
@@ -35,26 +35,26 @@ error: The following required arguments were not provided:
     <path>
 
 USAGE:
-    blaze [FLAGS] [OPTIONS] <path>
+    blazex [FLAGS] [OPTIONS] <path>
 
 For more information try --help
 ```
 
 ## Note
 
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazescript-vscode) and we are also looking for collaborators
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazexscript-vscode) and we are also looking for collaborators
 
 ## Example
 
 - Printing the famous "Hello World"
 
-```bz
+```bzx
 printf("Hello World!") @ yep as simple as that
 ```
 
 - Comments
 
-```bz
+```bzx
 @ single line comment
 @@
 	multi-line comment
@@ -63,7 +63,7 @@ printf("Hello World!") @ yep as simple as that
 
 - Creating and calling functions
 
-```bz
+```bzx
 fun sum(a: int, b: int): int {
     var c = a + b;
     return c;
@@ -74,7 +74,7 @@ printf(sum(2, 2));
 
 - Working around with objects
 
-```bz
+```bzx
 var obj = {
     "prop": 5 @ properties should be of String type or there will be Invalid Syntax Error
 }
@@ -87,7 +87,7 @@ printf(obj.prop) @ 10
 
 - Classes
 
-```bz
+```bzx
 class Main {
     var a = 10; @ this is a property
 
@@ -127,13 +127,13 @@ printf(ins.sum_to_a(5));
 
 ## Project Structure
 
-|            Codebase             |                   Description                   |
-| :-----------------------------: | :---------------------------------------------: |
-|      [blaze](crates/blaze)      |                   The binary                    |
-|  [bzc_lexer](crates/bzc_lexer)  |              Lexer for Tokenizing               |
-| [bzc_parser](crates/bzc_parser) |               Parser for AST Tree               |
-|   [bzc_llvm](crates/bzc_llvm)   |         W.I.P. LLVM IR Code Generation          |
-| [bzc_shared](crates/bzc_shared) | Structs, Methods, etc Shared among other crates |
+|             Codebase              |                   Description                   |
+| :-------------------------------: | :---------------------------------------------: |
+|      [blazex](crates/blazex)      |                   The binary                    |
+|  [bzxc_lexer](crates/bzxc_lexer)  |              Lexer for Tokenizing               |
+| [bzxc_parser](crates/bzxc_parser) |               Parser for AST Tree               |
+|   [bzxc_llvm](crates/bzxc_llvm)   |         W.I.P. LLVM IR Code Generation          |
+| [bzxc_shared](crates/bzxc_shared) | Structs, Methods, etc Shared among other crates |
 
 # TODO
 

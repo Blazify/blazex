@@ -12,28 +12,28 @@ cd $bin_dir
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc.exe"
-    exe="$bin_dir/blaze.exe"
+    exe="$bin_dir/blazex.exe"
 else
 	case $(uname -sm) in
 	"Darwin x86_64") target="x86_64-apple-darwin" ;;
 	"Darwin arm64") target="aarch64-apple-darwin" ;;
 	*) target="x86_64-unknown-linux-gnu" ;;
 	esac
-    exe="$bin_dir/blaze"
+    exe="$bin_dir/blazex"
 fi
 
 
 if [ $# -eq 1 ]; then
-	bzs_uri="https://github.com/BlazifyOrg/blaze/releases/latest/download/${target}"
+	bzs_uri="https://github.com/BlazifyOrg/blazex/releases/latest/download/${target}"
 else
-	bzs_uri="https://github.com/BlazifyOrg/blaze/releases/download/${1}/${target}"
+	bzs_uri="https://github.com/BlazifyOrg/blazex/releases/download/${1}/${target}"
 fi
 
 curl --fail --location --progress-bar --output "$exe" "$bzs_uri"
 chmod +x "$exe"
 
-if command -v blaze >/dev/null; then
-    echo "Run 'blaze path/to/file.bz(s/e)' to get started"
+if command -v blazex >/dev/null; then
+    echo "Run 'blazex path/to/file.bzx(s/e)' to get started"
 else
     case $SHELL in
     	/bin/zsh) shell_profile=".zshrc" ;;
@@ -43,5 +43,5 @@ else
     echo "Manually add the directory to your \$HOME/$shell_profile (or similar)"
     echo "  export BZS_INSTALL=\"$bzs_install\""
     echo "  export PATH=\"\$BZS_INSTALL/bin:\$PATH\""
-    echo "Run '$exe path/to/file.bz(s/e)' to get started"
+    echo "Run '$exe path/to/file.bzx(s/e)' to get started"
 fi

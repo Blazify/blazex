@@ -44,13 +44,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
-name = "blaze"
+name = "blazex"
 version = "0.1.0"
 dependencies = [
- "bzc_lexer",
- "bzc_llvm",
- "bzc_parser",
- "bzc_shared",
+ "bzxc_lexer",
+ "bzxc_llvm",
+ "bzxc_parser",
+ "bzxc_shared",
  "criterion",
  "inkwell",
  "mimalloc",
@@ -83,29 +83,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
-name = "bzc_lexer"
+name = "bzxc_lexer"
 version = "0.1.0"
 dependencies = [
- "bzc_shared",
+ "bzxc_shared",
 ]
 
 [[package]]
-name = "bzc_llvm"
+name = "bzxc_llvm"
 version = "0.1.0"
 dependencies = [
- "bzc_shared",
+ "bzxc_shared",
  "inkwell",
 ]
 
 [[package]]
-name = "bzc_parser"
+name = "bzxc_parser"
 version = "0.1.0"
 dependencies = [
- "bzc_shared",
+ "bzxc_shared",
 ]
 
 [[package]]
-name = "bzc_shared"
+name = "bzxc_shared"
 version = "0.1.0"
 dependencies = [
  "codespan-reporting",
