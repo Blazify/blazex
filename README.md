@@ -1,4 +1,4 @@
-# BlazeScript
+# Blaze
 
 > A intermediate jit compiled language which is kinda statically typed (for now) and object oriented
 
@@ -7,27 +7,27 @@
 
 ## Installation
 
-[Github Releases](https://github.com/BlazifyOrg/blazescript/releases)
+[Github Releases](https://github.com/BlazifyOrg/blaze/releases)
 
 ## Installing
 
 In Ubuntu Or MacOS
 
 ```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install | bash
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blaze/main/install | bash
 ```
 
 In Windows
 
 ```shell
-$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazescript/main/install -o install
+$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blaze/main/install -o install
 $ bash install
 ```
 
 Confirm Installation
 
 ```shell
-$ blazescript
+$ blaze
 ```
 
 ```
@@ -35,7 +35,7 @@ error: The following required arguments were not provided:
     <path>
 
 USAGE:
-    blazescript [FLAGS] [OPTIONS] <path>
+    blaze [FLAGS] [OPTIONS] <path>
 
 For more information try --help
 ```
@@ -48,13 +48,13 @@ This language is very much work in-progress. We are also working on a [VSCode Ex
 
 - Printing the famous "Hello World"
 
-```bzs
+```bz
 printf("Hello World!") @ yep as simple as that
 ```
 
 - Comments
 
-```bzs
+```bz
 @ single line comment
 @@
 	multi-line comment
@@ -63,7 +63,7 @@ printf("Hello World!") @ yep as simple as that
 
 - Creating and calling functions
 
-```bzs
+```bz
 fun sum(a: int, b: int): int {
     var c = a + b;
     return c;
@@ -74,7 +74,7 @@ printf(sum(2, 2));
 
 - Working around with objects
 
-```bzs
+```bz
 var obj = {
     "prop": 5 @ properties should be of String type or there will be Invalid Syntax Error
 }
@@ -87,7 +87,7 @@ printf(obj.prop) @ 10
 
 - Classes
 
-```bzs
+```bz
 class Main {
     var a = 10; @ this is a property
 
@@ -127,13 +127,13 @@ printf(ins.sum_to_a(5));
 
 ## Project Structure
 
-|             Codebase              |                   Description                   |
-| :-------------------------------: | :---------------------------------------------: |
-| [blazescript](crates/blazescript) |                   The binary                    |
-|  [bzsc_lexer](crates/bzsc_lexer)  |              Lexer for Tokenizing               |
-| [bzsc_parser](crates/bzsc_parser) |               Parser for AST Tree               |
-|   [bzsc_llvm](crates/bzsc_llvm)   |         W.I.P. LLVM IR Code Generation          |
-|  [bzs_shared](crates/bzs_shared)  | Structs, Methods, etc Shared among other crates |
+|            Codebase             |                   Description                   |
+| :-----------------------------: | :---------------------------------------------: |
+|      [blaze](crates/blaze)      |                   The binary                    |
+|  [bzc_lexer](crates/bzc_lexer)  |              Lexer for Tokenizing               |
+| [bzc_parser](crates/bzc_parser) |               Parser for AST Tree               |
+|   [bzc_llvm](crates/bzc_llvm)   |         W.I.P. LLVM IR Code Generation          |
+| [bzc_shared](crates/bzc_shared) | Structs, Methods, etc Shared among other crates |
 
 # TODO
 
@@ -170,4 +170,4 @@ printf(ins.sum_to_a(5));
 
 ## Author
 
-- [RoMeAh (Ronit Rahaman)](https://www.romeah.me)
+- [Ronit "RoMeAh" Rahaman](https://www.romeah.me)

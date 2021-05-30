@@ -1,0 +1,6 @@
+var a = 0;
+while a < 100 {
+    a = a + 1; @ TODO: Make this a += 1 soon
+    printf("Hi there!\n")
+}
+0

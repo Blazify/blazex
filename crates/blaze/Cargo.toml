@@ -1,0 +1,25 @@
+[package]
+name = "blaze"
+version = "0.1.0"
+authors = ["RoMeAh <romeah@blazify.rocks>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mimalloc = { version = "0.1.25", default_features = false }
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+structopt = "0.3.21"
+notify = "4.0.17"
+bzc_llvm = { path = "../bzc_llvm" }
+bzc_lexer = { path = "../bzc_lexer" }
+bzc_parser = { path = "../bzc_parser" }
+bzc_shared = { path = "../bzc_shared" }
+
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "blaze"
+harness = false

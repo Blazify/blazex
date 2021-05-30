@@ -13,12 +13,12 @@
           "llvm"
         ],
         "filter": {
-          "name": "blazescript",
+          "name": "blaze",
           "kind": "bin"
         }
       },
       "args": [
-        "examples/main.bzs",
+        "examples/main.bz",
         "-l"
       ],
       "cwd": "${workspaceFolder}"

@@ -12,28 +12,28 @@ cd $bin_dir
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc.exe"
-    exe="$bin_dir/blazescript.exe"
+    exe="$bin_dir/blaze.exe"
 else
 	case $(uname -sm) in
 	"Darwin x86_64") target="x86_64-apple-darwin" ;;
 	"Darwin arm64") target="aarch64-apple-darwin" ;;
 	*) target="x86_64-unknown-linux-gnu" ;;
 	esac
-    exe="$bin_dir/blazescript"
+    exe="$bin_dir/blaze"
 fi
 
 
 if [ $# -eq 1 ]; then
-	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/latest/download/${target}"
+	bzs_uri="https://github.com/BlazifyOrg/blaze/releases/latest/download/${target}"
 else
-	bzs_uri="https://github.com/BlazifyOrg/blazescript/releases/download/${1}/${target}"
+	bzs_uri="https://github.com/BlazifyOrg/blaze/releases/download/${1}/${target}"
 fi
 
 curl --fail --location --progress-bar --output "$exe" "$bzs_uri"
 chmod +x "$exe"
 
-if command -v blazescript >/dev/null; then
-    echo "Run 'blazescript path/to/file.bz(s/e)' to get started"
+if command -v blaze >/dev/null; then
+    echo "Run 'blaze path/to/file.bz(s/e)' to get started"
 else
     case $SHELL in
     	/bin/zsh) shell_profile=".zshrc" ;;

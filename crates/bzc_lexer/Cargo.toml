@@ -1,0 +1,10 @@
+[package]
+name = "bzc_lexer"
+version = "0.1.0"
+authors = ["RoMeAh <romeah@blazify.rocks>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bzc_shared = { path = "../bzc_shared" }

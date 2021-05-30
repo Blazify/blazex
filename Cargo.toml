@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "crates/blazescript",
-    "crates/bzsc_lexer",
-    "crates/bzsc_parser",
-    "crates/bzs_shared",
-    "crates/bzsc_llvm"
+    "crates/blaze",
+    "crates/bzc_lexer",
+    "crates/bzc_parser",
+    "crates/bzc_shared",
+    "crates/bzc_llvm"
 ]
 
 
