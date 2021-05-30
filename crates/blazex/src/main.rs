@@ -26,7 +26,6 @@ use inkwell::{
     module::{Linkage, Module},
     passes::PassManager,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    types::BasicTypeEnum,
     AddressSpace, OptimizationLevel,
 };
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
@@ -152,10 +151,14 @@ fn main() {
             },
         };
 
-        let str_type = context.i8_type().ptr_type(AddressSpace::Generic);
-        let i32_type = context.i32_type();
-        let printf_type = i32_type.fn_type(&[BasicTypeEnum::PointerType(str_type)], true);
-        module.add_function("printf", printf_type, Some(Linkage::External));
+        module.add_function(
+            "printf",
+            context.i32_type().fn_type(
+                &[context.i8_type().ptr_type(AddressSpace::Generic).into()],
+                true,
+            ),
+            Some(Linkage::External),
+        );
 
         match Compiler::compile(&context, &builder, &module, &fpm, func) {
             Ok(_) => {
@@ -183,11 +186,17 @@ fn main() {
                     )
                     .unwrap();
 
-                target_machine
-                    .write_to_file(&module, FileType::Object, &path)
-                    .ok();
-
-                println!("Wrote object file to {}", out_file);
+                match target_machine.write_to_file(&module, FileType::Object, &path) {
+                    Ok(_) => {
+                        if !is_quiet {
+                            println!("Wrote object file to {}", out_file);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e.to_string());
+                        exit(1);
+                    }
+                }
             }
             Err(err) => {
                 err.prettify();

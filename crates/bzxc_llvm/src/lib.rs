@@ -314,7 +314,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .as_pointer_value()
                     },
                     self.context.i8_type().ptr_type(AddressSpace::Generic),
-                    "stri8",
+                    "str_i8",
                 ),
             )),
             Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
@@ -358,11 +358,27 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     Tokens::PlusEquals => {
                         let curr_var = self.builder.build_load(*var, &name);
 
-                        let new_var = self.builder.build_int_add(
-                            curr_var.into_int_value(),
-                            val.into_int_value(),
-                            "new_val",
-                        );
+                        let new_var: BasicValueEnum = if curr_var.is_int_value()
+                            && val.is_int_value()
+                        {
+                            self.builder
+                                .build_int_add(
+                                    curr_var.into_int_value(),
+                                    val.into_int_value(),
+                                    "new_val",
+                                )
+                                .into()
+                        } else if curr_var.is_float_value() && val.is_float_value() {
+                            self.builder
+                                .build_float_add(
+                                    curr_var.into_float_value(),
+                                    val.into_float_value(),
+                                    "addtmp",
+                                )
+                                .into()
+                        } else {
+                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
+                        };
 
                         self.builder.build_store(*var, new_var);
                         Ok(new_var.into())
@@ -370,38 +386,86 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     Tokens::MinusEquals => {
                         let curr_var = self.builder.build_load(*var, &name);
 
-                        let new_var = self.builder.build_int_sub(
-                            curr_var.into_int_value(),
-                            val.into_int_value(),
-                            "new_val",
-                        );
+                        let new_var: BasicValueEnum = if curr_var.is_int_value()
+                            && val.is_int_value()
+                        {
+                            self.builder
+                                .build_int_sub(
+                                    curr_var.into_int_value(),
+                                    val.into_int_value(),
+                                    "new_val",
+                                )
+                                .into()
+                        } else if curr_var.is_float_value() && val.is_float_value() {
+                            self.builder
+                                .build_float_sub(
+                                    curr_var.into_float_value(),
+                                    val.into_float_value(),
+                                    "addtmp",
+                                )
+                                .into()
+                        } else {
+                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
+                        };
 
                         self.builder.build_store(*var, new_var);
-                        Ok(new_var.into())
+                        Ok(new_var)
                     }
                     Tokens::MultiplyEquals => {
                         let curr_var = self.builder.build_load(*var, &name);
 
-                        let new_var = self.builder.build_int_mul(
-                            curr_var.into_int_value(),
-                            val.into_int_value(),
-                            "new_val",
-                        );
+                        let new_var: BasicValueEnum = if curr_var.is_int_value()
+                            && val.is_int_value()
+                        {
+                            self.builder
+                                .build_int_mul(
+                                    curr_var.into_int_value(),
+                                    val.into_int_value(),
+                                    "new_val",
+                                )
+                                .into()
+                        } else if curr_var.is_float_value() && val.is_float_value() {
+                            self.builder
+                                .build_float_mul(
+                                    curr_var.into_float_value(),
+                                    val.into_float_value(),
+                                    "addtmp",
+                                )
+                                .into()
+                        } else {
+                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
+                        };
 
                         self.builder.build_store(*var, new_var);
-                        Ok(new_var.into())
+                        Ok(new_var)
                     }
                     Tokens::DivideEquals => {
                         let curr_var = self.builder.build_load(*var, &name);
 
-                        let new_var = self.builder.build_int_unsigned_div(
-                            curr_var.into_int_value(),
-                            val.into_int_value(),
-                            "new_val",
-                        );
+                        let new_var: BasicValueEnum = if curr_var.is_int_value()
+                            && val.is_int_value()
+                        {
+                            self.builder
+                                .build_int_unsigned_div(
+                                    curr_var.into_int_value(),
+                                    val.into_int_value(),
+                                    "new_val",
+                                )
+                                .into()
+                        } else if curr_var.is_float_value() && val.is_float_value() {
+                            self.builder
+                                .build_float_div(
+                                    curr_var.into_float_value(),
+                                    val.into_float_value(),
+                                    "addtmp",
+                                )
+                                .into()
+                        } else {
+                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
+                        };
 
                         self.builder.build_store(*var, new_var);
-                        Ok(new_var.into())
+                        Ok(new_var)
                     }
                     _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
                 }
@@ -505,20 +569,50 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .builder
                     .build_load(start_alloca, &var_name_token.value.into_string());
 
-                let next_var = self.builder.build_int_add(
-                    curr_var.into_int_value(),
-                    step.into_int_value(),
-                    "nextvar",
-                );
+                if !((curr_var.is_int_value()
+                    && step.is_int_value()
+                    && end_condition.is_int_value())
+                    || (curr_var.is_float_value()
+                        && step.is_float_value()
+                        && end_condition.is_float_value()))
+                {
+                    return Err(self.error(
+                        node.get_pos(),
+                        "Expected same type in all start, step and end",
+                    ));
+                }
+
+                let next_var: BasicValueEnum = if curr_var.is_int_value() {
+                    self.builder
+                        .build_int_add(curr_var.into_int_value(), step.into_int_value(), "nextvar")
+                        .into()
+                } else {
+                    self.builder
+                        .build_float_add(
+                            curr_var.into_float_value(),
+                            step.into_float_value(),
+                            "nextvar",
+                        )
+                        .into()
+                };
 
                 self.builder.build_store(start_alloca, next_var);
 
-                let end_condition = self.builder.build_int_compare(
-                    IntPredicate::NE,
-                    next_var,
-                    end_condition.into_int_value(),
-                    "loopcond",
-                );
+                let end_condition = if curr_var.is_int_value() {
+                    self.builder.build_int_compare(
+                        IntPredicate::NE,
+                        next_var.into_int_value(),
+                        end_condition.into_int_value(),
+                        "loopcond",
+                    )
+                } else {
+                    self.builder.build_float_compare(
+                        FloatPredicate::ONE,
+                        next_var.into_float_value(),
+                        end_condition.into_float_value(),
+                        "loopcond",
+                    )
+                };
 
                 let after_block = self.context.append_basic_block(parent, "afterloop");
 
