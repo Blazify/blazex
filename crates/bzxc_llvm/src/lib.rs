@@ -18,7 +18,7 @@ use bzxc_shared::{DynType, Error, Node, Position, Tokens};
 use inkwell::{
     builder::Builder,
     context::Context,
-    module::Module,
+    module::{Linkage, Module},
     passes::PassManager,
     types::{AnyTypeEnum, BasicType, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
@@ -28,7 +28,7 @@ use inkwell::{
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
     pub name: Option<String>,
-    pub args: Vec<(String, AnyTypeEnum<'ctx>)>,
+    pub args: Vec<(String, BasicTypeEnum<'ctx>)>,
     pub ret_type: AnyTypeEnum<'ctx>,
 }
 
@@ -70,7 +70,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     },
                     args: arg_tokens
                         .iter()
-                        .map(|x| (x.0.value.into_string(), x.1.to_llvm_type(&self.context)))
+                        .map(|x| {
+                            (
+                                x.0.value.into_string(),
+                                try_any_to_basic(x.1.to_llvm_type(&self.context)),
+                            )
+                        })
                         .collect(),
                     ret_type: return_type.to_llvm_type(&self.context),
                 },
@@ -128,15 +133,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             Node::NumberNode { token } => {
                 if let DynType::Float(i) = token.value {
-                    Ok(BasicValueEnum::FloatValue(
-                        self.context.f64_type().const_float(i),
-                    ))
+                    Ok(self.context.f64_type().const_float(i).into())
                 } else {
-                    Ok(BasicValueEnum::IntValue(
-                        self.context
-                            .i128_type()
-                            .const_int(token.value.into_int() as u64, false),
-                    ))
+                    Ok(self
+                        .context
+                        .i128_type()
+                        .const_int(token.value.into_int() as u64, false)
+                        .into())
                 }
             }
             Node::BinaryNode {
@@ -149,18 +152,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 match op_token.typee {
                     Tokens::DoubleEquals => {
-                        return Ok(BasicValueEnum::IntValue(
-                            self.context
-                                .bool_type()
-                                .const_int((left_val == right_val) as u64, false),
-                        ))
+                        return Ok(self
+                            .context
+                            .bool_type()
+                            .const_int((left_val == right_val) as u64, false)
+                            .into())
                     }
                     Tokens::NotEquals => {
-                        return Ok(BasicValueEnum::IntValue(
-                            self.context
-                                .bool_type()
-                                .const_int((left_val != right_val) as u64, false),
-                        ))
+                        return Ok(self
+                            .context
+                            .bool_type()
+                            .const_int((left_val != right_val) as u64, false)
+                            .into())
                     }
                     _ => (),
                 }
@@ -203,7 +206,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             }
                         }
                     };
-                    return Ok(BasicValueEnum::IntValue(ret));
+                    return Ok(ret.into());
                 }
 
                 if left_val.is_float_value() && right_val.is_float_value() {
@@ -273,7 +276,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         _ => return Err(self.error(node.get_pos(), "Unknown operation")),
                     };
-                    return Ok(BasicValueEnum::FloatValue(ret));
+                    return Ok(ret.into());
                 }
 
                 Err(self.error(node.get_pos(), "Unknown operation"))
@@ -291,7 +294,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         Tokens::Minus => built.const_neg(),
                         _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
                     };
-                    return Ok(BasicValueEnum::FloatValue(ret));
+                    return Ok(ret.into());
                 }
 
                 if val.is_int_value() {
@@ -301,13 +304,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         Tokens::Minus => built.const_neg(),
                         _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
                     };
-                    return Ok(BasicValueEnum::IntValue(ret));
+                    return Ok(ret.into());
                 }
 
                 Err(self.error(node.get_pos(), "Unknown unary operation"))
             }
-            Node::StringNode { token } => Ok(BasicValueEnum::PointerValue(
-                self.builder.build_pointer_cast(
+            Node::StringNode { token } => Ok(self
+                .builder
+                .build_pointer_cast(
                     unsafe {
                         self.builder
                             .build_global_string(&token.value.into_string(), "str")
@@ -315,18 +319,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     },
                     self.context.i8_type().ptr_type(AddressSpace::Generic),
                     "str_i8",
-                ),
-            )),
-            Node::CharNode { token } => Ok(BasicValueEnum::IntValue(
-                self.context
-                    .i8_type()
-                    .const_int(token.value.into_char() as u64, false),
-            )),
-            Node::BooleanNode { token } => Ok(BasicValueEnum::IntValue(
-                self.context
-                    .bool_type()
-                    .const_int(token.value.into_boolean() as u64, false),
-            )),
+                )
+                .into()),
+            Node::CharNode { token } => Ok(self
+                .context
+                .i8_type()
+                .const_int(token.value.into_char() as u64, false)
+                .into()),
+            Node::BooleanNode { token } => Ok(self
+                .context
+                .bool_type()
+                .const_int(token.value.into_boolean() as u64, false)
+                .into()),
             Node::VarAssignNode {
                 name,
                 value,
@@ -530,9 +534,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.builder.position_at_end(after_block);
 
-                Ok(BasicValueEnum::IntValue(
-                    self.context.i128_type().const_int(0, false),
-                ))
+                Ok(self.context.i128_type().const_int(0, false).into())
             }
             Node::ForNode {
                 var_name_token,
@@ -626,9 +628,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .insert(var_name_token.value.into_string(), val);
                 }
 
-                Ok(BasicValueEnum::IntValue(
-                    self.context.i128_type().const_int(0, false),
-                ))
+                Ok(self.context.i128_type().const_int(0, false).into())
             }
             Node::WhileNode {
                 condition_node,
@@ -654,9 +654,38 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 );
                 self.builder.position_at_end(after_block);
 
-                Ok(BasicValueEnum::IntValue(
-                    self.context.i128_type().const_int(0, false),
-                ))
+                Ok(self.context.i128_type().const_int(0, false).into())
+            }
+            Node::ExternNode {
+                name,
+                arg_tokens,
+                return_type,
+            } => {
+                let args_types = &arg_tokens
+                    .iter()
+                    .map(|x| try_any_to_basic(x.to_llvm_type(&self.context)))
+                    .collect::<Vec<BasicTypeEnum>>()[..];
+                Ok(self
+                    .module
+                    .add_function(
+                        &name.value.into_string(),
+                        match return_type.to_llvm_type(&self.context) {
+                            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::FunctionType(x) => {
+                                x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
+                            }
+                            AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
+                        },
+                        Some(Linkage::External),
+                    )
+                    .as_global_value()
+                    .as_pointer_value()
+                    .into())
             }
             Node::FunDef {
                 name,
@@ -667,9 +696,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let func = self.to_func_with_proto(node.clone())?;
                 let fun: FunctionValue = self.compile_fn(func)?;
 
-                Ok(BasicValueEnum::PointerValue(
-                    fun.as_global_value().as_pointer_value(),
-                ))
+                Ok(fun.as_global_value().as_pointer_value().into())
             }
             Node::CallNode { node_to_call, args } => {
                 let mut compiled_args = vec![];
@@ -728,7 +755,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let args_types = proto
             .args
             .iter()
-            .map(|x| try_any_to_basic(x.1))
+            .map(|x| x.1)
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
@@ -736,7 +763,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::FunctionType(x) => {
-                panic!("functions can't return functions but instead can return pointers")
+                x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
             }
             AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
             AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
@@ -755,7 +782,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
 
         for (i, arg) in fn_val.get_param_iter().enumerate() {
-            arg.into_int_value().set_name(proto.args[i].0.as_str());
+            arg.set_name(proto.args[i].0.as_str());
         }
 
         Ok(fn_val)
@@ -836,15 +863,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
 fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
     match k {
-        AnyTypeEnum::ArrayType(x) => BasicTypeEnum::ArrayType(x),
-        AnyTypeEnum::FloatType(x) => BasicTypeEnum::FloatType(x),
-        AnyTypeEnum::FunctionType(x) => {
-            BasicTypeEnum::PointerType(x.ptr_type(AddressSpace::Generic))
-        }
-        AnyTypeEnum::IntType(x) => BasicTypeEnum::IntType(x),
-        AnyTypeEnum::PointerType(x) => BasicTypeEnum::PointerType(x),
-        AnyTypeEnum::StructType(x) => BasicTypeEnum::StructType(x),
-        AnyTypeEnum::VectorType(x) => BasicTypeEnum::VectorType(x),
+        AnyTypeEnum::ArrayType(x) => x.into(),
+        AnyTypeEnum::FloatType(x) => x.into(),
+        AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).into(),
+        AnyTypeEnum::IntType(x) => x.into(),
+        AnyTypeEnum::PointerType(x) => x.into(),
+        AnyTypeEnum::StructType(x) => x.into(),
+        AnyTypeEnum::VectorType(x) => x.into(),
         AnyTypeEnum::VoidType(x) => panic!("void not convertible to basic type"),
     }
 }

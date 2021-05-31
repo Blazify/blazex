@@ -21,18 +21,6 @@ impl Parser {
     pub(crate) fn type_expr(&mut self, res: &mut ParseResult) -> Result<Type, Error> {
         let pos_start = self.current_token.pos_start.clone();
 
-        if self.current_token.typee != Tokens::Colon {
-            return Err(Error::new(
-                "Invalid Syntax",
-                pos_start,
-                self.current_token.pos_end.clone(),
-                "Expected ':'",
-            ));
-        }
-
-        res.register_advancement();
-        self.advance();
-
         if self.current_token.typee != Tokens::Identifier
             && self.current_token.typee != Tokens::Keyword
         {

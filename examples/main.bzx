@@ -2,10 +2,11 @@
     Program that prints "Hello World!" 100 times
 @@
 
+extern fun puts(string): int
 
-var a = 0;
+var a = 1;
 while a < 101 {
     a += 1;
-    printf("Hello World!\n")
-}
+    puts("Hello World!")
+};
 0

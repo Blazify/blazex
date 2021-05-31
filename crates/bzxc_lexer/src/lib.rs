@@ -39,6 +39,7 @@ pub fn get_keywords() -> Vec<String> {
         string("string"),
         string("char"),
         string("boolean"),
+        string("extern"),
     ]
 }
 

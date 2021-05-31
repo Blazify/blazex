@@ -122,6 +122,15 @@ impl Parser {
             return res.success(fun_def.unwrap());
         } else if token
             .clone()
+            .matches(Tokens::Keyword, DynType::String("extern".to_string()))
+        {
+            let extern_expr = res.register(self.extern_expr());
+            if res.error.is_some() {
+                return res;
+            }
+            return res.success(extern_expr.unwrap());
+        } else if token
+            .clone()
             .matches(Tokens::Keyword, DynType::String("class".to_string()))
         {
             let class_def = res.register(self.class_def());

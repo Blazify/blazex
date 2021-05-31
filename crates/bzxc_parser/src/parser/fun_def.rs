@@ -69,6 +69,17 @@ impl Parser {
             let name = self.current_token.clone();
             res.register_advancement();
             self.advance();
+            if self.current_token.typee != Tokens::Colon {
+                return res.failure(Error::new(
+                    "Invalid Syntax",
+                    self.current_token.pos_start.clone(),
+                    self.current_token.pos_end.clone(),
+                    "Expected ':'",
+                ));
+            }
+
+            res.register_advancement();
+            self.advance();
             let typee = self.type_expr(&mut res);
             match typee {
                 Ok(typ) => args_name_tokens.push((name, typ)),
@@ -81,6 +92,17 @@ impl Parser {
 
                 if self.current_token.typee == Tokens::Identifier {
                     let new_arg_token = self.current_token.clone();
+                    res.register_advancement();
+                    self.advance();
+                    if self.current_token.typee != Tokens::Colon {
+                        return res.failure(Error::new(
+                            "Invalid Syntax",
+                            self.current_token.pos_start.clone(),
+                            self.current_token.pos_end.clone(),
+                            "Expected ':'",
+                        ));
+                    }
+
                     res.register_advancement();
                     self.advance();
                     let typee = self.type_expr(&mut res);
@@ -117,7 +139,17 @@ impl Parser {
 
         res.register_advancement();
         self.advance();
+        if self.current_token.typee != Tokens::Colon {
+            return res.failure(Error::new(
+                "Invalid Syntax",
+                self.current_token.pos_start.clone(),
+                self.current_token.pos_end.clone(),
+                "Expected ':'",
+            ));
+        }
 
+        res.register_advancement();
+        self.advance();
         let ret_type = self.type_expr(&mut res);
         let return_type = match ret_type {
             Ok(ret) => ret,
