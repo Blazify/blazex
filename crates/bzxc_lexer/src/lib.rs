@@ -40,6 +40,7 @@ pub fn get_keywords() -> Vec<String> {
         string("char"),
         string("boolean"),
         string("extern"),
+        string("variadic"),
     ]
 }
 

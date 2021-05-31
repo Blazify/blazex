@@ -660,6 +660,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 name,
                 arg_tokens,
                 return_type,
+                var_args,
             } => {
                 let args_types = &arg_tokens
                     .iter()
@@ -670,16 +671,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .add_function(
                         &name.value.into_string(),
                         match return_type.to_llvm_type(&self.context) {
-                            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::FunctionType(x) => {
-                                x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
-                            }
-                            AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
-                            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
+                            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::FunctionType(x) => x
+                                .ptr_type(AddressSpace::Generic)
+                                .fn_type(args_types, var_args),
+                            AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
+                            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
                         },
                         Some(Linkage::External),
                     )

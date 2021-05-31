@@ -354,6 +354,7 @@ pub enum Node {
         name: Token,
         arg_tokens: Vec<Type>,
         return_type: Type,
+        var_args: bool,
     },
 }
 
@@ -463,11 +464,7 @@ impl Node {
                     name.pos_end
                 },
             ),
-            Node::ExternNode {
-                name,
-                arg_tokens: _,
-                return_type: _,
-            } => (name.pos_start, name.pos_end),
+            Node::ExternNode { name, .. } => (name.pos_start, name.pos_end),
         }
     }
 }

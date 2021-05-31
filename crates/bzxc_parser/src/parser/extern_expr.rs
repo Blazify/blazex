@@ -37,6 +37,17 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
+        let var_args = if self
+            .current_token
+            .matches(Tokens::Keyword, DynType::String("variadic".to_string()))
+        {
+            self.advance();
+            res.register_advancement();
+            true
+        } else {
+            false
+        };
+
         if !self
             .current_token
             .matches(Tokens::Keyword, DynType::String("fun".to_string()))
@@ -146,6 +157,7 @@ impl Parser {
             name,
             arg_tokens: args_name_tokens,
             return_type,
+            var_args,
         })
     }
 }
