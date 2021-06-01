@@ -12,6 +12,8 @@
 */
 
 #![allow(unused_assignments)]
+mod literals;
+mod logical;
 use bzxc_shared::{DynType, Error, Position, Token, Tokens};
 
 /*
@@ -47,7 +49,7 @@ pub fn get_keywords() -> Vec<String> {
 /*
 * Retuns a array of  all numbers from 0 to 9
 */
-pub fn get_number() -> Vec<u32> {
+pub(crate) fn get_number() -> Vec<u32> {
     vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
 
@@ -61,7 +63,7 @@ fn string(str: &str) -> String {
 /*
 * Return all ascii charecters
 */
-pub fn get_ascii_letters() -> Vec<&'static str> {
+pub(crate) fn get_ascii_letters() -> Vec<&'static str> {
     "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         .split("")
         .collect::<Vec<&str>>()
@@ -70,7 +72,7 @@ pub fn get_ascii_letters() -> Vec<&'static str> {
 /*
 * Returns all ascii charecters with numbers
 */
-pub fn get_ascii_letters_and_digits() -> Vec<&'static str> {
+pub(crate) fn get_ascii_letters_and_digits() -> Vec<&'static str> {
     "_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         .split("")
         .collect::<Vec<&str>>()
@@ -260,261 +262,6 @@ impl Lexer {
         }
 
         return Token::new(no_eq, start, self.position, DynType::None);
-    }
-
-    /*
-     * Makes a number token
-     */
-    fn make_number(&mut self) -> Token {
-        let mut str_num = String::new();
-        let mut dot_count = 0;
-        let start = self.position.clone();
-
-        while self.current_char.is_some() {
-            if self.current_char.unwrap().to_digit(36).is_none()
-                && self.current_char.unwrap() != '.'
-            {
-                break;
-            }
-            if self.current_char.unwrap() == '.' {
-                dot_count += 1;
-            }
-            str_num.push(self.current_char.unwrap());
-            self.advance();
-        }
-
-        return if dot_count > 0 {
-            Token::new(
-                Tokens::Float,
-                start,
-                self.position.clone(),
-                DynType::Float(str_num.parse::<f64>().unwrap()),
-            )
-        } else {
-            Token::new(
-                Tokens::Int,
-                start,
-                self.position.clone(),
-                DynType::Int(str_num.parse::<i128>().unwrap()),
-            )
-        };
-    }
-
-    /*
-     * Makes a String Token
-     */
-    fn make_string(&mut self) -> Token {
-        let mut str_raw = String::new();
-        let start = self.position.clone();
-        let mut escape = false;
-        self.advance();
-
-        while self.current_char.is_some() || escape {
-            if self.current_char.unwrap() == '"' {
-                break;
-            }
-            if escape {
-                if self.current_char.unwrap() == 'n' {
-                    str_raw.push('\n');
-                } else if self.current_char.unwrap() == 't' {
-                    str_raw.push('\t');
-                } else {
-                    str_raw.push(self.current_char.unwrap());
-                }
-            } else {
-                if self.current_char.unwrap() == '\\' {
-                    escape = true;
-                    self.advance();
-                    continue;
-                } else {
-                    str_raw.push(self.current_char.unwrap());
-                }
-            }
-
-            self.advance();
-            escape = false;
-        }
-
-        self.advance();
-
-        Token::new(
-            Tokens::String,
-            start,
-            self.position.clone(),
-            DynType::String(str_raw),
-        )
-    }
-
-    /*
-     * Makes a charecter token
-     */
-    fn make_char(&mut self) -> Result<Token, Error> {
-        let start = self.position.clone();
-
-        self.advance();
-        let new_char = self.current_char;
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') != '\'' {
-            return Err(Error::new(
-                "Expected Character",
-                start,
-                self.position.clone(),
-                "Expected Character \"'\" because chars are unicode characters.",
-            ));
-        }
-
-        self.advance();
-
-        Ok(Token::new(
-            Tokens::Char,
-            start,
-            self.position.clone(),
-            DynType::Char(new_char.unwrap()),
-        ))
-    }
-
-    /*
-     * Makes a DOUBLE_EQUALS | ARROW | EQUALS Token
-     */
-    fn make_equals(&mut self) -> Token {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '=' {
-            self.advance();
-            return Token::new(
-                Tokens::DoubleEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
-        }
-
-        Token::new(Tokens::Equals, start, self.position.clone(), DynType::None)
-    }
-
-    /*
-     * Makes a LESS_THAN or LESS_THAN_EQUALS Token
-     */
-    fn make_less_than(&mut self) -> Token {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '=' {
-            return Token::new(
-                Tokens::LessThanEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
-        }
-
-        Token::new(
-            Tokens::LessThan,
-            start,
-            self.position.clone(),
-            DynType::None,
-        )
-    }
-
-    /*
-     * Makes a GREATER_THAN or GREATER_THAN_EQUALS Token
-     */
-    fn make_greater_than(&mut self) -> Token {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '=' {
-            return Token::new(
-                Tokens::GreaterThanEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
-        }
-
-        Token::new(
-            Tokens::GreaterThan,
-            start,
-            self.position.clone(),
-            DynType::None,
-        )
-    }
-
-    /*
-     * Makes a NOT or NOT_EQUALS Token
-     */
-    fn make_not(&mut self) -> Token {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '=' {
-            self.advance();
-            return Token::new(
-                Tokens::NotEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
-        }
-
-        Token::new(
-            Tokens::Keyword,
-            start,
-            self.position.clone(),
-            DynType::String("not".to_string()),
-        )
-    }
-
-    /*
-     * Makes a NOT Token
-     */
-    fn make_or(&mut self) -> Result<Token, Error> {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '|' {
-            self.advance();
-            return Ok(Token::new(
-                Tokens::Keyword,
-                start,
-                self.position.clone(),
-                DynType::String("or".to_string()),
-            ));
-        }
-
-        Err(Error::new(
-            "Expected Character",
-            start,
-            self.position.clone(),
-            "Expected one more '|'",
-        ))
-    }
-
-    /*
-     * Makes a AND Token
-     */
-    fn make_and(&mut self) -> Result<Token, Error> {
-        let start = self.position.clone();
-        self.advance();
-
-        if self.current_char.unwrap_or(' ') == '&' {
-            self.advance();
-            return Ok(Token::new(
-                Tokens::Keyword,
-                start,
-                self.position.clone(),
-                DynType::String("and".to_string()),
-            ));
-        }
-
-        Err(Error::new(
-            "Expected Character",
-            start,
-            self.position.clone(),
-            "Expected one more '&'",
-        ))
     }
 
     /*

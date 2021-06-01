@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+rand = "0.8.3"
 bzxc_shared = { path = "../bzxc_shared" }

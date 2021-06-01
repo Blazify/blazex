@@ -10,20 +10,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+mod array;
+mod class;
+mod conditional;
+mod function;
+mod literals;
+mod loops;
+mod object;
+mod operation;
+mod variable;
 
-#![allow(unused_variables)]
 use std::collections::HashMap;
 
-use bzxc_shared::{DynType, Error, Node, Position, Tokens};
+use bzxc_shared::{Error, Node, Position};
 use inkwell::{
     builder::Builder,
     context::Context,
-    module::{Linkage, Module},
+    module::Module,
     passes::PassManager,
     types::{AnyTypeEnum, BasicType, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace, FloatPredicate, IntPredicate,
+    AddressSpace,
 };
+use rand::{distributions::Alphanumeric, Rng};
 
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
@@ -131,623 +140,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     self.context.i128_type().const_int(0, false),
                 ));
             }
-            Node::NumberNode { token } => {
-                if let DynType::Float(i) = token.value {
-                    Ok(self.context.f64_type().const_float(i).into())
-                } else {
-                    Ok(self
-                        .context
-                        .i128_type()
-                        .const_int(token.value.into_int() as u64, false)
-                        .into())
-                }
-            }
-            Node::BinaryNode {
-                left,
-                op_token,
-                right,
-            } => {
-                let left_val = self.compile_node(*left)?;
-                let right_val = self.compile_node(*right)?;
-
-                match op_token.typee {
-                    Tokens::DoubleEquals => {
-                        return Ok(self
-                            .context
-                            .bool_type()
-                            .const_int((left_val == right_val) as u64, false)
-                            .into())
-                    }
-                    Tokens::NotEquals => {
-                        return Ok(self
-                            .context
-                            .bool_type()
-                            .const_int((left_val != right_val) as u64, false)
-                            .into())
-                    }
-                    _ => (),
-                }
-
-                if left_val.is_int_value() && right_val.is_int_value() {
-                    let lhs = left_val.into_int_value();
-                    let rhs = right_val.into_int_value();
-
-                    let ret = match op_token.typee {
-                        Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
-                        Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
-                        Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
-                        Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
-                        Tokens::LessThan => {
-                            self.builder
-                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
-                        }
-                        Tokens::GreaterThan => {
-                            self.builder
-                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
-                        }
-                        Tokens::LessThanEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
-                        }
-                        Tokens::GreaterThanEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
-                        }
-                        _ => {
-                            if op_token.matches(Tokens::Keyword, DynType::String("and".to_string()))
-                            {
-                                lhs.const_and(rhs)
-                            } else if op_token
-                                .matches(Tokens::Keyword, DynType::String("or".to_string()))
-                            {
-                                lhs.const_or(rhs)
-                            } else {
-                                return Err(self.error(node.get_pos(), "Unknown operation"));
-                            }
-                        }
-                    };
-                    return Ok(ret.into());
-                }
-
-                if left_val.is_float_value() && right_val.is_float_value() {
-                    let lhs = left_val.into_float_value();
-                    let rhs = right_val.into_float_value();
-
-                    let ret = match op_token.typee {
-                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd"),
-                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub"),
-                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul"),
-                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv"),
-                        Tokens::LessThan => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ULT,
-                                lhs,
-                                rhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder.build_unsigned_int_to_float(
-                                cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
-                        }
-                        Tokens::GreaterThan => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::UGT,
-                                rhs,
-                                lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder.build_unsigned_int_to_float(
-                                cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
-                        }
-                        Tokens::LessThanEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ULE,
-                                lhs,
-                                rhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder.build_unsigned_int_to_float(
-                                cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
-                        }
-                        Tokens::GreaterThanEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::OGE,
-                                rhs,
-                                lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder.build_unsigned_int_to_float(
-                                cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
-                        }
-                        _ => return Err(self.error(node.get_pos(), "Unknown operation")),
-                    };
-                    return Ok(ret.into());
-                }
-
-                Err(self.error(node.get_pos(), "Unknown operation"))
-            }
-            Node::UnaryNode {
-                node: child,
-                op_token,
-            } => {
-                let val = self.compile_node(*child)?;
-
-                if val.is_float_value() {
-                    let built = val.into_float_value();
-                    let ret = match op_token.typee {
-                        Tokens::Plus => built,
-                        Tokens::Minus => built.const_neg(),
-                        _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
-                    };
-                    return Ok(ret.into());
-                }
-
-                if val.is_int_value() {
-                    let built = val.into_int_value();
-                    let ret = match op_token.typee {
-                        Tokens::Plus => built,
-                        Tokens::Minus => built.const_neg(),
-                        _ => return Err(self.error(node.get_pos(), "Unknown unary operation")),
-                    };
-                    return Ok(ret.into());
-                }
-
-                Err(self.error(node.get_pos(), "Unknown unary operation"))
-            }
-            Node::StringNode { token } => Ok(self
-                .builder
-                .build_pointer_cast(
-                    unsafe {
-                        self.builder
-                            .build_global_string(&token.value.into_string(), "str")
-                            .as_pointer_value()
-                    },
-                    self.context.i8_type().ptr_type(AddressSpace::Generic),
-                    "str_i8",
-                )
-                .into()),
-            Node::CharNode { token } => Ok(self
-                .context
-                .i8_type()
-                .const_int(token.value.into_char() as u64, false)
-                .into()),
-            Node::BooleanNode { token } => Ok(self
-                .context
-                .bool_type()
-                .const_int(token.value.into_boolean() as u64, false)
-                .into()),
-            Node::VarAssignNode {
-                name,
-                value,
-                reassignable: _,
-            } => {
-                let var_name = name.value.into_string();
-                let initial_val = self.compile_node(*value)?;
-                let alloca =
-                    self.create_entry_block_alloca(var_name.as_str(), initial_val.get_type());
-
-                self.builder.build_store(alloca, initial_val);
-
-                self.variables.insert(var_name, alloca);
-                Ok(initial_val)
-            }
-            Node::VarReassignNode { name, value, typee } => {
-                let name = name.value.into_string();
-                let val = self.compile_node(*value)?;
-
-                let var = self
-                    .variables
-                    .get(name.as_str())
-                    .ok_or(self.error(node.get_pos(), "Variable not found to be reassigned"))?;
-                match typee.typee.clone() {
-                    Tokens::Equals => {
-                        self.builder.build_store(*var, val);
-                        Ok(val)
-                    }
-                    Tokens::PlusEquals => {
-                        let curr_var = self.builder.build_load(*var, &name);
-
-                        let new_var: BasicValueEnum = if curr_var.is_int_value()
-                            && val.is_int_value()
-                        {
-                            self.builder
-                                .build_int_add(
-                                    curr_var.into_int_value(),
-                                    val.into_int_value(),
-                                    "new_val",
-                                )
-                                .into()
-                        } else if curr_var.is_float_value() && val.is_float_value() {
-                            self.builder
-                                .build_float_add(
-                                    curr_var.into_float_value(),
-                                    val.into_float_value(),
-                                    "addtmp",
-                                )
-                                .into()
-                        } else {
-                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
-                        };
-
-                        self.builder.build_store(*var, new_var);
-                        Ok(new_var.into())
-                    }
-                    Tokens::MinusEquals => {
-                        let curr_var = self.builder.build_load(*var, &name);
-
-                        let new_var: BasicValueEnum = if curr_var.is_int_value()
-                            && val.is_int_value()
-                        {
-                            self.builder
-                                .build_int_sub(
-                                    curr_var.into_int_value(),
-                                    val.into_int_value(),
-                                    "new_val",
-                                )
-                                .into()
-                        } else if curr_var.is_float_value() && val.is_float_value() {
-                            self.builder
-                                .build_float_sub(
-                                    curr_var.into_float_value(),
-                                    val.into_float_value(),
-                                    "addtmp",
-                                )
-                                .into()
-                        } else {
-                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
-                        };
-
-                        self.builder.build_store(*var, new_var);
-                        Ok(new_var)
-                    }
-                    Tokens::MultiplyEquals => {
-                        let curr_var = self.builder.build_load(*var, &name);
-
-                        let new_var: BasicValueEnum = if curr_var.is_int_value()
-                            && val.is_int_value()
-                        {
-                            self.builder
-                                .build_int_mul(
-                                    curr_var.into_int_value(),
-                                    val.into_int_value(),
-                                    "new_val",
-                                )
-                                .into()
-                        } else if curr_var.is_float_value() && val.is_float_value() {
-                            self.builder
-                                .build_float_mul(
-                                    curr_var.into_float_value(),
-                                    val.into_float_value(),
-                                    "addtmp",
-                                )
-                                .into()
-                        } else {
-                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
-                        };
-
-                        self.builder.build_store(*var, new_var);
-                        Ok(new_var)
-                    }
-                    Tokens::DivideEquals => {
-                        let curr_var = self.builder.build_load(*var, &name);
-
-                        let new_var: BasicValueEnum = if curr_var.is_int_value()
-                            && val.is_int_value()
-                        {
-                            self.builder
-                                .build_int_unsigned_div(
-                                    curr_var.into_int_value(),
-                                    val.into_int_value(),
-                                    "new_val",
-                                )
-                                .into()
-                        } else if curr_var.is_float_value() && val.is_float_value() {
-                            self.builder
-                                .build_float_div(
-                                    curr_var.into_float_value(),
-                                    val.into_float_value(),
-                                    "addtmp",
-                                )
-                                .into()
-                        } else {
-                            return Err(self.error(node.get_pos(), "Unknown compound assignment"));
-                        };
-
-                        self.builder.build_store(*var, new_var);
-                        Ok(new_var)
-                    }
-                    _ => Err(self.error(node.get_pos(), "Unknown compound assignment")),
-                }
-            }
-            Node::VarAccessNode { token } => {
-                match self.variables.get(token.value.into_string().as_str()) {
-                    Some(var) => Ok(self
-                        .builder
-                        .build_load(*var, token.value.into_string().as_str())),
-                    None => {
-                        let func = self.get_function(token.value.into_string().as_str());
-                        match func {
-                            Some(fun) => Ok(fun.as_global_value().as_pointer_value().into()),
-                            None => Err(self.error(node.get_pos(), "Variable not found")),
-                        }
-                    }
-                }
-            }
-            Node::IfNode { cases, else_case } => {
-                let mut blocks = vec![self.builder.get_insert_block().unwrap()];
-                let parent = self.fn_value();
-                for _ in 1..cases.len() {
-                    blocks.push(self.context.append_basic_block(parent, "if_start"));
-                }
-
-                let else_block = if else_case.is_some() {
-                    let result = self.context.append_basic_block(parent, "else");
-                    blocks.push(result);
-                    Some(result)
-                } else {
-                    None
-                };
-
-                let after_block = self.context.append_basic_block(parent, "after");
-                blocks.push(after_block);
-
-                for (i, (cond, body)) in cases.iter().enumerate() {
-                    let then_block = blocks[i];
-                    let else_block = blocks[i + 1];
-
-                    self.builder.position_at_end(then_block);
-
-                    let condition = self.compile_node(cond.clone())?;
-                    let conditional_block = self.context.prepend_basic_block(else_block, "if_body");
-
-                    self.builder.build_conditional_branch(
-                        condition.into_int_value(),
-                        conditional_block,
-                        else_block,
-                    );
-
-                    self.builder.position_at_end(conditional_block);
-                    self.compile_node(body.clone())?;
-                    self.builder.build_unconditional_branch(after_block);
-                }
-
-                if let Some(else_block) = else_block {
-                    self.builder.position_at_end(else_block);
-                    self.compile_node(else_case.unwrap())?;
-                    self.builder.build_unconditional_branch(after_block);
-                }
-
-                self.builder.position_at_end(after_block);
-
-                Ok(self.context.i128_type().const_int(0, false).into())
-            }
-            Node::ForNode {
-                var_name_token,
-                start_value,
-                end_value,
-                body_node,
-                step_value_node,
-            } => {
-                let parent = self.fn_value();
-
-                let start = self.compile_node(*start_value)?;
-                let start_alloca = self.create_entry_block_alloca(
-                    &var_name_token.value.into_string(),
-                    start.get_type(),
-                );
-
-                self.builder.build_store(start_alloca, start);
-
-                let loop_block = self.context.append_basic_block(parent, "for_loop");
-
-                self.builder.build_unconditional_branch(loop_block);
-                self.builder.position_at_end(loop_block);
-
-                let old_val = self.variables.remove(&var_name_token.value.into_string());
-
-                self.variables
-                    .insert(var_name_token.value.into_string(), start_alloca);
-
-                self.compile_node(*body_node)?;
-                let step = self.compile_node(*step_value_node)?;
-                let end_condition = self.compile_node(*end_value)?;
-
-                let curr_var = self
-                    .builder
-                    .build_load(start_alloca, &var_name_token.value.into_string());
-
-                if !((curr_var.is_int_value()
-                    && step.is_int_value()
-                    && end_condition.is_int_value())
-                    || (curr_var.is_float_value()
-                        && step.is_float_value()
-                        && end_condition.is_float_value()))
-                {
-                    return Err(self.error(
-                        node.get_pos(),
-                        "Expected same type in all start, step and end",
-                    ));
-                }
-
-                let next_var: BasicValueEnum = if curr_var.is_int_value() {
-                    self.builder
-                        .build_int_add(curr_var.into_int_value(), step.into_int_value(), "nextvar")
-                        .into()
-                } else {
-                    self.builder
-                        .build_float_add(
-                            curr_var.into_float_value(),
-                            step.into_float_value(),
-                            "nextvar",
-                        )
-                        .into()
-                };
-
-                self.builder.build_store(start_alloca, next_var);
-
-                let end_condition = if curr_var.is_int_value() {
-                    self.builder.build_int_compare(
-                        IntPredicate::NE,
-                        next_var.into_int_value(),
-                        end_condition.into_int_value(),
-                        "loopcond",
-                    )
-                } else {
-                    self.builder.build_float_compare(
-                        FloatPredicate::ONE,
-                        next_var.into_float_value(),
-                        end_condition.into_float_value(),
-                        "loopcond",
-                    )
-                };
-
-                let after_block = self.context.append_basic_block(parent, "afterloop");
-
-                self.builder
-                    .build_conditional_branch(end_condition, loop_block, after_block);
-                self.builder.position_at_end(after_block);
-                self.variables.remove(&var_name_token.value.into_string());
-
-                if let Some(val) = old_val {
-                    self.variables
-                        .insert(var_name_token.value.into_string(), val);
-                }
-
-                Ok(self.context.i128_type().const_int(0, false).into())
-            }
-            Node::WhileNode {
-                condition_node,
-                body_node,
-            } => {
-                let parent = self.fn_value();
-                let loop_block = self.context.append_basic_block(parent, "while_loop");
-
-                let after_block = self.context.append_basic_block(parent, "afterloop");
-
-                self.builder.build_conditional_branch(
-                    self.compile_node(*condition_node.clone())?.into_int_value(),
-                    loop_block,
-                    after_block,
-                );
-
-                self.builder.position_at_end(loop_block);
-                self.compile_node(*body_node)?;
-                self.builder.build_conditional_branch(
-                    self.compile_node(*condition_node.clone())?.into_int_value(),
-                    loop_block,
-                    after_block,
-                );
-                self.builder.position_at_end(after_block);
-
-                Ok(self.context.i128_type().const_int(0, false).into())
-            }
-            Node::ExternNode {
-                name,
-                arg_tokens,
-                return_type,
-                var_args,
-            } => {
-                let args_types = &arg_tokens
-                    .iter()
-                    .map(|x| try_any_to_basic(x.to_llvm_type(&self.context)))
-                    .collect::<Vec<BasicTypeEnum>>()[..];
-                Ok(self
-                    .module
-                    .add_function(
-                        &name.value.into_string(),
-                        match return_type.to_llvm_type(&self.context) {
-                            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::FunctionType(x) => x
-                                .ptr_type(AddressSpace::Generic)
-                                .fn_type(args_types, var_args),
-                            AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
-                        },
-                        Some(Linkage::External),
-                    )
-                    .as_global_value()
-                    .as_pointer_value()
-                    .into())
-            }
-            Node::FunDef {
-                name,
-                body_node,
-                arg_tokens,
-                ..
-            } => {
-                let func = self.to_func_with_proto(node.clone())?;
-                let fun: FunctionValue = self.compile_fn(func)?;
-
-                Ok(fun.as_global_value().as_pointer_value().into())
-            }
-            Node::CallNode { node_to_call, args } => {
-                let mut compiled_args = vec![];
-
-                for arg in args {
-                    compiled_args.push(self.compile_node(arg)?);
-                }
-
-                let func = self.compile_node(*node_to_call)?;
-                if !func.is_pointer_value() {
-                    return Err(self.error(
-                        node.get_pos(),
-                        "Expected a Function pointer found something else",
-                    ));
-                }
-
-                Ok(self
-                    .builder
-                    .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall")
-                    .try_as_basic_value()
-                    .unwrap_left())
-            }
-            Node::ArrayNode { element_nodes } => {
-                Err(self.error(node.get_pos(), "Node can't be compiled"))
-            }
-            Node::ArrayAcess { array, index } => {
-                Err(self.error(node.get_pos(), "Node can't be compiled"))
-            }
-            Node::ReturnNode { value } => Err(self.error(node.get_pos(), "Node can't be compiled")),
-            Node::ObjectDefNode { properties } => {
-                Err(self.error(node.get_pos(), "Node can't be compiled"))
-            }
-            Node::ObjectPropAccess { object, property } => {
-                Err(self.error(node.get_pos(), "Node can't be compiled"))
-            }
-            Node::ObjectPropEdit {
-                object,
-                property,
-                new_val,
-            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
-            Node::ClassDefNode {
-                name,
-                constructor,
-                properties,
-                methods,
-            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
-            Node::ClassInitNode {
-                name,
-                constructor_params,
-            } => Err(self.error(node.get_pos(), "Node can't be compiled")),
+            Node::NumberNode { .. } => self.num(node),
+            Node::BooleanNode { .. } => self.boolean(node),
+            Node::CharNode { .. } => self.char(node),
+            Node::StringNode { .. } => self.string(node),
+            Node::BinaryNode { .. } => self.binary_op(node),
+            Node::UnaryNode { .. } => self.unary_op(node),
+            Node::VarAssignNode { .. } => self.var_assign(node),
+            Node::VarReassignNode { .. } => self.var_reassign(node),
+            Node::VarAccessNode { .. } => self.var_access(node),
+            Node::IfNode { .. } => self.if_decl(node),
+            Node::ForNode { .. } => self.for_loop(node),
+            Node::WhileNode { .. } => self.while_loop(node),
+            Node::ExternNode { .. } => self.fun_extern(node),
+            Node::FunDef { .. } => self.fun_decl(node),
+            Node::CallNode { .. } => self.fun_call(node),
+            Node::ArrayNode { .. } => self.array_decl(node),
+            Node::ArrayAcess { .. } => self.array_access(node),
+            Node::ReturnNode { .. } => self.ret(node),
+            Node::ObjectDefNode { .. } => self.obj_decl(node),
+            Node::ObjectPropAccess { .. } => self.obj_get(node),
+            Node::ObjectPropEdit { .. } => self.obj_edit(node),
+            Node::ClassDefNode { .. } => self.class_decl(node),
+            Node::ClassInitNode { .. } => self.class_init(node),
         }
     }
 
@@ -776,7 +191,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             proto
                 .name
                 .as_ref()
-                .unwrap_or(&String::from("__anonymous__"))
+                .unwrap_or(
+                    &rand::thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(20)
+                        .map(char::from)
+                        .collect(),
+                )
                 .as_str(),
             fn_type,
             None,
@@ -815,7 +236,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let body = self.compile_node(func.body.clone())?;
 
-        self.builder.build_return(Some(&body));
+        if let AnyTypeEnum::VoidType(_) = func.prototype.ret_type {
+            self.builder.build_return(None);
+        } else {
+            self.builder.build_return(Some(&body));
+        }
 
         if main_block.is_some() {
             self.builder.position_at_end(main_block.unwrap());
@@ -871,6 +296,6 @@ fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
         AnyTypeEnum::PointerType(x) => x.into(),
         AnyTypeEnum::StructType(x) => x.into(),
         AnyTypeEnum::VectorType(x) => x.into(),
-        AnyTypeEnum::VoidType(x) => panic!("void not convertible to basic type"),
+        AnyTypeEnum::VoidType(_) => panic!("void not convertible to basic type"),
     }
 }
