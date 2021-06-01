@@ -9,7 +9,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::VarAssignNode {
                 name,
                 value,
-                reassignable: _,
+                reassignable,
             } => {
                 let var_name = name.value.into_string();
                 let initial_val = self.compile_node(*value)?;
@@ -18,7 +18,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.builder.build_store(alloca, initial_val);
 
-                self.variables.insert(var_name, alloca);
+                self.variables.insert(var_name, (alloca, reassignable));
                 Ok(initial_val)
             }
             _ => panic!(),
@@ -31,7 +31,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 match self.variables.get(token.value.into_string().as_str()) {
                     Some(var) => Ok(self
                         .builder
-                        .build_load(*var, token.value.into_string().as_str())),
+                        .build_load(var.0, token.value.into_string().as_str())),
                     None => {
                         let func = self.get_function(token.value.into_string().as_str());
                         match func {
@@ -51,10 +51,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let name = name.value.into_string();
                 let val = self.compile_node(*value)?;
 
-                let var = self
+                let value = self
                     .variables
                     .get(name.as_str())
                     .ok_or(self.error(node.get_pos(), "Variable not found to be reassigned"))?;
+                if !value.1 {
+                    return Err(self.error(node.get_pos(), "Variable isn't mutable"));
+                }
+                let var = &value.0;
                 match typee.typee.clone() {
                     Tokens::Equals => {
                         self.builder.build_store(*var, val);

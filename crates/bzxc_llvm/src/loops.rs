@@ -31,7 +31,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let old_val = self.variables.remove(&var_name_token.value.into_string());
 
                 self.variables
-                    .insert(var_name_token.value.into_string(), start_alloca);
+                    .insert(var_name_token.value.into_string(), (start_alloca, true));
 
                 self.compile_node(*body_node)?;
                 let step = self.compile_node(*step_value_node)?;

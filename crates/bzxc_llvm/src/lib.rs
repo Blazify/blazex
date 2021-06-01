@@ -54,7 +54,7 @@ pub struct Compiler<'a, 'ctx> {
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
     pub function: Function<'ctx>,
 
-    variables: HashMap<String, PointerValue<'ctx>>,
+    variables: HashMap<String, (PointerValue<'ctx>, bool)>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
 }
 
@@ -231,7 +231,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.build_store(alloca, arg);
 
-            self.variables.insert(proto.args[i].0.clone(), alloca);
+            self.variables
+                .insert(proto.args[i].0.clone(), (alloca, false));
         }
 
         let body = self.compile_node(func.body.clone())?;
