@@ -22,17 +22,15 @@ mod variable;
 
 use std::collections::HashMap;
 
-use bzxc_shared::{Error, Node, Position};
+use bzxc_shared::{try_any_to_basic, Error, Node, Position};
 use inkwell::{
     builder::Builder,
     context::Context,
     module::Module,
     passes::PassManager,
     types::{AnyTypeEnum, BasicType, BasicTypeEnum},
-    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace,
+    values::{BasicValueEnum, FunctionValue, PointerValue},
 };
-use rand::{distributions::Alphanumeric, Rng};
 
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
@@ -129,16 +127,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     ret = Some(self.compile_node(statement)?);
                 }
 
-                if ret.is_some() {
-                    let val = ret.unwrap();
-                    if val.is_int_value() {
-                        return Ok(val);
-                    }
-                }
-
-                return Ok(BasicValueEnum::IntValue(
-                    self.context.i128_type().const_int(0, false),
-                ));
+                return Ok(if ret.is_none() {
+                    self.context.i128_type().const_int(0, false).into()
+                } else {
+                    ret.unwrap()
+                });
             }
             Node::NumberNode { .. } => self.num(node),
             Node::BooleanNode { .. } => self.boolean(node),
@@ -166,102 +159,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    fn compile_prototype(&self, proto: &'a Prototype<'ctx>) -> Result<FunctionValue<'ctx>, Error> {
-        let ret_type = proto.ret_type;
-        let args_types = proto
-            .args
-            .iter()
-            .map(|x| x.1)
-            .collect::<Vec<BasicTypeEnum>>();
-        let args_types = args_types.as_slice();
-
-        let fn_type = match ret_type {
-            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::FunctionType(x) => {
-                x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
-            }
-            AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
-        };
-        let fn_val = self.module.add_function(
-            proto
-                .name
-                .as_ref()
-                .unwrap_or(
-                    &rand::thread_rng()
-                        .sample_iter(&Alphanumeric)
-                        .take(20)
-                        .map(char::from)
-                        .collect(),
-                )
-                .as_str(),
-            fn_type,
-            None,
-        );
-
-        for (i, arg) in fn_val.get_param_iter().enumerate() {
-            arg.set_name(proto.args[i].0.as_str());
-        }
-
-        Ok(fn_val)
-    }
-
-    fn compile_fn(&mut self, func: Function<'ctx>) -> Result<FunctionValue<'ctx>, Error> {
-        let parent = self.fn_value_opt.clone();
-
-        let proto = &func.prototype;
-        let function = self.compile_prototype(&proto)?;
-
-        let entry = self.context.append_basic_block(function, "entry");
-
-        let main_block = self.builder.get_insert_block();
-        self.builder.position_at_end(entry);
-
-        self.fn_value_opt = Some(function);
-
-        self.variables.reserve(proto.args.len());
-
-        for (i, arg) in function.get_param_iter().enumerate() {
-            let arg_name = proto.args[i].0.as_str();
-            let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
-
-            self.builder.build_store(alloca, arg);
-
-            self.variables
-                .insert(proto.args[i].0.clone(), (alloca, false));
-        }
-
-        let body = self.compile_node(func.body.clone())?;
-
-        if let AnyTypeEnum::VoidType(_) = func.prototype.ret_type {
-            self.builder.build_return(None);
-        } else {
-            self.builder.build_return(Some(&body));
-        }
-
-        if main_block.is_some() {
-            self.builder.position_at_end(main_block.unwrap());
-        }
-
-        self.fn_value_opt = parent;
-
-        if function.verify(true) {
-            self.fpm.run_on(&function);
-
-            Ok(function)
-        } else {
-            unsafe {
-                function.delete();
-            }
-
-            Err(self.error(func.body.get_pos(), "Invalid generated function"))
-        }
-    }
-
     fn compile_top(&mut self) -> Result<FunctionValue<'ctx>, Error> {
         let func = self.function.clone();
         self.compile_fn(func)
@@ -285,18 +182,5 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         };
 
         compiler.compile_top()
-    }
-}
-
-fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
-    match k {
-        AnyTypeEnum::ArrayType(x) => x.into(),
-        AnyTypeEnum::FloatType(x) => x.into(),
-        AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).into(),
-        AnyTypeEnum::IntType(x) => x.into(),
-        AnyTypeEnum::PointerType(x) => x.into(),
-        AnyTypeEnum::StructType(x) => x.into(),
-        AnyTypeEnum::VectorType(x) => x.into(),
-        AnyTypeEnum::VoidType(_) => panic!("void not convertible to basic type"),
     }
 }

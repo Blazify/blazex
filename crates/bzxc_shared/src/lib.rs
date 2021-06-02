@@ -16,7 +16,7 @@ use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use codespan_reporting::term::{self};
 use inkwell::context::Context;
-use inkwell::types::AnyTypeEnum;
+use inkwell::types::{AnyTypeEnum, BasicTypeEnum, FunctionType};
 use inkwell::AddressSpace;
 
 /*
@@ -469,7 +469,38 @@ impl Node {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+pub fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
+    match k {
+        AnyTypeEnum::ArrayType(x) => x.into(),
+        AnyTypeEnum::FloatType(x) => x.into(),
+        AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).into(),
+        AnyTypeEnum::IntType(x) => x.into(),
+        AnyTypeEnum::PointerType(x) => x.into(),
+        AnyTypeEnum::StructType(x) => x.into(),
+        AnyTypeEnum::VectorType(x) => x.into(),
+        AnyTypeEnum::VoidType(_) => panic!("void not convertible to basic type"),
+    }
+}
+
+pub fn any_fn_type<'ctx>(
+    ret_type: AnyTypeEnum<'ctx>,
+    args_types: &[BasicTypeEnum<'ctx>],
+) -> FunctionType<'ctx> {
+    match ret_type {
+        AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::FunctionType(x) => {
+            x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
+        }
+        AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
     Float,
@@ -477,11 +508,12 @@ pub enum Type {
     Char,
     String,
     Void,
+    Function(Vec<Type>, Box<Type>),
     Custom(&'static str),
 }
 
-impl Type {
-    pub fn to_llvm_type<'ctx>(&self, ctx: &'ctx Context) -> AnyTypeEnum<'ctx> {
+impl<'ctx> Type {
+    pub fn to_llvm_type(&self, ctx: &'ctx Context) -> AnyTypeEnum<'ctx> {
         match self {
             Type::Int => AnyTypeEnum::IntType(ctx.i128_type()),
             Type::Float => AnyTypeEnum::FloatType(ctx.f64_type()),
@@ -489,6 +521,14 @@ impl Type {
             Type::Char => AnyTypeEnum::IntType(ctx.i8_type()),
             Type::String => AnyTypeEnum::PointerType(ctx.i8_type().ptr_type(AddressSpace::Generic)),
             Type::Void => AnyTypeEnum::VoidType(ctx.void_type()),
+            Type::Function(params, ret) => any_fn_type(
+                ret.to_llvm_type(ctx),
+                &params
+                    .iter()
+                    .map(|x| try_any_to_basic(x.to_llvm_type(ctx)))
+                    .collect::<Vec<BasicTypeEnum>>()[..],
+            )
+            .into(),
             Type::Custom(_) => panic!("Custom types aren't supported yet!"),
         }
     }

@@ -44,6 +44,104 @@ impl Parser {
                     "boolean" => Ok(Type::Boolean),
                     "string" => Ok(Type::String),
                     "void" => Ok(Type::Void),
+                    "fun" => {
+                        if self.current_token.typee != Tokens::LeftParenthesis {
+                            return Err(Error::new(
+                                "Syntax Error",
+                                pos_start,
+                                self.current_token.pos_end.clone(),
+                                "Expected '('",
+                            ));
+                        }
+
+                        self.advance();
+                        res.register_advancement();
+
+                        let mut arg_types = vec![];
+                        if self.current_token.typee == Tokens::RightParenthesis {
+                            self.advance();
+                            res.register_advancement();
+
+                            if self.current_token.typee != Tokens::Colon {
+                                return Err(Error::new(
+                                    "Invalid Syntax",
+                                    self.current_token.pos_start.clone(),
+                                    self.current_token.pos_end.clone(),
+                                    "Expected ':'",
+                                ));
+                            }
+
+                            res.register_advancement();
+                            self.advance();
+                            let typee = self.type_expr(res);
+                            match typee {
+                                Ok(typ) => Ok(Type::Function(vec![], Box::new(typ))),
+                                Err(e) => Err(e),
+                            }
+                        } else if self.current_token.typee == Tokens::Keyword {
+                            let typee = self.type_expr(res);
+                            match typee {
+                                Ok(typ) => arg_types.push(typ),
+                                Err(e) => return Err(e),
+                            }
+
+                            while self.current_token.typee == Tokens::Comma {
+                                res.register_advancement();
+                                self.advance();
+
+                                if self.current_token.typee == Tokens::Keyword {
+                                    let typee = self.type_expr(res);
+                                    match typee {
+                                        Ok(typ) => arg_types.push(typ),
+                                        Err(e) => return Err(e),
+                                    }
+                                } else {
+                                    return Err(Error::new(
+                                        "Invalid Syntax",
+                                        self.current_token.pos_start.clone(),
+                                        self.current_token.pos_end.clone(),
+                                        "Expected keyword",
+                                    ));
+                                }
+                            }
+
+                            if self.current_token.typee != Tokens::RightParenthesis {
+                                return Err(Error::new(
+                                    "Invalid Syntax",
+                                    self.current_token.pos_start.clone(),
+                                    self.current_token.pos_end.clone(),
+                                    "Expected ')' or ','",
+                                ));
+                            }
+
+                            self.advance();
+                            res.register_advancement();
+
+                            if self.current_token.typee != Tokens::Colon {
+                                return Err(Error::new(
+                                    "Invalid Syntax",
+                                    self.current_token.pos_start.clone(),
+                                    self.current_token.pos_end.clone(),
+                                    "Expected ':'",
+                                ));
+                            }
+
+                            res.register_advancement();
+                            self.advance();
+                            let typee = self.type_expr(res);
+                            match typee {
+                                Ok(typ) => Ok(Type::Function(arg_types, Box::new(typ))),
+                                Err(e) => Err(e),
+                            }
+                        } else {
+                            Err(Error::new(
+                                "Syntax Error",
+                                pos_start,
+                                self.current_token.pos_end.clone(),
+                                "Expected ')' or arguments",
+                            ))
+                        }
+                    }
                     _ => Ok(Type::Custom(to_static_str(typee.clone()))),
                 }
             }
