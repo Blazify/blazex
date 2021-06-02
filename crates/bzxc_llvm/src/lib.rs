@@ -61,37 +61,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Error::new("Compiler Error", pos.0, pos.1, description)
     }
 
-    fn to_func_with_proto(&self, node: Node) -> Result<Function<'ctx>, Error> {
-        match node.clone() {
-            Node::FunDef {
-                arg_tokens,
-                body_node,
-                name,
-                return_type,
-            } => Ok(Function {
-                prototype: Prototype {
-                    name: if name.is_none() {
-                        None
-                    } else {
-                        Some(name.unwrap().value.into_string())
-                    },
-                    args: arg_tokens
-                        .iter()
-                        .map(|x| {
-                            (
-                                x.0.value.into_string(),
-                                try_any_to_basic(x.1.to_llvm_type(&self.context)),
-                            )
-                        })
-                        .collect(),
-                    ret_type: return_type.to_llvm_type(&self.context),
-                },
-                body: *body_node,
-            }),
-            _ => Err(self.error(node.get_pos(), "Not a functions")),
-        }
-    }
-
     #[inline]
     fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
         self.module.get_function(name)

@@ -1,4 +1,4 @@
-use bzxc_shared::{try_any_to_basic, Error, Node};
+use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node};
 use inkwell::{
     module::Linkage,
     types::{AnyTypeEnum, BasicTypeEnum},
@@ -167,18 +167,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .module
                     .add_function(
                         &name.value.into_string(),
-                        match return_type.to_llvm_type(&self.context) {
-                            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::FunctionType(x) => x
-                                .ptr_type(AddressSpace::Generic)
-                                .fn_type(args_types, var_args),
-                            AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
-                            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
-                        },
+                        any_fn_type(return_type.to_llvm_type(self.context), args_types),
                         Some(Linkage::External),
                     )
                     .as_global_value()
@@ -193,6 +182,37 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match node {
             Node::ReturnNode { .. } => Err(self.error(node.get_pos(), "Node can't be compiled")),
             _ => panic!(),
+        }
+    }
+
+    pub(crate) fn to_func_with_proto(&self, node: Node) -> Result<Function<'ctx>, Error> {
+        match node.clone() {
+            Node::FunDef {
+                arg_tokens,
+                body_node,
+                name,
+                return_type,
+            } => Ok(Function {
+                prototype: Prototype {
+                    name: if name.is_none() {
+                        None
+                    } else {
+                        Some(name.unwrap().value.into_string())
+                    },
+                    args: arg_tokens
+                        .iter()
+                        .map(|x| {
+                            (
+                                x.0.value.into_string(),
+                                try_any_to_basic(x.1.to_llvm_type(&self.context)),
+                            )
+                        })
+                        .collect(),
+                    ret_type: return_type.to_llvm_type(&self.context),
+                },
+                body: *body_node,
+            }),
+            _ => Err(self.error(node.get_pos(), "Not a functions")),
         }
     }
 }
