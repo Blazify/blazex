@@ -3,7 +3,6 @@ use inkwell::{
     module::Linkage,
     types::{AnyTypeEnum, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue},
-    AddressSpace,
 };
 use rand::{distributions::Alphanumeric, Rng};
 
@@ -22,18 +21,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
-        let fn_type = match ret_type {
-            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::FunctionType(x) => {
-                x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
-            }
-            AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
-            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
-        };
+        let fn_type = any_fn_type(ret_type, args_types, false);
         let fn_val = self.module.add_function(
             proto
                 .name
@@ -70,6 +58,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let entry = self.context.append_basic_block(function, "entry");
         self.builder.position_at_end(entry);
+
         self.fn_value_opt = Some(function);
 
         self.variables.reserve(proto.args.len());
@@ -103,7 +92,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             Ok(function)
         } else {
-            println!("{}", self.module.print_to_string().to_string());
+            println!(
+                "Invalid LLVM IR:\n{}",
+                self.module.print_to_string().to_string()
+            );
             unsafe {
                 function.delete();
             }
@@ -167,7 +159,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .module
                     .add_function(
                         &name.value.into_string(),
-                        any_fn_type(return_type.to_llvm_type(self.context), args_types),
+                        any_fn_type(return_type.to_llvm_type(self.context), args_types, var_args),
                         Some(Linkage::External),
                     )
                     .as_global_value()

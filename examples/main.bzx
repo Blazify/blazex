@@ -9,14 +9,13 @@ extern fun puts(string): int;
     you don't need this anonymous function wrapping the while loop, just
     was testing them.
 @@
-(fun(): fun(): void {
-    fun(): void {
+(fun(): fun(): int {
+    fun(): int {
         var a = 1;
         while a < 101 {
             puts("Hello World!");
             a += 1;
         }
+        a
     }
 })()()
-@ exit code for program
-0

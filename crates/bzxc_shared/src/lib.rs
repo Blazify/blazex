@@ -485,18 +485,19 @@ pub fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
 pub fn any_fn_type<'ctx>(
     ret_type: AnyTypeEnum<'ctx>,
     args_types: &[BasicTypeEnum<'ctx>],
+    var_args: bool,
 ) -> FunctionType<'ctx> {
     match ret_type {
-        AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::FloatType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::FunctionType(x) => {
-            x.ptr_type(AddressSpace::Generic).fn_type(args_types, false)
-        }
-        AnyTypeEnum::IntType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::PointerType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::StructType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::VectorType(x) => x.fn_type(args_types, false),
-        AnyTypeEnum::VoidType(x) => x.fn_type(args_types, false),
+        AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::FunctionType(x) => x
+            .ptr_type(AddressSpace::Generic)
+            .fn_type(args_types, var_args),
+        AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
+        AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
     }
 }
 
@@ -527,6 +528,7 @@ impl<'ctx> Type {
                     .iter()
                     .map(|x| try_any_to_basic(x.to_llvm_type(ctx)))
                     .collect::<Vec<BasicTypeEnum>>()[..],
+                false,
             )
             .into(),
             Type::Custom(_) => panic!("Custom types aren't supported yet!"),

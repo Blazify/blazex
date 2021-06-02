@@ -15,26 +15,12 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use bzxc_lexer::Lexer;
-use bzxc_llvm::Compiler;
-use bzxc_llvm::Function;
-use bzxc_llvm::Prototype;
-use bzxc_parser::parser::Parser;
-use inkwell::{
-    context::Context,
-    execution_engine::JitFunction,
-    module::{Linkage, Module},
-    passes::PassManager,
-    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    AddressSpace, OptimizationLevel,
-};
+use blazex::compile;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
 use std::sync::mpsc::channel;
 use std::time::Duration;
-use std::time::SystemTime;
 use structopt::StructOpt;
 
 /*
@@ -92,7 +78,17 @@ fn main() {
     /*
      * Compiling to Object File
      */
-    let compile_with_config = || compile(file_name.clone(), is_quiet, watch, out_file.clone());
+    let compile_with_config = || {
+        let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
+        compile(
+            file_name.clone(),
+            cnt,
+            is_quiet,
+            watch,
+            out_file.clone(),
+            false,
+        )
+    };
 
     compile_with_config();
 
@@ -121,148 +117,5 @@ fn main() {
                 }
             }
         }
-    }
-}
-
-pub fn compile(file_name: String, is_quiet: bool, watch: bool, out_file: String) {
-    let time = SystemTime::now();
-    if !is_quiet {
-        println!("----BlazeX compiler----");
-        println!("Version: 0.0.1");
-        println!("File: {}", file_name);
-    }
-    let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
-
-    let name = Box::leak(file_name.to_owned().into_boxed_str());
-    let content = Box::leak(cnt.to_owned().into_boxed_str());
-    let lexed = Lexer::new(name, content).lex();
-    let mut tokens = vec![];
-    match lexed {
-        Ok(lexed) => {
-            tokens.extend(lexed);
-        }
-        Err(error) => {
-            error.prettify();
-            if !watch {
-                exit(1);
-            }
-        }
-    }
-
-    let parsed = Parser::new(tokens).parse();
-    if parsed.error.is_some() || parsed.node.is_none() {
-        parsed.error.unwrap().prettify();
-        if !watch {
-            exit(1);
-        }
-    }
-
-    let context = Context::create();
-    let module = context.create_module(name);
-    let builder = context.create_builder();
-
-    let fpm = PassManager::create(&module);
-
-    fpm.add_instruction_combining_pass();
-    fpm.add_reassociate_pass();
-    fpm.add_gvn_pass();
-    fpm.add_cfg_simplification_pass();
-    fpm.add_basic_alias_analysis_pass();
-    fpm.add_promote_memory_to_register_pass();
-    fpm.add_reassociate_pass();
-
-    fpm.initialize();
-
-    let func = Function {
-        body: parsed.node.unwrap(),
-        prototype: Prototype {
-            name: Some(String::from("main")),
-            args: vec![],
-            ret_type: context.i128_type().into(),
-        },
-    };
-
-    module.add_function(
-        "printf",
-        context.i32_type().fn_type(
-            &[context.i8_type().ptr_type(AddressSpace::Generic).into()],
-            true,
-        ),
-        Some(Linkage::External),
-    );
-
-    match Compiler::compile(&context, &builder, &module, &fpm, func) {
-        Ok(_) => {
-            if !is_quiet {
-                println!("LLVM IR:\n{}", module.print_to_string().to_string());
-            }
-
-            let path = Path::new(&out_file);
-
-            Target::initialize_all(&InitializationConfig::default());
-            let target = Target::from_name("x86-64").unwrap();
-            let target_machine = target
-                .create_target_machine(
-                    &TargetMachine::get_default_triple(),
-                    "x86-64",
-                    TargetMachine::get_host_cpu_features().to_string().as_str(),
-                    OptimizationLevel::Aggressive,
-                    RelocMode::Default,
-                    CodeModel::Default,
-                )
-                .unwrap();
-
-            match target_machine.write_to_file(&module, FileType::Object, &path) {
-                Ok(_) => {
-                    /*
-                     * Uncomment if you want to test what the output is...
-                     */
-                    // jit(module);
-                    if !is_quiet {
-                        println!("Wrote object file to {}", out_file);
-                    }
-                }
-                Err(e) => {
-                    eprintln!("{}", e.to_string());
-                    exit(1);
-                }
-            }
-        }
-        Err(err) => {
-            err.prettify();
-        }
-    }
-
-    match time.elapsed() {
-        Ok(elapsed) => {
-            if !is_quiet {
-                println!(
-                    "Time taken for Compilation Process: {} milliseconds",
-                    elapsed.as_millis()
-                );
-            }
-        }
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            if !watch {
-                exit(1);
-            }
-        }
-    }
-
-    if !watch {
-        exit(0);
-    }
-}
-
-fn jit<'ctx>(module: Module<'ctx>) {
-    let jit_engine = module
-        .create_jit_execution_engine(OptimizationLevel::Aggressive)
-        .unwrap();
-
-    unsafe {
-        let main: JitFunction<unsafe extern "C" fn() -> i128> =
-            jit_engine.get_function("main").unwrap();
-        main.call();
     }
 }

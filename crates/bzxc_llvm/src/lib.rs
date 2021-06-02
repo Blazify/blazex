@@ -22,7 +22,7 @@ mod variable;
 
 use std::collections::HashMap;
 
-use bzxc_shared::{try_any_to_basic, Error, Node, Position};
+use bzxc_shared::{Error, Node, Position};
 use inkwell::{
     builder::Builder,
     context::Context,

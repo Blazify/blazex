@@ -18,7 +18,7 @@ bzxc_shared = { path = "../bzxc_shared" }
 
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
 name = "blazex"
