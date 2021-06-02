@@ -12,7 +12,6 @@ use inkwell::{
     AddressSpace, OptimizationLevel,
 };
 use std::path::Path;
-use std::process::exit;
 use std::time::SystemTime;
 
 pub fn compile(
@@ -22,7 +21,7 @@ pub fn compile(
     watch: bool,
     out_file: String,
     jit_: bool,
-) {
+) -> i32 {
     let time = SystemTime::now();
     if !is_quiet {
         println!("----BlazeX compiler----");
@@ -41,7 +40,7 @@ pub fn compile(
         Err(error) => {
             error.prettify();
             if !watch {
-                exit(1);
+                return 1;
             }
         }
     }
@@ -50,7 +49,7 @@ pub fn compile(
     if parsed.error.is_some() || parsed.node.is_none() {
         parsed.error.unwrap().prettify();
         if !watch {
-            exit(1);
+            return 1;
         }
     }
 
@@ -99,7 +98,7 @@ pub fn compile(
             if jit_ {
                 jit(module.clone());
                 if !watch {
-                    exit(0)
+                    return 1;
                 }
             };
 
@@ -126,7 +125,7 @@ pub fn compile(
                 }
                 Err(e) => {
                     eprintln!("{}", e.to_string());
-                    exit(1);
+                    return 1;
                 }
             }
         }
@@ -143,18 +142,16 @@ pub fn compile(
                     elapsed.as_millis()
                 );
             }
+            return 0;
         }
         Err(e) => {
             eprintln!("Error: {:?}", e);
             if !watch {
-                exit(1);
+                return 1;
             }
         }
     }
-
-    if !watch {
-        exit(0);
-    }
+    return 0;
 }
 
 fn jit<'ctx>(module: Module<'ctx>) {

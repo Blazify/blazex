@@ -90,7 +90,10 @@ fn main() {
         )
     };
 
-    compile_with_config();
+    let init = compile_with_config();
+    if !watch {
+        exit(init)
+    };
 
     let (tx, rx) = channel();
 

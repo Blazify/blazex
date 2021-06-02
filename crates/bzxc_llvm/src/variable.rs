@@ -55,9 +55,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .variables
                     .get(name.as_str())
                     .ok_or(self.error(node.get_pos(), "Variable not found to be reassigned"))?;
+
                 if !value.1 {
                     return Err(self.error(node.get_pos(), "Variable isn't mutable"));
                 }
+
                 let var = &value.0;
                 match typee.typee.clone() {
                     Tokens::Equals => {

@@ -9,11 +9,11 @@ fn bench_compile(cnt: &'static str) {
         false,
         String::new(),
         true,
-    )
+    );
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("Sample", |b| {
+    c.bench_function("100 raised to 100 iterations", |b| {
         b.iter(|| {
             bench_compile(
                 r#"

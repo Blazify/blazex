@@ -51,7 +51,7 @@ jobs:
           rustup component add rust-src
           cargo +nightly bench
           mkdir -p ${{ github.event.client_payload.new_version }}
-          cp -r target/criterion/ ${{ github.event.client_payload.new_version }}
+          cp -r target/criterion/*/ ${{ github.event.client_payload.new_version }}
       - name: Checkout the benches branch
         run: |
           git fetch
