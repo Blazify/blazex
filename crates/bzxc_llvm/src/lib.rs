@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+#![allow(unused_variables)]
 mod array;
 mod class;
 mod conditional;
@@ -102,33 +103,88 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     ret.unwrap()
                 });
             }
-            Node::NumberNode { .. } => self.num(node),
-            Node::BooleanNode { .. } => self.boolean(node),
-            Node::CharNode { .. } => self.char(node),
-            Node::StringNode { .. } => self.string(node),
-            Node::BinaryNode { .. } => self.binary_op(node),
-            Node::UnaryNode { .. } => self.unary_op(node),
-            Node::VarAssignNode { .. } => self.var_assign(node),
-            Node::VarReassignNode { .. } => self.var_reassign(node),
-            Node::VarAccessNode { .. } => self.var_access(node),
-            Node::IfNode { .. } => self.if_decl(node),
-            Node::ForNode { .. } => self.for_loop(node),
-            Node::WhileNode { .. } => self.while_loop(node),
-            Node::ExternNode { .. } => self.fun_extern(node),
-            Node::FunDef { .. } => self.fun_decl(node),
-            Node::CallNode { .. } => self.fun_call(node),
-            Node::ArrayNode { .. } => self.array_decl(node),
-            Node::ArrayAcess { .. } => self.array_access(node),
-            Node::ReturnNode { .. } => self.ret(node),
-            Node::ObjectDefNode { .. } => self.obj_decl(node),
-            Node::ObjectPropAccess { .. } => self.obj_get(node),
-            Node::ObjectPropEdit { .. } => self.obj_edit(node),
-            Node::ClassDefNode { .. } => self.class_decl(node),
-            Node::ClassInitNode { .. } => self.class_init(node),
+            Node::WhileNode {
+                condition_node,
+                body_node,
+            } => self.while_loop(*condition_node, *body_node),
+            Node::VarReassignNode { name, typee, value } => {
+                self.var_reassign(name, *value, typee, node.get_pos())
+            }
+            Node::VarAssignNode {
+                name,
+                value,
+                reassignable,
+            } => self.var_assign(name, *value, reassignable),
+            Node::VarAccessNode { token } => self.var_access(token, node.get_pos()),
+            Node::UnaryNode {
+                node: child,
+                op_token,
+            } => self.unary_op(*child, op_token, node.get_pos()),
+            Node::StringNode { token } => self.string(token),
+            Node::NumberNode { token } => self.num(token),
+            Node::IfNode { cases, else_case } => self.if_decl(cases, *else_case),
+            Node::FunDef {
+                name,
+                arg_tokens,
+                body_node,
+                return_type,
+            } => self.fun_decl(arg_tokens, *body_node, name, return_type),
+            Node::ForNode {
+                var_name_token,
+                start_value,
+                end_value,
+                body_node,
+                step_value_node,
+            } => self.for_loop(
+                var_name_token,
+                *start_value,
+                *end_value,
+                *body_node,
+                *step_value_node,
+                node.get_pos(),
+            ),
+            Node::CharNode { token } => self.char(token),
+            Node::CallNode { node_to_call, args } => {
+                self.fun_call(*node_to_call, args, node.get_pos())
+            }
+            Node::BooleanNode { token } => self.boolean(token),
+            Node::BinaryNode {
+                left,
+                right,
+                op_token,
+            } => self.binary_op(*left, op_token, *right, node.get_pos()),
+            Node::ArrayNode { element_nodes } => self.array_decl(element_nodes, node.get_pos()),
+            Node::ArrayAcess { array, index } => self.array_access(*array, *index, node.get_pos()),
+            Node::ReturnNode { value } => self.ret(*value, node.get_pos()),
+            Node::ObjectDefNode { properties } => self.obj_decl(properties, node.get_pos()),
+            Node::ObjectPropAccess { object, property } => {
+                self.obj_get(*object, property, node.get_pos())
+            }
+            Node::ObjectPropEdit {
+                object,
+                property,
+                new_val,
+            } => self.obj_edit(*object, property, *new_val, node.get_pos()),
+            Node::ClassDefNode {
+                name,
+                constructor,
+                properties,
+                methods,
+            } => self.class_decl(*constructor, properties, name, methods, node.get_pos()),
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+            } => self.class_init(name, constructor_params, node.get_pos()),
+            Node::ExternNode {
+                name,
+                arg_tokens,
+                return_type,
+                var_args,
+            } => self.fun_extern(name, arg_tokens, return_type, var_args),
         }
     }
 
-    fn compile_top(&mut self) -> Result<FunctionValue<'ctx>, Error> {
+    fn compile_main(&mut self) -> Result<FunctionValue<'ctx>, Error> {
         let func = self.function.clone();
         self.compile_fn(func)
     }
@@ -150,6 +206,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             fn_value_opt: None,
         };
 
-        compiler.compile_top()
+        compiler.compile_main()
     }
 }
