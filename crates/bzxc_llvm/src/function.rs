@@ -92,7 +92,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             Ok(function)
         } else {
-            println!(
+            eprintln!(
                 "Invalid LLVM IR:\n{}",
                 self.module.print_to_string().to_string()
             );

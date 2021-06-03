@@ -17,6 +17,8 @@ extern fun puts(string): int;
             a += 1;
         }
         printf("Times: %i\n", a);
+        var a = [0, 1][0];
+        printf("%i\n", a)
         0
     }
 })()()

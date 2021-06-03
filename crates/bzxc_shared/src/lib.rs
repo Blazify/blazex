@@ -199,6 +199,15 @@ pub struct Position {
 }
 
 impl Position {
+    /* Just for Testing */
+    pub fn proto() -> Self {
+        Position {
+            file_content: "",
+            file_name: "",
+            index: 0,
+        }
+    }
+
     /*
      * Creates a new Position Struct
      */
@@ -424,10 +433,16 @@ impl Node {
                 right,
                 op_token: _,
             } => (left.get_pos().0, right.get_pos().1),
-            Node::ArrayNode { element_nodes } => (
-                element_nodes.first().unwrap().get_pos().0,
-                element_nodes.last().unwrap().get_pos().1,
-            ),
+            Node::ArrayNode { element_nodes } => {
+                if !element_nodes.is_empty() {
+                    (
+                        element_nodes.first().unwrap().get_pos().0,
+                        element_nodes.last().unwrap().get_pos().1,
+                    )
+                } else {
+                    (Position::proto(), Position::proto())
+                }
+            }
             Node::ArrayAcess { array, index } => (array.get_pos().0, index.get_pos().1),
             Node::Statements { statements } => (
                 statements.first().unwrap().get_pos().0,

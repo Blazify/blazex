@@ -157,7 +157,7 @@ printf(ins.sum_to_a(5));
   - [x] For loop
   - [x] While loop
   - [x] Functions
-  - [ ] Arrays
+  - [x] Arrays
   - [ ] Objects
   - [ ] Classes
   - [ ] Proper Mutability
