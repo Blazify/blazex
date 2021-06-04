@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Token, Tokens};
+use bzxc_shared::{DynType, Error, Node, Token, Tokens, Type};
 
 impl Parser {
     /*
@@ -21,7 +21,7 @@ impl Parser {
      */
     pub(crate) fn class_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        let mut methods: Vec<(Token, Vec<Token>, Node)> = vec![];
+        let mut methods: Vec<(Token, Vec<Token>, Node, Type)> = vec![];
         let mut properties: Vec<(Token, Node)> = vec![];
         let mut constructor: Option<(Vec<Token>, Node)> = None;
 
@@ -88,7 +88,7 @@ impl Parser {
                     name,
                     body_node,
                     arg_tokens,
-                    return_type: _,
+                    return_type,
                 } => {
                     if name.as_ref().is_none() {
                         if constructor.is_some() {
@@ -108,6 +108,7 @@ impl Parser {
                             name.as_ref().unwrap().clone(),
                             arg_tokens.iter().map(|x| x.clone().0).collect(),
                             *body_node,
+                            return_type,
                         ));
                     }
                 }

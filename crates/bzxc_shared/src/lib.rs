@@ -353,7 +353,7 @@ pub enum Node {
         name: Token,
         constructor: Box<Option<(Vec<Token>, Node)>>,
         properties: Vec<(Token, Node)>,
-        methods: Vec<(Token, Vec<Token>, Node)>,
+        methods: Vec<(Token, Vec<Token>, Node, Type)>,
     },
     ClassInitNode {
         name: Token,

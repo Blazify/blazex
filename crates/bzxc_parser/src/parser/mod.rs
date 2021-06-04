@@ -80,17 +80,16 @@ impl Parser {
     /*
      * Advances to the next token
      */
-    fn advance(&mut self) -> Token {
+    fn advance(&mut self) {
         self.token_index += 1;
         self.update_current_token();
-        self.current_token.clone()
     }
 
     /*
      * Updates the current token based upon the token index
      */
     fn update_current_token(&mut self) {
-        if self.token_index >= 0 as usize && self.token_index < self.tokens.len() {
+        if self.token_index < self.tokens.len() {
             self.current_token = self.tokens.clone()[self.clone().token_index].clone();
         }
     }
@@ -98,10 +97,18 @@ impl Parser {
     /*
      * Reverse tokens by provided offset
      */
-    fn reverse(&mut self, cnt: usize) -> Token {
+    fn reverse(&mut self, cnt: usize) {
         self.token_index -= cnt;
         self.update_current_token();
+    }
 
-        self.clone().current_token
+    /*
+     * Checks whether is a type declaration
+     */
+    fn is_type_decl(&self) -> bool {
+        matches!(
+            self.current_token.typee,
+            Tokens::LeftSquareBraces | Tokens::Identifier | Tokens::Keyword
+        )
     }
 }

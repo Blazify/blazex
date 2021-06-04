@@ -184,19 +184,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    fn compile_main(&mut self) -> Result<FunctionValue<'ctx>, Error> {
+    pub fn compile_main(&mut self) -> Result<FunctionValue<'ctx>, Error> {
         let func = self.function.clone();
         self.compile_fn(func)
     }
 
-    pub fn compile(
+    pub fn init(
         context: &'ctx Context,
         builder: &'a Builder<'ctx>,
         module: &'a Module<'ctx>,
         fpm: &'a PassManager<FunctionValue<'ctx>>,
         function: Function<'ctx>,
-    ) -> Result<FunctionValue<'ctx>, Error> {
-        let mut compiler = Compiler {
+    ) -> Compiler<'a, 'ctx> {
+        Compiler {
             builder,
             context,
             module,
@@ -204,8 +204,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             variables: HashMap::new(),
             function,
             fn_value_opt: None,
-        };
-
-        compiler.compile_main()
+        }
     }
 }

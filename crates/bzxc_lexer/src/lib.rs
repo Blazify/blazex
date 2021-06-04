@@ -11,7 +11,6 @@
  * limitations under the License.
 */
 
-#![allow(unused_assignments)]
 mod literals;
 mod logical;
 use bzxc_shared::{DynType, Error, Position, Token, Tokens};

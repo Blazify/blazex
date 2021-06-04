@@ -1,13 +1,5 @@
 # BlazeX
-
-> A intermediate jit compiled language which is kinda statically typed (for now) and object oriented
-
-## Note
-> We are moving to LLVM as the VM wasn't performant, and to compile to native executabe you must link to libc.
-
-## Installation
-
-[Github Releases](https://github.com/BlazifyOrg/blazex/releases)
+A intermediate AOT compiled language which is kinda statically typed (for now) and object oriented
 
 ## Installing
 
@@ -42,7 +34,7 @@ For more information try --help
 
 ## Note
 
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazexscript-vscode) and we are also looking for collaborators
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazexscript-vscode) and i am also looking for collaborators
 
 ## Example
 
@@ -112,7 +104,7 @@ printf(ins.sum_to_a(5));
 ## Dependencies
 - inkwell (Safe LLVM Wrapper)
 - codespan-reporting (Errors)
-- mimalloc (Allocation for the binary)
+- mimalloc (Memory allocation)
 - structopt (Argument parsing)
 - notify (Look for file changes)
 
@@ -127,7 +119,7 @@ printf(ins.sum_to_a(5));
 
 ## Project Structure
 
-|             Codebase              |                   Description                   |
+|               Crate               |                   Description                   |
 | :-------------------------------: | :---------------------------------------------: |
 |      [blazex](crates/blazex)      |                   The binary                    |
 |  [bzxc_lexer](crates/bzxc_lexer)  |              Lexer for Tokenizing               |
@@ -135,15 +127,11 @@ printf(ins.sum_to_a(5));
 |   [bzxc_llvm](crates/bzxc_llvm)   |         W.I.P. LLVM IR Code Generation          |
 | [bzxc_shared](crates/bzxc_shared) | Structs, Methods, etc Shared among other crates |
 
-# TODO
+## TODO
 
 - [ ] Bugs Fixed
-- [x] Errors
-  - [x] Lexer
-  - [x] Parser
-  - [x] LLVM 
+- [ ] Type System
 - [ ] LLVM
-
   - [x] Executables
   - [x] Statements
   - [x] Int & Floats
@@ -160,14 +148,15 @@ printf(ins.sum_to_a(5));
   - [x] Arrays
   - [ ] Objects
   - [ ] Classes
-  - [ ] Proper Mutability
-
+- [x] Errors
+  - [x] Lexer
+  - [x] Parser
+  - [x] LLVM 
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
-- [ ] Type System
 - [x] AST
 
 ## Author
 
-- [Ronit "RoMeAh" Rahaman](https://www.romeah.me)
+- [Ronit "RoMeAh" Rahaman](https://blazify.rocks/team/)

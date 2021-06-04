@@ -3,11 +3,13 @@ extern fun puts(string): int;
 (fun(): fun(): [int, 2] {
     fun(): [int, 2] {
         var a = 0;
+        
         while a < 100 {
             puts("Hello World!");
             a += 1;
         }
         printf("Times: %i\n", a);
+        
         var a = [0, 1];
         a
     }

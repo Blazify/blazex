@@ -89,10 +89,7 @@ impl Parser {
         self.advance();
 
         let mut args_name_tokens: Vec<Type> = vec![];
-        if self.current_token.typee == Tokens::Identifier
-            || self.current_token.typee == Tokens::Keyword
-            || self.current_token.typee == Tokens::LeftSquareBraces
-        {
+        if self.is_type_decl() {
             let typee = self.type_expr(&mut res);
             match typee {
                 Ok(typ) => args_name_tokens.push(typ),
@@ -103,10 +100,7 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
-                if self.current_token.typee == Tokens::Identifier
-                    || self.current_token.typee == Tokens::Keyword
-                    || self.current_token.typee == Tokens::LeftSquareBraces
-                {
+                if self.is_type_decl() {
                     let typee = self.type_expr(&mut res);
                     match typee {
                         Ok(typ) => args_name_tokens.push(typ),

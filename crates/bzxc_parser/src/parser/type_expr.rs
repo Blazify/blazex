@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{to_static_str, DynType, Error, Tokens, Type};
+use bzxc_shared::{to_static_str, DynType, Error, Node, Tokens, Type};
 
 use crate::parse_result::ParseResult;
 
@@ -21,10 +21,7 @@ impl Parser {
     pub(crate) fn type_expr(&mut self, res: &mut ParseResult) -> Result<Type, Error> {
         let pos_start = self.current_token.pos_start.clone();
 
-        if self.current_token.typee != Tokens::Identifier
-            && self.current_token.typee != Tokens::Keyword
-            && self.current_token.typee != Tokens::LeftSquareBraces
-        {
+        if !self.is_type_decl() {
             return Err(Error::new(
                 "Invalid Syntax",
                 pos_start,
@@ -148,7 +145,6 @@ impl Parser {
             }
             _ => match self.current_token.typee {
                 Tokens::LeftSquareBraces => {
-                    println!("omaiwa");
                     self.advance();
                     res.register_advancement();
 
@@ -166,19 +162,10 @@ impl Parser {
                     self.advance();
                     res.register_advancement();
 
-                    if self.current_token.typee != Tokens::Int {
-                        return Err(Error::new(
-                            "Syntax Error",
-                            pos_start,
-                            self.current_token.pos_end.clone(),
-                            "Expected int",
-                        ));
+                    let size = res.register(self.expr());
+                    if let Some(error) = &res.error {
+                        return Err(error.clone());
                     }
-
-                    let size = self.current_token.clone();
-
-                    res.register_advancement();
-                    self.advance();
 
                     if self.current_token.typee != Tokens::RightSquareBraces {
                         return Err(Error::new(
@@ -191,7 +178,17 @@ impl Parser {
 
                     self.advance();
                     res.register_advancement();
-                    Ok(Type::Array(Box::new(typee), size))
+
+                    if let Node::NumberNode { token } = size.clone().unwrap() {
+                        Ok(Type::Array(Box::new(typee), token))
+                    } else {
+                        Err(Error::new(
+                            "Syntax Error",
+                            pos_start,
+                            size.clone().unwrap().get_pos().1,
+                            "Expected 'int'",
+                        ))
+                    }
                 }
                 _ => Err(Error::new(
                     "Invalid Syntax",

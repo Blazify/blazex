@@ -56,7 +56,6 @@ pub fn compile(
     let context = Context::create();
     let module = context.create_module(name);
     let builder = context.create_builder();
-
     let fpm = PassManager::create(&module);
 
     fpm.add_instruction_combining_pass();
@@ -66,7 +65,6 @@ pub fn compile(
     fpm.add_basic_alias_analysis_pass();
     fpm.add_promote_memory_to_register_pass();
     fpm.add_reassociate_pass();
-
     fpm.initialize();
 
     let func = Function {
@@ -89,7 +87,7 @@ pub fn compile(
         );
     }
 
-    match Compiler::compile(&context, &builder, &module, &fpm, func) {
+    match Compiler::init(&context, &builder, &module, &fpm, func).compile_main() {
         Ok(_) => {
             if !is_quiet {
                 println!("LLVM IR:\n{}", module.print_to_string().to_string());
