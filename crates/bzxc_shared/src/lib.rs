@@ -525,6 +525,7 @@ pub enum Type {
     String,
     Void,
     Function(Vec<Type>, Box<Type>),
+    Array(Box<Type>, Token),
     Custom(&'static str),
 }
 
@@ -546,6 +547,22 @@ impl<'ctx> Type {
                 false,
             )
             .into(),
+            Type::Array(typee, size) => {
+                let size = size.value.into_int() as u32;
+                match typee.to_llvm_type(ctx) {
+                    AnyTypeEnum::ArrayType(x) => x.array_type(size),
+                    AnyTypeEnum::FloatType(x) => x.array_type(size),
+                    AnyTypeEnum::FunctionType(x) => {
+                        x.ptr_type(AddressSpace::Generic).array_type(size)
+                    }
+                    AnyTypeEnum::IntType(x) => x.array_type(size),
+                    AnyTypeEnum::PointerType(x) => x.array_type(size),
+                    AnyTypeEnum::StructType(x) => x.array_type(size),
+                    AnyTypeEnum::VectorType(x) => x.array_type(size),
+                    AnyTypeEnum::VoidType(_) => panic!(),
+                }
+                .into()
+            }
             Type::Custom(_) => panic!("Custom types aren't supported yet!"),
         }
     }

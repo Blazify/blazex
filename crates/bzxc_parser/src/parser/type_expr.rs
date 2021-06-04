@@ -23,6 +23,7 @@ impl Parser {
 
         if self.current_token.typee != Tokens::Identifier
             && self.current_token.typee != Tokens::Keyword
+            && self.current_token.typee != Tokens::LeftSquareBraces
         {
             return Err(Error::new(
                 "Invalid Syntax",
@@ -145,12 +146,60 @@ impl Parser {
                     _ => Ok(Type::Custom(to_static_str(typee.clone()))),
                 }
             }
-            _ => Err(Error::new(
-                "Invalid Syntax",
-                pos_start,
-                self.current_token.pos_end.clone(),
-                "Expected Type",
-            )),
+            _ => match self.current_token.typee {
+                Tokens::LeftSquareBraces => {
+                    println!("omaiwa");
+                    self.advance();
+                    res.register_advancement();
+
+                    let typee = self.type_expr(res)?;
+
+                    if self.current_token.typee != Tokens::Comma {
+                        return Err(Error::new(
+                            "Syntax Error",
+                            pos_start,
+                            self.current_token.pos_end.clone(),
+                            "Expected ','",
+                        ));
+                    }
+
+                    self.advance();
+                    res.register_advancement();
+
+                    if self.current_token.typee != Tokens::Int {
+                        return Err(Error::new(
+                            "Syntax Error",
+                            pos_start,
+                            self.current_token.pos_end.clone(),
+                            "Expected int",
+                        ));
+                    }
+
+                    let size = self.current_token.clone();
+
+                    res.register_advancement();
+                    self.advance();
+
+                    if self.current_token.typee != Tokens::RightSquareBraces {
+                        return Err(Error::new(
+                            "Syntax Error",
+                            pos_start,
+                            self.current_token.pos_end.clone(),
+                            "Expected ']'",
+                        ));
+                    }
+
+                    self.advance();
+                    res.register_advancement();
+                    Ok(Type::Array(Box::new(typee), size))
+                }
+                _ => Err(Error::new(
+                    "Invalid Syntax",
+                    pos_start,
+                    self.current_token.pos_end.clone(),
+                    "Expected Type",
+                )),
+            },
         }
     }
 }

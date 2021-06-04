@@ -1,24 +1,14 @@
-@@
-    Program that prints "Hello World!" 100 times
-@@
-
-@ declare a external function "puts"
 extern fun puts(string): int;
 
-@@
-    you don't need this anonymous function wrapping the while loop, just
-    was testing them.
-@@
-(fun(): fun(): int {
-    fun(): int {
+(fun(): fun(): [int, 2] {
+    fun(): [int, 2] {
         var a = 0;
         while a < 100 {
             puts("Hello World!");
             a += 1;
         }
         printf("Times: %i\n", a);
-        var a = [0, 1][0];
-        printf("%i\n", a)
-        0
+        var a = [0, 1];
+        a
     }
-})()()
+})()()[0]

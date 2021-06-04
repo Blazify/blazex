@@ -65,7 +65,10 @@ impl Parser {
         self.advance();
 
         let mut args_name_tokens: Vec<(Token, Type)> = vec![];
-        if self.current_token.typee == Tokens::Identifier {
+        if self.current_token.typee == Tokens::Identifier
+            || self.current_token.typee == Tokens::Keyword
+            || self.current_token.typee == Tokens::LeftSquareBraces
+        {
             let name = self.current_token.clone();
             res.register_advancement();
             self.advance();
@@ -90,7 +93,10 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
-                if self.current_token.typee == Tokens::Identifier {
+                if self.current_token.typee == Tokens::Identifier
+                    || self.current_token.typee == Tokens::Keyword
+                    || self.current_token.typee == Tokens::LeftSquareBraces
+                {
                     let new_arg_token = self.current_token.clone();
                     res.register_advancement();
                     self.advance();
