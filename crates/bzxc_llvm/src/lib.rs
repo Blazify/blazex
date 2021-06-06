@@ -55,7 +55,8 @@ pub struct Compiler<'a, 'ctx> {
 
     variables: HashMap<String, (PointerValue<'ctx>, bool)>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
-    objects: HashMap<(StructType<'ctx>, String), usize>,
+    objects: HashMap<(StructType<'ctx>, String), u32>,
+    object_aligner: u32,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -206,6 +207,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             function,
             fn_value_opt: None,
             objects: HashMap::new(),
+            object_aligner: 0,
         }
     }
 }

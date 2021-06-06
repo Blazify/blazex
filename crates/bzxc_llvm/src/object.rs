@@ -24,8 +24,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let arr = self
             .context
             .i8_type()
-            .array_type(self.objects.len() as u32)
+            .array_type(self.object_aligner)
             .const_zero();
+
+        self.object_aligner += 1;
 
         let mut values = vec![arr.into()];
         let mut types = vec![arr.get_type().into()];
@@ -50,7 +52,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for (i, name) in names.iter().enumerate() {
             self.objects
-                .insert((struct_val.get_type(), name.clone()), i);
+                .insert((struct_val.get_type(), name.clone()), i as u32);
         }
 
         Ok(struct_val.into())
@@ -76,17 +78,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .ok_or(self.error(pos, "Property not found on object"))?
             .clone();
 
-        let val = self.builder.build_extract_value(
-            struct_val.into_struct_value(),
-            prop as u32,
-            "extract_obj",
-        );
+        let val = self
+            .builder
+            .build_extract_value(struct_val.into_struct_value(), prop, "extract_obj")
+            .ok_or(self.error(pos, "Property not found on object"))?;
 
-        if let Some(v) = val {
-            Ok(v)
-        } else {
-            Err(self.error(pos, "Property not found on object"))
-        }
+        Ok(val)
     }
 
     pub(crate) fn obj_edit(
@@ -113,25 +110,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .ok_or(self.error(pos, "Property not found on object"))?
             .clone();
 
-        let x = self.builder.build_extract_value(
-            struct_val.into_struct_value(),
-            i as u32,
-            "extract_obj",
-        );
+        let x = self
+            .builder
+            .build_extract_value(struct_val.into_struct_value(), i, "extract_obj")
+            .ok_or(self.error(pos, "Property not found on object"))?;
 
-        if x.is_none() {
-            return Err(self.error(pos, "Property not found on object"));
-        }
-
-        if x.unwrap().get_type() != val.get_type() {
+        if x.get_type() != val.get_type() {
             return Err(self.error(pos, "Expected the type it was initialized with."));
         };
 
-        Ok(self
+        let new_struct = self
             .builder
             .build_insert_value(struct_val.into_struct_value(), val.clone(), i as u32, "")
             .unwrap()
-            .into_struct_value()
-            .into())
+            .into_struct_value();
+        Ok(new_struct.into())
     }
 }
