@@ -23,13 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "11.0"
-          directory: ${{ runner.temp }}/llvm
       - name: Build project
-        run: bash build ${{ runner.temp }}/llvm
+        run: bash build
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:

@@ -23,7 +23,7 @@ rustup override set nightly
 sleep 1
 rustup component add rust-src
 sleep 1
-LLVM_SYS_110_PREFIX="$1" cargo +nightly build --locked --target $target --release
+cargo +nightly build --locked --target $target --release
 strip $executable
 
 if [ ! -d "bin" ]; then

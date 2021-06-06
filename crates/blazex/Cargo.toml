@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 mimalloc = { version = "0.1.25", default_features = false }
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+inkwell = { path = "../bzxc_llvm_wrapper" }
 structopt = "0.3.21"
 notify = "4.0.17"
 bzxc_llvm = { path = "../bzxc_llvm" }

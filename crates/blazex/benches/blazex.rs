@@ -14,19 +14,7 @@ fn bench_compile(cnt: &'static str) {
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("100 raised to 100 iterations", |b| {
-        b.iter(|| {
-            bench_compile(
-                r#"
-                var a = 0;
-                for i = 1 to 100 step 1 {
-                    for j = 100 to 1 step -1 {
-                        a += (i * j);
-                    }
-                }
-                a
-            "#,
-            )
-        })
+        b.iter(|| bench_compile("var a = 0; for i = 1 to 100 step 1 { for j = 100 to 1 step -1 { a += (i * j); } }; a") )
     });
 }
 

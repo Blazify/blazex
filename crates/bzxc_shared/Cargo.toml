@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 codespan-reporting = "0.11.1"
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+inkwell = { path = "../bzxc_llvm_wrapper" }

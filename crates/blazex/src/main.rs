@@ -77,7 +77,7 @@ fn main() {
      * Compiling to Object File
      */
     let compile_with_config = || {
-        let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read script");
+        let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read file");
         compile(
             file_name.clone(),
             cnt,

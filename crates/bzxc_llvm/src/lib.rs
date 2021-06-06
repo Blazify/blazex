@@ -29,7 +29,7 @@ use inkwell::{
     context::Context,
     module::Module,
     passes::PassManager,
-    types::{AnyTypeEnum, BasicType, BasicTypeEnum},
+    types::{AnyTypeEnum, BasicType, BasicTypeEnum, StructType},
     values::{BasicValueEnum, FunctionValue, PointerValue},
 };
 
@@ -55,6 +55,7 @@ pub struct Compiler<'a, 'ctx> {
 
     variables: HashMap<String, (PointerValue<'ctx>, bool)>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
+    objects: HashMap<(StructType<'ctx>, String), usize>,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -156,7 +157,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::ArrayNode { element_nodes } => self.array_decl(element_nodes, node.get_pos()),
             Node::ArrayAcess { array, index } => self.array_access(*array, *index, node.get_pos()),
             Node::ReturnNode { value } => self.ret(*value, node.get_pos()),
-            Node::ObjectDefNode { properties } => self.obj_decl(properties, node.get_pos()),
+            Node::ObjectDefNode { properties } => self.obj_decl(properties),
             Node::ObjectPropAccess { object, property } => {
                 self.obj_get(*object, property, node.get_pos())
             }
@@ -204,6 +205,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             variables: HashMap::new(),
             function,
             fn_value_opt: None,
+            objects: HashMap::new(),
         }
     }
 }

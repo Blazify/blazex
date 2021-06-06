@@ -7,6 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm11-0"] }
+inkwell = { path = "../bzxc_llvm_wrapper" }
 rand = "0.8.3"
 bzxc_shared = { path = "../bzxc_shared" }
