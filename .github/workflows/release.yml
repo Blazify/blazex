@@ -18,17 +18,18 @@ jobs:
           #  artifact_name: aarch64-apple-darwin
           - os: macos-10.15
             artifact_name: x86_64-apple-darwin
-          - os: windows-latest
-            artifact_name: x86_64-pc-windows-msvc.exe
+          # - os: windows-latest
+          #   artifact_name: x86_64-pc-windows-msvc.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build project
-        run: bash build
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: "11.0"
+          directory: ${{ runner.temp }}/llvm
+      - name: Build project
+        run: bash build ${{ runner.temp }}/llvm
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:

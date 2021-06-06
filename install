@@ -23,7 +23,7 @@ else
 fi
 
 
-if [ $# -eq 1 ]; then
+if [ $# -eq 0 ]; then
 	bzs_uri="https://github.com/BlazifyOrg/blazex/releases/latest/download/${target}"
 else
 	bzs_uri="https://github.com/BlazifyOrg/blazex/releases/download/${1}/${target}"

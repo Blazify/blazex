@@ -2,5 +2,5 @@ var obj = {
     "msg": "Hello World!"
 };
 
-printf("%s", obj.msg)
+printf("%s\n", obj.msg)
 0
