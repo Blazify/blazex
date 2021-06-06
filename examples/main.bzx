@@ -1,1 +1,6 @@
+var obj = {
+    "msg": "Hello World!"
+};
+
+printf("%s", obj.msg)
 0

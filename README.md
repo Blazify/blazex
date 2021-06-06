@@ -147,7 +147,7 @@ printf(ins.sum_to_a(5));
   - [x] While loop
   - [x] Functions
   - [x] Arrays
-  - [ ] Objects
+  - [x] Objects
   - [ ] Classes
 - [x] Errors
   - [x] Lexer
