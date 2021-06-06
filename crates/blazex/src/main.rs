@@ -49,6 +49,12 @@ struct CmdParams {
      */
     #[structopt(long, short = "w")]
     pub watch: bool,
+
+    /*
+     * Spit LLVM or not
+     */
+    #[structopt(long, short = "l")]
+    pub llvm: bool,
 }
 
 /*
@@ -72,6 +78,7 @@ fn main() {
         file_name.clone().replace(".bzx", ".o")
     };
     let watch = cmd_params.watch;
+    let spit_ll = cmd_params.llvm;
 
     /*
      * Compiling to Object File
@@ -84,6 +91,7 @@ fn main() {
             is_quiet,
             watch,
             out_file.clone(),
+            spit_ll,
             false,
         )
     };

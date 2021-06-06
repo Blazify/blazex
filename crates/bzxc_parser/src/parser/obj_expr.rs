@@ -56,7 +56,7 @@ impl Parser {
             }
 
             let mut tok;
-            if let Node::StringNode { token, .. } = expr.unwrap() {
+            if let Node::VarAccessNode { token } = expr.unwrap() {
                 tok = token;
             } else {
                 return res.failure(Error::new(
@@ -105,7 +105,7 @@ impl Parser {
                     ));
                 }
 
-                if let Node::StringNode { token, .. } = expr.unwrap() {
+                if let Node::VarAccessNode { token } = expr.unwrap() {
                     tok = token;
                 } else {
                     return res.failure(Error::new(

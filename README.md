@@ -1,5 +1,5 @@
 # BlazeX
-A intermediate AOT compiled language which is kinda statically typed (for now) and object oriented
+A intermediate AOT compiled language which is kinda statically typed (wanna move to gradual typing) and object oriented
 
 ## Installing
 
@@ -68,7 +68,7 @@ printf(sum(2, 2));
 
 ```bzx
 var obj = {
-    "prop": 5 @ properties should be of String type or there will be Invalid Syntax Error
+    prop: 5 @ properties should be Identifier or there will be Invalid Syntax Error
 }
 
 println(obj.prop); @ accessing object property
@@ -128,10 +128,15 @@ printf(ins.sum_to_a(5));
 | [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |                 Fork of Inkwell                 |
 |       [bzxc_shared](crates/bzxc_shared)       | Structs, Methods, etc Shared among other crates |
 
+## Need Help with
+- Gradual type system (Hybrid Dynamic & Static Typing)
+- Implementing return-ing in functions
+- Class Definition and Initializing LLVM code generation
+
 ## TODO
 
 - [ ] Bugs Fixed
-- [ ] Type System
+- [ ] Type System (gradual typing)
 - [ ] LLVM
   - [x] Executables
   - [x] Statements

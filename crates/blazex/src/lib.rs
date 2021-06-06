@@ -3,6 +3,7 @@ use bzxc_llvm::Compiler;
 use bzxc_llvm::Function;
 use bzxc_llvm::Prototype;
 use bzxc_parser::parser::Parser;
+use inkwell::support::enable_llvm_pretty_stack_trace;
 use inkwell::{
     context::Context,
     execution_engine::JitFunction,
@@ -20,6 +21,7 @@ pub fn compile(
     is_quiet: bool,
     watch: bool,
     out_file: String,
+    llvm: bool,
     jit_: bool,
 ) -> i32 {
     let time = SystemTime::now();
@@ -66,6 +68,7 @@ pub fn compile(
     fpm.add_promote_memory_to_register_pass();
     fpm.add_reassociate_pass();
     fpm.initialize();
+    enable_llvm_pretty_stack_trace();
 
     let func = Function {
         body: parsed.node.unwrap(),
@@ -89,7 +92,7 @@ pub fn compile(
 
     match Compiler::init(&context, &builder, &module, &fpm, func).compile_main() {
         Ok(_) => {
-            if !is_quiet {
+            if llvm {
                 println!("LLVM IR:\n{}", module.print_to_string().to_string());
             }
 

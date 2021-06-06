@@ -8,6 +8,7 @@ fn bench_compile(cnt: &'static str) {
         true,
         false,
         String::new(),
+        false,
         true,
     );
 }
