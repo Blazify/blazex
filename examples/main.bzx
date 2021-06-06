@@ -1,6 +1,13 @@
 var obj = {
-    "msg": "Hello World!"
+    "x": "Hello World!",
+    "y": fun(): string { "Hi there" }
 };
 
-printf("%s\n", obj.msg)
+var obj1 = {
+    "y": "Hello World!",
+    "x": fun(): string { "Hi there" }
+};
+
+printf("%s\n%s\n", obj.x, obj.y());
+printf("%s\n%s\n", obj1.x(), obj1.y);
 0

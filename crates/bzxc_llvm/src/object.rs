@@ -21,9 +21,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         &mut self,
         properties: Vec<(Token, Node)>,
     ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let mut values = vec![];
-        let mut types = vec![];
-        let mut names = vec![];
+        let arr = self
+            .context
+            .i8_type()
+            .array_type(self.objects.len() as u32)
+            .const_zero();
+
+        let mut values = vec![arr.into()];
+        let mut types = vec![arr.get_type().into()];
+        let mut names = vec![String::new()];
 
         for (k, v) in &properties {
             let val = self.compile_node(v.clone())?;
