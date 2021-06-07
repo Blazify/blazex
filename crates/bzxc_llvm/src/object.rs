@@ -119,11 +119,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             return Err(self.error(pos, "Expected the type it was initialized with."));
         };
 
-        let new_struct = self
+        let struct_ptr = self
             .builder
-            .build_insert_value(struct_val.into_struct_value(), val.clone(), i as u32, "")
-            .unwrap()
-            .into_struct_value();
-        Ok(new_struct.into())
+            .build_alloca(struct_val.get_type(), "struct_alloca");
+        self.builder.build_store(struct_ptr, struct_val);
+
+        let ptr = self
+            .builder
+            .build_struct_gep(struct_ptr, i, "struct_gep")
+            .ok()
+            .unwrap();
+        self.builder.build_store(ptr, val);
+
+        Ok(struct_val)
     }
 }

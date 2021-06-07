@@ -15,7 +15,7 @@ use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node, Position, Token, T
 use inkwell::{
     module::Linkage,
     types::{AnyTypeEnum, BasicTypeEnum},
-    values::{BasicValue, BasicValueEnum, FunctionValue},
+    values::{AnyValue, BasicValue, BasicValueEnum, FunctionValue},
 };
 use rand::{distributions::Alphanumeric, Rng};
 
@@ -99,6 +99,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         self.fn_value_opt = parent;
+        println!("{}", function.print_to_string().to_string());
 
         if function.verify(true) {
             self.fpm.run_on(&function);
