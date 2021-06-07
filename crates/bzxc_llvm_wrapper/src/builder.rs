@@ -163,7 +163,7 @@ impl<'ctx> Builder<'ctx> {
         function: F,
         args: &[BasicValueEnum<'ctx>],
         name: &str,
-    ) -> CallSiteValue<'ctx>
+    ) -> Result<CallSiteValue<'ctx>, ()>
     where
         F: Into<FunctionOrPointerValue<'ctx>>,
     {
@@ -178,12 +178,9 @@ impl<'ctx> Builder<'ctx> {
                     _ => false,
                 };
 
-                // REVIEW: We should probably turn this into a Result?
-                assert!(
-                    is_a_fn_ptr,
-                    "build_call called with a pointer which is not a function pointer"
-                );
-
+                if !is_a_fn_ptr {
+                    return Err(());
+                }
                 value_ref
             }
         };
@@ -210,7 +207,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { CallSiteValue::new(value) }
+        Ok(unsafe { CallSiteValue::new(value) })
     }
 
     // REVIEW: Doesn't GEP work on array too?

@@ -15,7 +15,7 @@ use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node, Position, Token, T
 use inkwell::{
     module::Linkage,
     types::{AnyTypeEnum, BasicTypeEnum},
-    values::{AnyValue, BasicValue, BasicValueEnum, FunctionValue},
+    values::{BasicValue, BasicValueEnum, FunctionValue},
 };
 use rand::{distributions::Alphanumeric, Rng};
 
@@ -99,7 +99,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         self.fn_value_opt = parent;
-        println!("{}", function.print_to_string().to_string());
 
         if function.verify(true) {
             self.fpm.run_on(&function);
@@ -148,11 +147,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             return Err(self.error(pos, "Expected a Function pointer found something else"));
         }
 
-        Ok(self
-            .builder
-            .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall")
-            .try_as_basic_value()
-            .left_or(self.context.i128_type().const_int(0, false).into()))
+        let call =
+            self.builder
+                .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall");
+
+        match call {
+            Ok(call) => Ok(call
+                .try_as_basic_value()
+                .left_or(self.context.i128_type().const_int(0, false).into())),
+            Err(_) => Err(self.error(pos, "Not a function")),
+        }
     }
 
     pub(crate) fn fun_extern(
