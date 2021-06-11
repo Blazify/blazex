@@ -119,14 +119,15 @@ printf(ins.sum_to_a(5));
 
 ## Project Structure
 
-|                     Crate                     |                   Description                   |
-| :-------------------------------------------: | :---------------------------------------------: |
-|            [blazex](crates/blazex)            |                   The binary                    |
-|        [bzxc_lexer](crates/bzxc_lexer)        |              Lexer for Tokenizing               |
-|       [bzxc_parser](crates/bzxc_parser)       |               Parser for AST Tree               |
-|         [bzxc_llvm](crates/bzxc_llvm)         |         W.I.P. LLVM IR Code Generation          |
-| [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |                 Fork of Inkwell                 |
-|       [bzxc_shared](crates/bzxc_shared)       | Structs, Methods, etc Shared among other crates |
+|                     Crate                     |           Description            |
+| :-------------------------------------------: | :------------------------------: |
+|            [blazex](crates/blazex)            |            The binary            |
+|        [bzxc_lexer](crates/bzxc_lexer)        |       Lexer for Tokenizing       |
+|       [bzxc_parser](crates/bzxc_parser)       |       Parser for AST Tree        |
+| [bzxc_type_checker](crates/bzxc_type_checker) |    Typer checker for AST Tree    |
+|         [bzxc_llvm](crates/bzxc_llvm)         |  W.I.P. LLVM IR Code Generation  |
+| [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |         Fork of Inkwell          |
+|       [bzxc_shared](crates/bzxc_shared)       | Things Shared among other crates |
 
 ## Need Help with
 - Gradual type system (Hybrid Dynamic & Static Typing)

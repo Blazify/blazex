@@ -11,8 +11,8 @@
  * limitations under the License.
 */
 
+use bzxc_llvm_wrapper::{types::BasicTypeEnum, values::BasicValueEnum};
 use bzxc_shared::{Error, Node, Position};
-use inkwell::{types::BasicTypeEnum, values::BasicValueEnum};
 
 use crate::Compiler;
 

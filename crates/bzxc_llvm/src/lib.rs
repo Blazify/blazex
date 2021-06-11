@@ -23,8 +23,7 @@ mod variable;
 
 use std::collections::HashMap;
 
-use bzxc_shared::{Error, Node, Position};
-use inkwell::{
+use bzxc_llvm_wrapper::{
     builder::Builder,
     context::Context,
     module::Module,
@@ -32,6 +31,7 @@ use inkwell::{
     types::{AnyTypeEnum, BasicType, BasicTypeEnum, StructType},
     values::{BasicValueEnum, FunctionValue, PointerValue},
 };
+use bzxc_shared::{Error, Node, Position};
 
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {

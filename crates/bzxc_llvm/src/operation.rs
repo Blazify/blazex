@@ -12,7 +12,7 @@
 */
 
 use bzxc_shared::{DynType, Error, Node, Position, Token, Tokens};
-use inkwell::{values::BasicValueEnum, FloatPredicate, IntPredicate};
+use bzxc_llvm_wrapper::{values::BasicValueEnum, FloatPredicate, IntPredicate};
 
 use crate::Compiler;
 

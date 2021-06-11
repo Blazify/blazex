@@ -2,6 +2,5 @@ var obj = {
     x: "Hello World!"
 };
 
-obj.x = "Mmmmm..."
 printf("%s\n", obj.x);
 0

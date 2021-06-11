@@ -11,8 +11,8 @@
  * limitations under the License.
 */
 
+use bzxc_llvm_wrapper::{values::BasicValueEnum, AddressSpace};
 use bzxc_shared::{DynType, Error, Token};
-use inkwell::{values::BasicValueEnum, AddressSpace};
 
 use crate::Compiler;
 

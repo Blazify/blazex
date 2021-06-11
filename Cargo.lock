@@ -49,10 +49,11 @@ version = "0.1.0"
 dependencies = [
  "bzxc_lexer",
  "bzxc_llvm",
+ "bzxc_llvm_wrapper",
  "bzxc_parser",
  "bzxc_shared",
+ "bzxc_type_checker",
  "criterion",
- "inkwell",
  "mimalloc",
  "notify",
  "structopt",
@@ -93,9 +94,22 @@ dependencies = [
 name = "bzxc_llvm"
 version = "0.1.0"
 dependencies = [
+ "bzxc_llvm_wrapper",
  "bzxc_shared",
- "inkwell",
  "rand",
+]
+
+[[package]]
+name = "bzxc_llvm_wrapper"
+version = "0.1.0"
+dependencies = [
+ "either",
+ "inkwell_internals",
+ "libc",
+ "llvm-sys",
+ "once_cell",
+ "parking_lot",
+ "regex",
 ]
 
 [[package]]
@@ -109,8 +123,15 @@ dependencies = [
 name = "bzxc_shared"
 version = "0.1.0"
 dependencies = [
+ "bzxc_llvm_wrapper",
  "codespan-reporting",
- "inkwell",
+]
+
+[[package]]
+name = "bzxc_type_checker"
+version = "0.1.0"
+dependencies = [
+ "bzxc_shared",
 ]
 
 [[package]]
@@ -353,19 +374,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "inkwell"
-version = "0.1.0"
-dependencies = [
- "either",
- "inkwell_internals",
- "libc",
- "llvm-sys",
- "once_cell",
- "parking_lot",
- "regex",
 ]
 
 [[package]]

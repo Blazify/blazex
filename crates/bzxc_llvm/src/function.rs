@@ -11,12 +11,12 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node, Position, Token, Type};
-use inkwell::{
+use bzxc_llvm_wrapper::{
     module::Linkage,
     types::{AnyTypeEnum, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue},
 };
+use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node, Position, Token, Type};
 use rand::{distributions::Alphanumeric, Rng};
 
 use crate::{Compiler, Function, Prototype};

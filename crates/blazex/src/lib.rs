@@ -2,9 +2,8 @@ use bzxc_lexer::Lexer;
 use bzxc_llvm::Compiler;
 use bzxc_llvm::Function;
 use bzxc_llvm::Prototype;
-use bzxc_parser::parser::Parser;
-use inkwell::support::enable_llvm_pretty_stack_trace;
-use inkwell::{
+use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
+use bzxc_llvm_wrapper::{
     context::Context,
     execution_engine::JitFunction,
     module::{Linkage, Module},
@@ -12,6 +11,8 @@ use inkwell::{
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
     AddressSpace, OptimizationLevel,
 };
+use bzxc_parser::parser::Parser;
+use bzxc_type_checker::TypeChecker;
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -55,6 +56,8 @@ pub fn compile(
         }
     }
 
+    let typed = TypeChecker::new(parsed.node.unwrap()).typed_node();
+
     let context = Context::create();
     let module = context.create_module(name);
     let builder = context.create_builder();
@@ -71,7 +74,7 @@ pub fn compile(
     enable_llvm_pretty_stack_trace();
 
     let func = Function {
-        body: parsed.node.unwrap(),
+        body: typed,
         prototype: Prototype {
             name: Some(String::from("main")),
             args: vec![],

@@ -11,13 +11,13 @@
  * limitations under the License.
 */
 #![allow(unused_must_use)]
+use bzxc_llvm_wrapper::context::Context;
+use bzxc_llvm_wrapper::types::{AnyTypeEnum, BasicTypeEnum, FunctionType};
+use bzxc_llvm_wrapper::AddressSpace;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use codespan_reporting::term::{self};
-use inkwell::context::Context;
-use inkwell::types::{AnyTypeEnum, BasicTypeEnum, FunctionType};
-use inkwell::AddressSpace;
 
 /*
 * Enum of all the Token Types

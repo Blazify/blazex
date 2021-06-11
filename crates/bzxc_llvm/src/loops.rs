@@ -11,8 +11,8 @@
  * limitations under the License.
 */
 
+use bzxc_llvm_wrapper::{values::BasicValueEnum, FloatPredicate, IntPredicate};
 use bzxc_shared::{Error, Node, Position, Token};
-use inkwell::{values::BasicValueEnum, FloatPredicate, IntPredicate};
 
 use crate::Compiler;
 

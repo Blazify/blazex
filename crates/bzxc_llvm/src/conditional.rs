@@ -12,7 +12,7 @@
 */
 
 use bzxc_shared::{Error, Node};
-use inkwell::values::BasicValueEnum;
+use bzxc_llvm_wrapper::values::BasicValueEnum;
 
 use crate::Compiler;
 
