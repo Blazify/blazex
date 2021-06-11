@@ -1,4 +1,7 @@
 # BlazeX
+
+[![Join the chat at https://gitter.im/BlazifyOrg-blazex/community](https://badges.gitter.im/BlazifyOrg-blazex/community.svg)](https://gitter.im/BlazifyOrg-blazex/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A intermediate AOT compiled language which is kinda statically typed (wanna move to gradual typing) and object oriented
 
 ## Installing
