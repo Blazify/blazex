@@ -52,7 +52,7 @@ dependencies = [
  "bzxc_llvm_wrapper",
  "bzxc_parser",
  "bzxc_shared",
- "bzxc_type_checker",
+ "bzxc_type_system",
  "criterion",
  "mimalloc",
  "notify",
@@ -128,7 +128,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bzxc_type_checker"
+name = "bzxc_type_system"
 version = "0.1.0"
 dependencies = [
  "bzxc_shared",

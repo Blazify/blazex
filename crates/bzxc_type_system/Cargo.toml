@@ -1,5 +1,5 @@
 [package]
-name = "bzxc_type_checker"
+name = "bzxc_type_system"
 version = "0.1.0"
 edition = "2018"
 

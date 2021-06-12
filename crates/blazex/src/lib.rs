@@ -12,7 +12,7 @@ use bzxc_llvm_wrapper::{
     AddressSpace, OptimizationLevel,
 };
 use bzxc_parser::parser::Parser;
-use bzxc_type_checker::TypeChecker;
+use bzxc_type_system::TypeChecker;
 use std::path::Path;
 use std::time::SystemTime;
 

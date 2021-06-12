@@ -6,7 +6,7 @@ members = [
     "crates/bzxc_shared",
     "crates/bzxc_llvm",
     "crates/bzxc_llvm_wrapper",
-    "crates/bzxc_type_checker"
+    "crates/bzxc_type_system"
 ]
 
 

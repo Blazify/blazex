@@ -12,7 +12,7 @@ structopt = "0.3.21"
 notify = "4.0.17"
 bzxc_lexer = { path = "../bzxc_lexer" }
 bzxc_parser = { path = "../bzxc_parser" }
-bzxc_type_checker = { path = "../bzxc_type_checker" }
+bzxc_type_system = { path = "../bzxc_type_system" }
 bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }
 bzxc_llvm = { path = "../bzxc_llvm" }
 bzxc_shared = { path = "../bzxc_shared" }
