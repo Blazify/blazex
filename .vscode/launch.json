@@ -6,22 +6,14 @@
       "request": "launch",
       "name": "Compile",
       "cargo": {
-        "args": [
-          "build",
-          "--release",
-          "--features",
-          "llvm"
-        ],
+        "args": ["build", "--release"],
         "filter": {
-          "name": "blazex",
-          "kind": "bin"
+          "kind": "bin",
+          "name": "blazex"
         }
       },
-      "args": [
-        "examples/main.bzx",
-        "-l"
-      ],
+      "args": ["examples/main.bzx", "-l"],
       "cwd": "${workspaceFolder}"
-    },
+    }
   ]
 }

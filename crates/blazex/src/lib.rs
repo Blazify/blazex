@@ -6,10 +6,10 @@ use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
 use bzxc_llvm_wrapper::{
     context::Context,
     execution_engine::JitFunction,
-    module::{Linkage, Module},
+    module::Module,
     passes::PassManager,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    AddressSpace, OptimizationLevel,
+    OptimizationLevel,
 };
 use bzxc_parser::parser::Parser;
 use bzxc_type_system::TypeChecker;
@@ -81,17 +81,6 @@ pub fn compile(
             ret_type: context.i128_type().into(),
         },
     };
-
-    if !jit_ {
-        module.add_function(
-            "printf",
-            context.i32_type().fn_type(
-                &[context.i8_type().ptr_type(AddressSpace::Generic).into()],
-                true,
-            ),
-            Some(Linkage::External),
-        );
-    }
 
     match Compiler::init(&context, &builder, &module, &fpm, func).compile_main() {
         Ok(_) => {

@@ -1,6 +1,6 @@
-var obj = {
-    x: "Hello World!"
-};
+extern variadic fun printf(string): void
 
-printf("%s\n", obj.x);
+var obj = { b: "RoMeAh" }
+obj.b = "HI"
+printf("%s\n", obj.b);
 0

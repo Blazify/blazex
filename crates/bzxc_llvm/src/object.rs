@@ -50,12 +50,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_struct_value();
         }
 
+        let struct_ptr = self
+            .builder
+            .build_alloca(struct_val.get_type(), "struct_alloca");
+        self.builder.build_store(struct_ptr, struct_val);
+
         for (i, name) in names.iter().enumerate() {
             self.objects
-                .insert((struct_val.get_type(), name.clone()), i as u32);
+                .insert((struct_ptr.get_type(), name.clone()), i as u32);
         }
 
-        Ok(struct_val.into())
+        Ok(struct_ptr.into())
     }
 
     pub(crate) fn obj_get(
@@ -65,25 +70,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let struct_val = self.compile_node(object)?;
-        if !struct_val.is_struct_value() {
+        if !struct_val.is_pointer_value() {
             return Err(self.error(pos, "Expected 'object'"));
         }
 
         let prop = self
             .objects
             .get(&(
-                struct_val.into_struct_value().get_type(),
+                struct_val.into_pointer_value().get_type(),
                 property.value.into_string(),
             ))
-            .ok_or(self.error(pos, "Property not found on object"))?
-            .clone();
+            .ok_or(self.error(pos, "Property not found on object"))?;
 
         let val = self
             .builder
-            .build_extract_value(struct_val.into_struct_value(), prop, "extract_obj")
+            .build_struct_gep(struct_val.into_pointer_value(), *prop, "extract_obj")
+            .ok()
             .ok_or(self.error(pos, "Property not found on object"))?;
 
-        Ok(val)
+        Ok(self.builder.build_load(val, "obj_prop"))
     }
 
     pub(crate) fn obj_edit(
@@ -97,40 +102,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let struct_val = self.compile_node(object)?;
 
-        if !struct_val.is_struct_value() {
+        if !struct_val.is_pointer_value() {
             return Err(self.error(pos, "Expected 'object'"));
         }
 
+        let struct_ptr = struct_val.into_pointer_value();
+
         let i = self
             .objects
-            .get(&(
-                struct_val.into_struct_value().get_type(),
-                property.value.into_string(),
-            ))
-            .ok_or(self.error(pos, "Property not found on object"))?
-            .clone();
-
-        let x = self
-            .builder
-            .build_extract_value(struct_val.into_struct_value(), i, "extract_obj")
+            .get(&(struct_ptr.get_type(), property.value.into_string()))
             .ok_or(self.error(pos, "Property not found on object"))?;
-
-        if x.get_type() != val.get_type() {
-            return Err(self.error(pos, "Expected the type it was initialized with."));
-        };
-
-        let struct_ptr = self
-            .builder
-            .build_alloca(struct_val.get_type(), "struct_alloca");
-        self.builder.build_store(struct_ptr, struct_val);
 
         let ptr = self
             .builder
-            .build_struct_gep(struct_ptr, i, "struct_gep")
+            .build_struct_gep(struct_ptr, *i, "struct_gep")
             .ok()
-            .unwrap();
+            .ok_or(self.error(pos, "Property not found on object"))?;
         self.builder.build_store(ptr, val);
 
-        Ok(struct_val)
+        Ok(struct_ptr.into())
     }
 }

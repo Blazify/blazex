@@ -28,7 +28,7 @@ use bzxc_llvm_wrapper::{
     context::Context,
     module::Module,
     passes::PassManager,
-    types::{AnyTypeEnum, BasicType, BasicTypeEnum, StructType},
+    types::{AnyTypeEnum, BasicType, BasicTypeEnum, PointerType},
     values::{BasicValueEnum, FunctionValue, PointerValue},
 };
 use bzxc_shared::{Error, Node, Position};
@@ -55,7 +55,7 @@ pub struct Compiler<'a, 'ctx> {
 
     variables: HashMap<String, (PointerValue<'ctx>, bool)>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
-    objects: HashMap<(StructType<'ctx>, String), u32>,
+    objects: HashMap<(PointerType<'ctx>, String), u32>,
     object_aligner: u32,
 }
 
