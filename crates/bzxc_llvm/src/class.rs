@@ -11,18 +11,14 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{Error, Node, Position, Token, Type};
 use bzxc_llvm_wrapper::values::BasicValueEnum;
+use bzxc_shared::{Error, Node, Position, Token};
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn class_decl(
-        &self,
-        constructor: Option<(Vec<Token>, Node)>,
-        properties: Vec<(Token, Node)>,
-        name: Token,
-        methods: Vec<(Token, Vec<Token>, Node, Type)>,
+        &mut self,
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         Err(self.error(pos, "Node can't be compiled"))

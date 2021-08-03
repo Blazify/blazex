@@ -12,9 +12,8 @@ use bzxc_llvm_wrapper::{
     OptimizationLevel,
 };
 use bzxc_parser::parser::Parser;
-use bzxc_type_system::TypeChecker;
+use bzxc_type_system::TypeSystem;
 use std::path::Path;
-use std::time::SystemTime;
 
 pub fn compile(
     file_name: String,
@@ -25,7 +24,6 @@ pub fn compile(
     llvm: bool,
     jit_: bool,
 ) -> i32 {
-    let time = SystemTime::now();
     if !is_quiet {
         println!("----BlazeX compiler----");
         println!("Version: 0.0.1");
@@ -56,7 +54,7 @@ pub fn compile(
         }
     }
 
-    let typed = TypeChecker::new(parsed.node.unwrap()).typed_node();
+    let typed = TypeSystem::new(parsed.node.unwrap()).typed_node();
 
     let context = Context::create();
     let module = context.create_module(name);
@@ -124,24 +122,6 @@ pub fn compile(
         }
         Err(err) => {
             err.prettify();
-        }
-    }
-
-    match time.elapsed() {
-        Ok(elapsed) => {
-            if !is_quiet {
-                println!(
-                    "Time taken for Compilation Process: {} milliseconds",
-                    elapsed.as_millis()
-                );
-            }
-            return 0;
-        }
-        Err(e) => {
-            eprintln!("Error: {:?}", e);
-            if !watch {
-                return 1;
-            }
         }
     }
     return 0;

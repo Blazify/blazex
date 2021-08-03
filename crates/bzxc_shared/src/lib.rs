@@ -350,10 +350,7 @@ pub enum Node {
         new_val: Box<Node>,
     },
     ClassDefNode {
-        name: Token,
-        constructor: Box<Option<(Vec<Token>, Node)>>,
-        properties: Vec<(Token, Node)>,
-        methods: Vec<(Token, Vec<Token>, Node, Type)>,
+        // !TODO
     },
     ClassInitNode {
         name: Token,
@@ -462,12 +459,7 @@ impl Node {
                 property: _,
                 new_val,
             } => (object.get_pos().0, new_val.get_pos().1),
-            Node::ClassDefNode {
-                name,
-                constructor: _,
-                properties: _,
-                methods,
-            } => (name.pos_start, methods.last().unwrap().2.get_pos().1),
+            Node::ClassDefNode {} => panic!(),
             Node::ClassInitNode {
                 name,
                 constructor_params,

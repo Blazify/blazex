@@ -1,8 +1,6 @@
-# BlazeX
+# [BlazeX](https://gitter.im/BlazifyOrg-blazex/community)
 
-[![Join the chat at https://gitter.im/BlazifyOrg-blazex/community](https://badges.gitter.im/BlazifyOrg-blazex/community.svg)](https://gitter.im/BlazifyOrg-blazex/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-A intermediate AOT compiled language which is kinda statically typed (wanna move to gradual typing) and object oriented
+A intermediate AOT compiled language which is kinda statically typed (plan: move to gradual typing) and object oriented
 
 ## Installing
 
@@ -12,7 +10,7 @@ In Ubuntu Or MacOS
 $ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install | bash
 ```
 
-In Windows
+In Windows (WSL for now)
 
 ```shell
 $ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install -o install
@@ -80,7 +78,7 @@ obj.prop = 10; @ editing object property value
 printf(obj.prop) @ 10
 ```
 
-- Classes
+- Classes (Not implemented)
 
 ```bzx
 class Main {
@@ -105,34 +103,35 @@ printf(ins.sum_to_a(5));
 ```
 
 ## Dependencies
+
 - inkwell (Safe LLVM Wrapper) (Forked in crates/bzxc_llvm_wrapper)
 - codespan-reporting (Errors)
 - mimalloc (Memory allocation)
 - structopt (Argument parsing)
 - notify (Look for file changes)
 
-
 ## Contributing
 
 - Fork the repository
 - Create a branch with the patch/feature you want
 - Make Changes to the code
-- Commit the code (Use the [Emoji Commit Style](https://gist.github.com/RoMeAh/29cb5008266ab14ace12ac865bfe0538)) and the message should NOT contain the word "release"
+- Commit the code (Use the [Emoji Commit Style](https://github.com/BlazifyOrg/pretty-commits)) and the message should **NOT** contain the word "release"
 - Finally push the code and make a pull request
 
 ## Project Structure
 
-|                     Crate                     |           Description            |
-| :-------------------------------------------: | :------------------------------: |
-|            [blazex](crates/blazex)            |            The binary            |
-|        [bzxc_lexer](crates/bzxc_lexer)        |       Lexer for Tokenizing       |
-|       [bzxc_parser](crates/bzxc_parser)       |       Parser for AST Tree        |
-| [bzxc_type_system](crates/bzxc_type_checker)  |           Type System            |
-|         [bzxc_llvm](crates/bzxc_llvm)         |  W.I.P. LLVM IR Code Generation  |
-| [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |         Fork of Inkwell          |
-|       [bzxc_shared](crates/bzxc_shared)       | Things Shared among other crates |
+|                     Crate                     |        Description         |
+| :-------------------------------------------: | :------------------------: |
+|            [blazex](crates/blazex)            |         The binary         |
+|        [bzxc_lexer](crates/bzxc_lexer)        |    Lexer for Tokenizing    |
+|       [bzxc_parser](crates/bzxc_parser)       |    Parser for AST Tree     |
+| [bzxc_type_system](crates/bzxc_type_checker)  |        Type System         |
+|         [bzxc_llvm](crates/bzxc_llvm)         |  LLVM IR Code Generation   |
+| [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |      Fork of Inkwell       |
+|       [bzxc_shared](crates/bzxc_shared)       | Things Shared among crates |
 
 ## Need Help with
+
 - Gradual type system (Hybrid Dynamic & Static Typing)
 - Implementing return-ing in functions
 - Class Definition and Initializing LLVM code generation
@@ -161,7 +160,7 @@ printf(ins.sum_to_a(5));
 - [x] Errors
   - [x] Lexer
   - [x] Parser
-  - [x] LLVM 
+  - [x] LLVM
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser

@@ -13,133 +13,18 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Token, Tokens, Type};
+use bzxc_shared::Error;
 
 impl Parser {
     /*
      * Parses a class definition
      */
     pub(crate) fn class_def(&mut self) -> ParseResult {
-        let mut res = ParseResult::new();
-        let mut methods: Vec<(Token, Vec<Token>, Node, Type)> = vec![];
-        let mut properties: Vec<(Token, Node)> = vec![];
-        let mut constructor: Option<(Vec<Token>, Node)> = None;
-
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("class".to_string()))
-        {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                self.current_token.pos_start.clone(),
-                self.current_token.pos_end.clone(),
-                "Expected 'class'",
-            ));
-        }
-
-        res.register_advancement();
-        self.advance();
-
-        if self.current_token.typee != Tokens::Identifier {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                self.current_token.pos_start.clone(),
-                self.current_token.pos_end.clone(),
-                "Expected identifier",
-            ));
-        }
-
-        let name = self.current_token.clone();
-
-        res.register_advancement();
-        self.advance();
-
-        if self.current_token.typee != Tokens::LeftCurlyBraces {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                self.current_token.pos_start.clone(),
-                self.current_token.pos_end.clone(),
-                "Expected '{'",
-            ));
-        }
-
-        res.register_advancement();
-        self.advance();
-
-        while self.current_token.typee != Tokens::RightCurlyBraces {
-            while self.current_token.typee == Tokens::Newline {
-                res.register_advancement();
-                self.advance();
-            }
-            if self.current_token.typee == Tokens::RightCurlyBraces {
-                break;
-            }
-            let stnts = res.register(self.expr());
-            if res.error.is_some() {
-                return res;
-            }
-            let a = stnts.unwrap();
-            match a.clone() {
-                Node::VarAssignNode { name, value, .. } => {
-                    properties.push((name.clone(), *value.clone()))
-                }
-                Node::FunDef {
-                    name,
-                    body_node,
-                    arg_tokens,
-                    return_type,
-                } => {
-                    if name.as_ref().is_none() {
-                        if constructor.is_some() {
-                            return res.failure(Error::new(
-                                "Invalid Syntax",
-                                self.current_token.pos_start.clone(),
-                                self.current_token.pos_end.clone(),
-                                "Constructor defined",
-                            ));
-                        }
-                        constructor = Some((
-                            arg_tokens.iter().map(|x| x.clone().0).collect(),
-                            *body_node.clone(),
-                        ));
-                    } else {
-                        methods.push((
-                            name.as_ref().unwrap().clone(),
-                            arg_tokens.iter().map(|x| x.clone().0).collect(),
-                            *body_node,
-                            return_type,
-                        ));
-                    }
-                }
-                _ => {
-                    return res.failure(Error::new(
-                        "Invalid Syntax",
-                        self.current_token.pos_start.clone(),
-                        self.current_token.pos_end.clone(),
-                        "Expected properties or methods",
-                    ))
-                }
-            }
-        }
-
-        if self.current_token.typee != Tokens::RightCurlyBraces {
-            return res.failure(Error::new(
-                "Invalid Syntax",
-                self.current_token.pos_start.clone(),
-                self.current_token.pos_end.clone(),
-                "Expected '}'",
-            ));
-        }
-
-        res.register_advancement();
-        self.advance();
-
-        res.success(Node::ClassDefNode {
-            name,
-            constructor: Box::new(constructor),
-            properties,
-            methods,
-        })
+        ParseResult::new().failure(Error::new(
+            "Syntax Error",
+            self.current_token.pos_start,
+            self.current_token.pos_end,
+            "Classes not yet implemented",
+        ))
     }
 }

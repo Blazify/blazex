@@ -1,6 +1,6 @@
 extern variadic fun printf(string): void
 
-var obj = { b: "RoMeAh" }
-obj.b = "HI"
-printf("%s\n", obj.b);
+var obj = { b: ["RoMeAh", "mmm"] }
+
+printf("%s %s\n", obj.b[0], obj.b[1]);
 0

@@ -31,16 +31,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .get_type();
 
         let size = element_nodes.len() as u32;
-        let arr = match ty {
-            BasicTypeEnum::ArrayType(x) => x.array_type(size),
-            BasicTypeEnum::FloatType(x) => x.array_type(size),
-            BasicTypeEnum::IntType(x) => x.array_type(size),
-            BasicTypeEnum::PointerType(x) => x.array_type(size),
-            BasicTypeEnum::StructType(x) => x.array_type(size),
-            BasicTypeEnum::VectorType(x) => x.array_type(size),
-        };
 
-        let array_alloca = self.builder.build_alloca(arr, "array_alloca");
+        let array_alloca = self.builder.build_alloca(
+            match ty {
+                BasicTypeEnum::ArrayType(x) => x.array_type(size),
+                BasicTypeEnum::FloatType(x) => x.array_type(size),
+                BasicTypeEnum::IntType(x) => x.array_type(size),
+                BasicTypeEnum::PointerType(x) => x.array_type(size),
+                BasicTypeEnum::StructType(x) => x.array_type(size),
+                BasicTypeEnum::VectorType(x) => x.array_type(size),
+            },
+            "array_alloca",
+        );
         let mut array = self
             .builder
             .build_load(array_alloca, "array_load")
@@ -48,10 +50,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for (i, k) in element_nodes.iter().enumerate() {
             let elem = self.compile_node(k.clone())?;
-
-            if elem.get_type() != ty {
-                return Err(self.error(pos, "Arrays cannot be of multiple types"));
-            }
 
             array = self
                 .builder

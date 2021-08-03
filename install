@@ -30,10 +30,10 @@ else
 fi
 
 curl --fail --location --progress-bar --output "$exe" "$bzs_uri"
-chmod +x "$exe"
+chmod u+x "$exe"
 
 if command -v blazex >/dev/null; then
-    echo "Run 'blazex path/to/file.bzx(s/e)' to get started"
+    echo "Run 'blazex path/to/file.bzx' to get started"
 else
     case $SHELL in
     	/bin/zsh) shell_profile=".zshrc" ;;
