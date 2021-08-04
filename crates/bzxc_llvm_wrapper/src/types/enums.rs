@@ -7,6 +7,7 @@ use crate::types::{
     ArrayType, FloatType, FunctionType, IntType, PointerType, StructType, VectorType, VoidType,
 };
 use crate::values::{BasicValue, BasicValueEnum, IntValue};
+use crate::AddressSpace;
 
 use std::convert::TryFrom;
 
@@ -120,9 +121,17 @@ impl<'ctx> AnyTypeEnum<'ctx> {
         }
     }
 
-    /// This will panic if type is a void or function type.
-    pub(crate) fn to_basic_type_enum(&self) -> BasicTypeEnum<'ctx> {
-        unsafe { BasicTypeEnum::new(self.as_type_ref()) }
+    pub fn to_basic_type_enum(self) -> BasicTypeEnum<'ctx> {
+        match self {
+            AnyTypeEnum::ArrayType(x) => x.into(),
+            AnyTypeEnum::FloatType(x) => x.into(),
+            AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).into(),
+            AnyTypeEnum::IntType(x) => x.into(),
+            AnyTypeEnum::PointerType(x) => x.into(),
+            AnyTypeEnum::StructType(x) => x.into(),
+            AnyTypeEnum::VectorType(x) => x.into(),
+            AnyTypeEnum::VoidType(_) => panic!(),
+        }
     }
 
     pub fn into_array_type(self) -> ArrayType<'ctx> {
@@ -219,6 +228,34 @@ impl<'ctx> AnyTypeEnum<'ctx> {
 
     pub fn is_void_type(self) -> bool {
         matches!(self, AnyTypeEnum::VoidType(_))
+    }
+
+    pub fn fn_type(self, args_types: &[BasicTypeEnum<'ctx>], var_args: bool) -> FunctionType<'ctx> {
+        match self {
+            AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::FunctionType(x) => x
+                .ptr_type(AddressSpace::Generic)
+                .fn_type(args_types, var_args),
+            AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
+            AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
+        }
+    }
+
+    pub fn array_type(self, size: u32) -> ArrayType<'ctx> {
+        match self {
+            AnyTypeEnum::ArrayType(x) => x.array_type(size),
+            AnyTypeEnum::FloatType(x) => x.array_type(size),
+            AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).array_type(size),
+            AnyTypeEnum::IntType(x) => x.array_type(size),
+            AnyTypeEnum::PointerType(x) => x.array_type(size),
+            AnyTypeEnum::StructType(x) => x.array_type(size),
+            AnyTypeEnum::VectorType(x) => x.array_type(size),
+            AnyTypeEnum::VoidType(_) => panic!(),
+        }
     }
 
     pub fn size_of(&self) -> Option<IntValue<'ctx>> {

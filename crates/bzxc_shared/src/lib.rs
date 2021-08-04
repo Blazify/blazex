@@ -12,12 +12,12 @@
 */
 #![allow(unused_must_use)]
 use bzxc_llvm_wrapper::context::Context;
-use bzxc_llvm_wrapper::types::{AnyTypeEnum, BasicTypeEnum, FunctionType};
+use bzxc_llvm_wrapper::types::{AnyTypeEnum, BasicTypeEnum};
 use bzxc_llvm_wrapper::AddressSpace;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
-use codespan_reporting::term::{self};
 
 /*
 * Enum of all the Token Types
@@ -476,38 +476,6 @@ impl Node {
     }
 }
 
-pub fn try_any_to_basic(k: AnyTypeEnum) -> BasicTypeEnum {
-    match k {
-        AnyTypeEnum::ArrayType(x) => x.into(),
-        AnyTypeEnum::FloatType(x) => x.into(),
-        AnyTypeEnum::FunctionType(x) => x.ptr_type(AddressSpace::Generic).into(),
-        AnyTypeEnum::IntType(x) => x.into(),
-        AnyTypeEnum::PointerType(x) => x.into(),
-        AnyTypeEnum::StructType(x) => x.into(),
-        AnyTypeEnum::VectorType(x) => x.into(),
-        AnyTypeEnum::VoidType(_) => panic!("void not convertible to basic type"),
-    }
-}
-
-pub fn any_fn_type<'ctx>(
-    ret_type: AnyTypeEnum<'ctx>,
-    args_types: &[BasicTypeEnum<'ctx>],
-    var_args: bool,
-) -> FunctionType<'ctx> {
-    match ret_type {
-        AnyTypeEnum::ArrayType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::FloatType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::FunctionType(x) => x
-            .ptr_type(AddressSpace::Generic)
-            .fn_type(args_types, var_args),
-        AnyTypeEnum::IntType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::PointerType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::StructType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::VectorType(x) => x.fn_type(args_types, var_args),
-        AnyTypeEnum::VoidType(x) => x.fn_type(args_types, var_args),
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
@@ -530,30 +498,19 @@ impl<'ctx> Type {
             Type::Char => AnyTypeEnum::IntType(ctx.i8_type()),
             Type::String => AnyTypeEnum::PointerType(ctx.i8_type().ptr_type(AddressSpace::Generic)),
             Type::Void => AnyTypeEnum::VoidType(ctx.void_type()),
-            Type::Function(params, ret) => any_fn_type(
-                ret.to_llvm_type(ctx),
-                &params
-                    .iter()
-                    .map(|x| try_any_to_basic(x.to_llvm_type(ctx)))
-                    .collect::<Vec<BasicTypeEnum>>()[..],
-                false,
-            )
-            .into(),
+            Type::Function(params, ret) => ret
+                .to_llvm_type(ctx)
+                .fn_type(
+                    &params
+                        .iter()
+                        .map(|x| x.to_llvm_type(ctx).to_basic_type_enum())
+                        .collect::<Vec<BasicTypeEnum>>()[..],
+                    false,
+                )
+                .into(),
             Type::Array(typee, size) => {
                 let size = size.value.into_int() as u32;
-                match typee.to_llvm_type(ctx) {
-                    AnyTypeEnum::ArrayType(x) => x.array_type(size),
-                    AnyTypeEnum::FloatType(x) => x.array_type(size),
-                    AnyTypeEnum::FunctionType(x) => {
-                        x.ptr_type(AddressSpace::Generic).array_type(size)
-                    }
-                    AnyTypeEnum::IntType(x) => x.array_type(size),
-                    AnyTypeEnum::PointerType(x) => x.array_type(size),
-                    AnyTypeEnum::StructType(x) => x.array_type(size),
-                    AnyTypeEnum::VectorType(x) => x.array_type(size),
-                    AnyTypeEnum::VoidType(_) => panic!(),
-                }
-                .into()
+                typee.to_llvm_type(ctx).array_type(size).into()
             }
             Type::Custom(_) => panic!("Custom types aren't supported yet!"),
         }

@@ -16,7 +16,7 @@ use bzxc_llvm_wrapper::{
     types::{AnyTypeEnum, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue},
 };
-use bzxc_shared::{any_fn_type, try_any_to_basic, Error, Node, Position, Token, Type};
+use bzxc_shared::{Error, Node, Position, Token, Type};
 use rand::{distributions::Alphanumeric, Rng};
 
 use crate::{Compiler, Function, Prototype};
@@ -34,7 +34,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .collect::<Vec<BasicTypeEnum>>();
         let args_types = args_types.as_slice();
 
-        let fn_type = any_fn_type(ret_type, args_types, false);
+        let fn_type = ret_type.fn_type(args_types, false);
         let fn_val = self.module.add_function(
             proto
                 .name
@@ -168,13 +168,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let args_types = &arg_tokens
             .iter()
-            .map(|x| try_any_to_basic(x.to_llvm_type(&self.context)))
+            .map(|x| x.to_llvm_type(&self.context).to_basic_type_enum())
             .collect::<Vec<BasicTypeEnum>>()[..];
         Ok(self
             .module
             .add_function(
                 &name.value.into_string(),
-                any_fn_type(return_type.to_llvm_type(self.context), args_types, var_args),
+                return_type
+                    .to_llvm_type(&self.context)
+                    .fn_type(args_types, var_args),
                 Some(Linkage::External),
             )
             .as_global_value()
@@ -209,7 +211,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .map(|x| {
                         (
                             x.0.value.into_string(),
-                            try_any_to_basic(x.1.to_llvm_type(&self.context)),
+                            x.1.to_llvm_type(&self.context).to_basic_type_enum(),
                         )
                     })
                     .collect(),

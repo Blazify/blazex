@@ -1,6 +1,4 @@
 extern variadic fun printf(string): void
 
-var obj = { b: ["RoMeAh", "mmm"] }
-
-printf("%s %s\n", obj.b[0], obj.b[1]);
+printf("%i\n", 'a' == 'a');
 0

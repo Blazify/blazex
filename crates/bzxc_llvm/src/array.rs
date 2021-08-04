@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_llvm_wrapper::{types::BasicTypeEnum, values::BasicValueEnum};
+use bzxc_llvm_wrapper::{types::BasicType, values::BasicValueEnum};
 use bzxc_shared::{Error, Node, Position};
 
 use crate::Compiler;
@@ -32,17 +32,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let size = element_nodes.len() as u32;
 
-        let array_alloca = self.builder.build_alloca(
-            match ty {
-                BasicTypeEnum::ArrayType(x) => x.array_type(size),
-                BasicTypeEnum::FloatType(x) => x.array_type(size),
-                BasicTypeEnum::IntType(x) => x.array_type(size),
-                BasicTypeEnum::PointerType(x) => x.array_type(size),
-                BasicTypeEnum::StructType(x) => x.array_type(size),
-                BasicTypeEnum::VectorType(x) => x.array_type(size),
-            },
-            "array_alloca",
-        );
+        let array_alloca = self
+            .builder
+            .build_alloca(ty.array_type(size), "array_alloca");
         let mut array = self
             .builder
             .build_load(array_alloca, "array_load")
