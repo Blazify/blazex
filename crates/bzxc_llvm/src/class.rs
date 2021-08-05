@@ -50,8 +50,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             body: *constructor.1,
         };
 
-        let compiled_constr = self.compile_fn(constr)?;
         self.variables.insert(name.value.into_string(), obj);
+
+        let compiled_constr = self.compile_fn(constr)?;
         Ok(compiled_constr.as_global_value().as_pointer_value().into())
     }
 
@@ -67,7 +68,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let constructor = self.get_function(&(name_str + &"Init")).unwrap().clone();
             let mut compiled_args: Vec<BasicValueEnum> =
                 Vec::with_capacity(constructor_params.len() + 1);
-            compiled_args.push((*klass).into());
+            let klas_ = self.builder.build_load(*klass, "base_class_obj");
+            let alloca = self.create_entry_block_alloca("class_init", klas_.get_type());
+            self.builder.build_store(alloca, klas_);
+            compiled_args.push(alloca.into());
 
             for arg in constructor_params {
                 compiled_args.push(self.compile_node(arg)?);

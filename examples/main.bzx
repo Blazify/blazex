@@ -14,4 +14,7 @@ printf("%s\n", a.a);
 a.a = "hello there";
 printf("%s\n", a.a)
 
+var b = new A();
+printf("%s\n", b.a);
+
 0
