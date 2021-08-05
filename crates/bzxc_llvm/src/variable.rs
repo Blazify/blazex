@@ -21,7 +21,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         &mut self,
         name: Token,
         value: Node,
-        reassignable: bool,
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let var_name = name.value.into_string();
         let initial_val = self.compile_node(value)?;
@@ -29,7 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         self.builder.build_store(alloca, initial_val);
 
-        self.variables.insert(var_name, (alloca, reassignable));
+        self.variables.insert(var_name, alloca);
         Ok(initial_val)
     }
 
@@ -41,7 +40,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match self.variables.get(token.value.into_string().as_str()) {
             Some(var) => Ok(self
                 .builder
-                .build_load(var.0, token.value.into_string().as_str())),
+                .build_load(*var, token.value.into_string().as_str())),
             None => {
                 let func = self.get_function(token.value.into_string().as_str());
                 match func {
@@ -67,18 +66,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .get(name.as_str())
             .ok_or(self.error(pos, "Variable not found to be reassigned"))?;
 
-        if !value.1 {
-            return Err(self.error(pos, "Variable isn't mutable"));
-        }
-
-        let var = &value.0;
         match typee.value.clone() {
             Tokens::Equals => {
-                self.builder.build_store(*var, val);
+                self.builder.build_store(*value, val);
                 Ok(val)
             }
             Tokens::PlusEquals => {
-                let curr_var = self.builder.build_load(*var, &name);
+                let curr_var = self.builder.build_load(*value, &name);
 
                 let new_var: BasicValueEnum = if curr_var.is_int_value() && val.is_int_value() {
                     self.builder
@@ -96,11 +90,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     return Err(self.error(pos, "Unknown compound assignment"));
                 };
 
-                self.builder.build_store(*var, new_var);
+                self.builder.build_store(*value, new_var);
                 Ok(new_var.into())
             }
             Tokens::MinusEquals => {
-                let curr_var = self.builder.build_load(*var, &name);
+                let curr_var = self.builder.build_load(*value, &name);
 
                 let new_var: BasicValueEnum = if curr_var.is_int_value() && val.is_int_value() {
                     self.builder
@@ -118,11 +112,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     return Err(self.error(pos, "Unknown compound assignment"));
                 };
 
-                self.builder.build_store(*var, new_var);
+                self.builder.build_store(*value, new_var);
                 Ok(new_var)
             }
             Tokens::MultiplyEquals => {
-                let curr_var = self.builder.build_load(*var, &name);
+                let curr_var = self.builder.build_load(*value, &name);
 
                 let new_var: BasicValueEnum = if curr_var.is_int_value() && val.is_int_value() {
                     self.builder
@@ -140,11 +134,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     return Err(self.error(pos, "Unknown compound assignment"));
                 };
 
-                self.builder.build_store(*var, new_var);
+                self.builder.build_store(*value, new_var);
                 Ok(new_var)
             }
             Tokens::DivideEquals => {
-                let curr_var = self.builder.build_load(*var, &name);
+                let curr_var = self.builder.build_load(*value, &name);
 
                 let new_var: BasicValueEnum = if curr_var.is_int_value() && val.is_int_value() {
                     self.builder
@@ -166,7 +160,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     return Err(self.error(pos, "Unknown compound assignment"));
                 };
 
-                self.builder.build_store(*var, new_var);
+                self.builder.build_store(*value, new_var);
                 Ok(new_var)
             }
             _ => Err(self.error(pos, "Unknown compound assignment")),

@@ -53,7 +53,7 @@ pub struct Compiler<'a, 'ctx> {
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
     pub function: Function<'ctx>,
 
-    variables: HashMap<String, (PointerValue<'ctx>, bool)>,
+    variables: HashMap<String, PointerValue<'ctx>>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
     objects: HashMap<(PointerType<'ctx>, String), u32>,
     object_aligner: u32,
@@ -112,11 +112,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::VarReassignNode { name, typee, value } => {
                 self.var_reassign(name, *value, typee, node.get_pos())
             }
-            Node::VarAssignNode {
-                name,
-                value,
-                reassignable,
-            } => self.var_assign(name, *value, reassignable),
+            Node::VarAssignNode { name, value, .. } => self.var_assign(name, *value),
             Node::VarAccessNode { token } => self.var_access(token, node.get_pos()),
             Node::UnaryNode {
                 node: child,

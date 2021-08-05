@@ -82,8 +82,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.build_store(alloca, arg);
 
-            self.variables
-                .insert(proto.args[i].0.clone(), (alloca, false));
+            self.variables.insert(proto.args[i].0.clone(), alloca);
         }
 
         let body = self.compile_node(func.body.clone())?;

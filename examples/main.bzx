@@ -1,7 +1,17 @@
+extern variadic fun printf(string): void
+
 class A {
-    var a = 0;
+    var a = "hi there";
     fun(): void {
-        printf("hm")
+        printf("%s\n", soul.a)
+        soul
     }
 }
+
+var a = new A()
+printf("%s\n", a.a);
+
+a.a = "hello there";
+printf("%s\n", a.a)
+
 0
