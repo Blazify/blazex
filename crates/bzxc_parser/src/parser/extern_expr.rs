@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{DynType, Error, Node, Tokens, Type};
+use bzxc_shared::{Error, Node, Tokens, Type};
 
 use crate::parse_result::ParseResult;
 
@@ -22,10 +22,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.pos_start.clone();
 
-        if !self
-            .current_token
-            .matches(Tokens::Keyword, DynType::String("extern".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("extern") {
             return res.failure(Error::new(
                 "Syntax Error",
                 pos_start,
@@ -37,10 +34,7 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        let var_args = if self
-            .current_token
-            .matches(Tokens::Keyword, DynType::String("variadic".to_string()))
-        {
+        let var_args = if self.current_token.value == Tokens::Keyword("variadic") {
             self.advance();
             res.register_advancement();
             true
@@ -48,10 +42,7 @@ impl Parser {
             false
         };
 
-        if !self
-            .current_token
-            .matches(Tokens::Keyword, DynType::String("fun".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("fun") {
             return res.failure(Error::new(
                 "Syntax Error",
                 self.current_token.pos_start.clone(),
@@ -63,7 +54,8 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        if self.current_token.typee != Tokens::Identifier {
+        if let Tokens::Identifier(_) = self.current_token.value {
+        } else {
             return res.failure(Error::new(
                 "Syntax Error",
                 self.current_token.pos_start.clone(),
@@ -76,7 +68,7 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        if self.current_token.typee != Tokens::LeftParenthesis {
+        if self.current_token.value != Tokens::LeftParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -96,7 +88,7 @@ impl Parser {
                 Err(e) => return res.failure(e),
             }
 
-            while self.current_token.typee == Tokens::Comma {
+            while self.current_token.value == Tokens::Comma {
                 res.register_advancement();
                 self.advance();
 
@@ -116,7 +108,7 @@ impl Parser {
                 }
             }
 
-            if self.current_token.typee != Tokens::RightParenthesis {
+            if self.current_token.value != Tokens::RightParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -124,7 +116,7 @@ impl Parser {
                     "Expected ')' or ','",
                 ));
             }
-        } else if self.current_token.typee != Tokens::RightParenthesis {
+        } else if self.current_token.value != Tokens::RightParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -136,7 +128,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee != Tokens::Colon {
+        if self.current_token.value != Tokens::Colon {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

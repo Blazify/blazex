@@ -27,7 +27,7 @@ impl Parser {
             return res;
         }
 
-        while [Tokens::Plus, Tokens::Minus].contains(&self.current_token.typee) {
+        while [Tokens::Plus, Tokens::Minus].contains(&self.current_token.value) {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();

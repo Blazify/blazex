@@ -1,4 +1,7 @@
-extern variadic fun printf(string): void
-
-printf("%i\n", 'a' == 'a');
+class A {
+    var a = 0;
+    fun(): void {
+        printf("hm")
+    }
+}
 0

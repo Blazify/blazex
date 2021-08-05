@@ -24,11 +24,11 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 */
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Tokens {
-    Int,
-    Float,
-    String,
-    Boolean,
-    Char,
+    Int(i128),
+    Float(f64),
+    String(&'static str),
+    Boolean(bool),
+    Char(char),
     Colon,
     Comma,
     Dot,
@@ -43,8 +43,8 @@ pub enum Tokens {
     LeftSquareBraces,
     RightSquareBraces,
     Power,
-    Keyword,
-    Identifier,
+    Keyword(&'static str),
+    Identifier(&'static str),
     Equals,
     PlusEquals,
     MinusEquals,
@@ -65,25 +65,13 @@ pub enum Tokens {
 pub fn to_static_str(string: String) -> &'static str {
     Box::leak(string.to_owned().into_boxed_str())
 }
-/*
-* Enum of all the Token Values
-*/
-#[derive(Debug, PartialEq, Clone)]
-pub enum DynType {
-    Int(i128),
-    Float(f64),
-    String(String),
-    Char(char),
-    Boolean(bool),
-    None,
-}
 
-impl DynType {
+impl Tokens {
     /*
      * Convert a Token value to int if possible
      */
     pub fn into_int(&self) -> i128 {
-        if let DynType::Int(i) = self {
+        if let Tokens::Int(i) = self {
             *i
         } else {
             panic!()
@@ -94,9 +82,9 @@ impl DynType {
      * Convert a Token value to float if possible
      */
     pub fn into_float(&self) -> f64 {
-        return if let DynType::Float(i) = self {
+        return if let Tokens::Float(i) = self {
             *i
-        } else if let DynType::Int(i) = self {
+        } else if let Tokens::Int(i) = self {
             *i as f64
         } else {
             panic!()
@@ -107,7 +95,7 @@ impl DynType {
      * Convert a Token value to string if possible
      */
     pub fn into_string(&self) -> String {
-        if let DynType::String(i) = self {
+        if let Tokens::String(i) | Tokens::Identifier(i) | Tokens::Keyword(i) = self {
             i.to_string()
         } else {
             panic!()
@@ -118,7 +106,7 @@ impl DynType {
      * Convert a Token value to charecter if possible
      */
     pub fn into_char(&self) -> char {
-        if let DynType::Char(i) = self {
+        if let Tokens::Char(i) = self {
             *i
         } else {
             panic!()
@@ -129,7 +117,7 @@ impl DynType {
      * Convert a Token value to boolean if possible
      */
     pub fn into_boolean(&self) -> bool {
-        if let DynType::Boolean(i) = self {
+        if let Tokens::Boolean(i) = self {
             *i
         } else {
             panic!()
@@ -140,7 +128,7 @@ impl DynType {
 /*
 * Custom Error struct for capturing errors
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Error {
     pub name: &'static str,
     pub pos_start: Position,
@@ -231,10 +219,9 @@ impl Position {
 /*
 * Token struct for tokens in a program
 */
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Token {
-    pub typee: Tokens,
-    pub value: DynType,
+    pub value: Tokens,
     pub pos_start: Position,
     pub pos_end: Position,
 }
@@ -243,20 +230,12 @@ impl Token {
     /*
      * Creates a new token
      */
-    pub fn new(typee: Tokens, pos_start: Position, pos_end: Position, value: DynType) -> Token {
+    pub fn new(value: Tokens, pos_start: Position, pos_end: Position) -> Token {
         Token {
-            typee,
             value,
             pos_start,
             pos_end,
         }
-    }
-
-    /*
-     * Matches a token based upon it's type and value
-     */
-    pub fn matches(&self, typee: Tokens, value: DynType) -> bool {
-        return self.typee == typee && self.value == value;
     }
 }
 
@@ -350,7 +329,10 @@ pub enum Node {
         new_val: Box<Node>,
     },
     ClassDefNode {
-        // !TODO
+        methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)>,
+        properties: Vec<(Token, Node)>,
+        constructor: (Vec<(Token, Type)>, Box<Node>),
+        name: Token,
     },
     ClassInitNode {
         name: Token,
@@ -459,7 +441,7 @@ impl Node {
                 property: _,
                 new_val,
             } => (object.get_pos().0, new_val.get_pos().1),
-            Node::ClassDefNode {} => panic!(),
+            Node::ClassDefNode { name, .. } => (name.pos_start, name.pos_end),
             Node::ClassInitNode {
                 name,
                 constructor_params,

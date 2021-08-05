@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -21,11 +21,7 @@ impl Parser {
      */
     pub(crate) fn if_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("if".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("if") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -45,11 +41,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::LeftCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -68,11 +60,7 @@ impl Parser {
 
         cases.push((first_condition.unwrap(), first_expr.unwrap()));
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::RightCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::RightCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -83,19 +71,11 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        while self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("else".to_string()))
-        {
+        while self.current_token.value == Tokens::Keyword("else") {
             res.register_advancement();
             self.advance();
 
-            if self
-                .current_token
-                .clone()
-                .matches(Tokens::Keyword, DynType::String("if".to_string()))
-            {
+            if self.current_token.value == Tokens::Keyword("if") {
                 res.register_advancement();
                 self.advance();
 
@@ -104,11 +84,7 @@ impl Parser {
                     return res;
                 }
 
-                if !self
-                    .current_token
-                    .clone()
-                    .matches(Tokens::LeftCurlyBraces, DynType::None)
-                {
+                if self.current_token.value != Tokens::LeftCurlyBraces {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
@@ -127,11 +103,7 @@ impl Parser {
 
                 cases.push((condition.unwrap(), else_if.unwrap()));
 
-                if !self
-                    .current_token
-                    .clone()
-                    .matches(Tokens::RightCurlyBraces, DynType::None)
-                {
+                if self.current_token.value != Tokens::RightCurlyBraces {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
@@ -142,11 +114,7 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
             } else {
-                if !self
-                    .current_token
-                    .clone()
-                    .matches(Tokens::LeftCurlyBraces, DynType::None)
-                {
+                if self.current_token.value != Tokens::LeftCurlyBraces {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
@@ -163,11 +131,7 @@ impl Parser {
                 }
 
                 else_case = Some(else_.unwrap());
-                if !self
-                    .current_token
-                    .clone()
-                    .matches(Tokens::RightCurlyBraces, DynType::None)
-                {
+                if self.current_token.value != Tokens::RightCurlyBraces {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),

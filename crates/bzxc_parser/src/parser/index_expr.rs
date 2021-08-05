@@ -27,7 +27,7 @@ impl Parser {
             return res;
         }
 
-        if self.current_token.typee == Tokens::LeftSquareBraces {
+        if self.current_token.value == Tokens::LeftSquareBraces {
             res.register_advancement();
             self.advance();
 
@@ -36,7 +36,7 @@ impl Parser {
                 return res;
             }
 
-            if self.current_token.typee != Tokens::RightSquareBraces {
+            if self.current_token.value != Tokens::RightSquareBraces {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     pos_start,
@@ -52,11 +52,11 @@ impl Parser {
                 array: Box::new(atom.unwrap()),
                 index: Box::new(index.unwrap()),
             });
-        } else if self.current_token.typee == Tokens::LeftParenthesis {
+        } else if self.current_token.value == Tokens::LeftParenthesis {
             let mut arg_nodes = vec![];
             res.register_advancement();
             self.advance();
-            if self.current_token.typee == Tokens::RightParenthesis {
+            if self.current_token.value == Tokens::RightParenthesis {
                 res.register_advancement();
                 self.advance();
             } else {
@@ -71,7 +71,7 @@ impl Parser {
                 }
                 arg_nodes.push(expr.unwrap());
 
-                while self.current_token.typee == Tokens::Comma {
+                while self.current_token.value == Tokens::Comma {
                     res.register_advancement();
                     self.advance();
 
@@ -87,7 +87,7 @@ impl Parser {
                     arg_nodes.push(expr.unwrap());
                 }
 
-                if self.current_token.typee != Tokens::RightParenthesis {
+                if self.current_token.value != Tokens::RightParenthesis {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
@@ -102,11 +102,12 @@ impl Parser {
                 node_to_call: Box::new(atom.clone().unwrap()),
                 args: arg_nodes,
             });
-        } else if self.current_token.typee == Tokens::Dot {
+        } else if self.current_token.value == Tokens::Dot {
             self.advance();
             res.register_advancement();
 
-            if self.current_token.typee != Tokens::Identifier {
+            if let Tokens::Identifier(_) = self.current_token.value {
+            } else {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -120,7 +121,7 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
-            if self.current_token.typee == Tokens::Equals {
+            if self.current_token.value == Tokens::Equals {
                 res.register_advancement();
                 self.advance();
 
@@ -141,11 +142,12 @@ impl Parser {
                 property: id,
             };
 
-            while self.current_token.typee == Tokens::Dot {
+            while self.current_token.value == Tokens::Dot {
                 self.advance();
                 res.register_advancement();
 
-                if self.current_token.typee != Tokens::Identifier {
+                if let Tokens::Identifier(_) = self.current_token.value {
+                } else {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),
@@ -159,7 +161,7 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
-                if self.current_token.typee == Tokens::Equals {
+                if self.current_token.value == Tokens::Equals {
                     res.register_advancement();
                     self.advance();
 

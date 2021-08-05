@@ -167,7 +167,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 property,
                 new_val,
             } => self.obj_edit(*object, property, *new_val, node.get_pos()),
-            Node::ClassDefNode {} => self.class_decl(node.get_pos()),
+            Node::ClassDefNode {
+                methods,
+                properties,
+                constructor,
+                name,
+            } => self.class_decl(name, constructor, properties, methods, node.get_pos()),
             Node::ClassInitNode {
                 name,
                 constructor_params,

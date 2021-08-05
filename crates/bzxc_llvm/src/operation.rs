@@ -11,8 +11,8 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{DynType, Error, Node, Position, Token, Tokens};
 use bzxc_llvm_wrapper::{values::BasicValueEnum, FloatPredicate, IntPredicate};
+use bzxc_shared::{Error, Node, Position, Token, Tokens};
 
 use crate::Compiler;
 
@@ -27,7 +27,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let left_val = self.compile_node(left)?;
         let right_val = self.compile_node(right)?;
 
-        match op_token.typee {
+        match op_token.value {
             Tokens::DoubleEquals => {
                 return Ok(self
                     .context
@@ -49,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let lhs = left_val.into_int_value();
             let rhs = right_val.into_int_value();
 
-            let ret = match op_token.typee {
+            let ret = match op_token.value {
                 Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
                 Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
                 Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
@@ -71,9 +71,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
                 }
                 _ => {
-                    if op_token.matches(Tokens::Keyword, DynType::String("and".to_string())) {
+                    if op_token.value == Tokens::Keyword("and") {
                         lhs.const_and(rhs)
-                    } else if op_token.matches(Tokens::Keyword, DynType::String("or".to_string())) {
+                    } else if op_token.value == Tokens::Keyword("or") {
                         lhs.const_or(rhs)
                     } else {
                         return Err(self.error(pos, "Unknown operation"));
@@ -87,7 +87,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let lhs = left_val.into_float_value();
             let rhs = right_val.into_float_value();
 
-            let ret = match op_token.typee {
+            let ret = match op_token.value {
                 Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd"),
                 Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub"),
                 Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul"),
@@ -154,7 +154,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         if val.is_float_value() {
             let built = val.into_float_value();
-            let ret = match op_token.typee {
+            let ret = match op_token.value {
                 Tokens::Plus => built,
                 Tokens::Minus => built.const_neg(),
                 _ => return Err(self.error(pos, "Unknown unary operation")),
@@ -164,7 +164,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         if val.is_int_value() {
             let built = val.into_int_value();
-            let ret = match op_token.typee {
+            let ret = match op_token.value {
                 Tokens::Plus => built,
                 Tokens::Minus => built.const_neg(),
                 _ => return Err(self.error(pos, "Unknown unary operation")),

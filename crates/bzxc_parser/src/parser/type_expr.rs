@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{to_static_str, DynType, Error, Node, Tokens, Type};
+use bzxc_shared::{Error, Node, Tokens, Type};
 
 use crate::parse_result::ParseResult;
 
@@ -31,11 +31,11 @@ impl Parser {
         }
 
         match &self.current_token.value.clone() {
-            DynType::String(typee) => {
+            Tokens::Keyword(typee) => {
                 res.register_advancement();
                 self.advance();
 
-                match typee.as_str() {
+                match typee.clone() {
                     "int" => Ok(Type::Int),
                     "float" => Ok(Type::Float),
                     "char" => Ok(Type::Char),
@@ -43,7 +43,7 @@ impl Parser {
                     "string" => Ok(Type::String),
                     "void" => Ok(Type::Void),
                     "fun" => {
-                        if self.current_token.typee != Tokens::LeftParenthesis {
+                        if self.current_token.value != Tokens::LeftParenthesis {
                             return Err(Error::new(
                                 "Syntax Error",
                                 pos_start,
@@ -56,11 +56,11 @@ impl Parser {
                         res.register_advancement();
 
                         let mut arg_types = vec![];
-                        if self.current_token.typee == Tokens::RightParenthesis {
+                        if self.current_token.value == Tokens::RightParenthesis {
                             self.advance();
                             res.register_advancement();
 
-                            if self.current_token.typee != Tokens::Colon {
+                            if self.current_token.value != Tokens::Colon {
                                 return Err(Error::new(
                                     "Invalid Syntax",
                                     self.current_token.pos_start.clone(),
@@ -76,18 +76,18 @@ impl Parser {
                                 Ok(typ) => Ok(Type::Function(vec![], Box::new(typ))),
                                 Err(e) => Err(e),
                             }
-                        } else if self.current_token.typee == Tokens::Keyword {
+                        } else if let Tokens::Keyword(_) = self.current_token.value {
                             let typee = self.type_expr(res);
                             match typee {
                                 Ok(typ) => arg_types.push(typ),
                                 Err(e) => return Err(e),
                             }
 
-                            while self.current_token.typee == Tokens::Comma {
+                            while self.current_token.value == Tokens::Comma {
                                 res.register_advancement();
                                 self.advance();
 
-                                if self.current_token.typee == Tokens::Keyword {
+                                if let Tokens::Keyword(_) = self.current_token.value {
                                     let typee = self.type_expr(res);
                                     match typee {
                                         Ok(typ) => arg_types.push(typ),
@@ -103,7 +103,7 @@ impl Parser {
                                 }
                             }
 
-                            if self.current_token.typee != Tokens::RightParenthesis {
+                            if self.current_token.value != Tokens::RightParenthesis {
                                 return Err(Error::new(
                                     "Invalid Syntax",
                                     self.current_token.pos_start.clone(),
@@ -115,7 +115,7 @@ impl Parser {
                             self.advance();
                             res.register_advancement();
 
-                            if self.current_token.typee != Tokens::Colon {
+                            if self.current_token.value != Tokens::Colon {
                                 return Err(Error::new(
                                     "Invalid Syntax",
                                     self.current_token.pos_start.clone(),
@@ -140,17 +140,17 @@ impl Parser {
                             ))
                         }
                     }
-                    _ => Ok(Type::Custom(to_static_str(typee.clone()))),
+                    _ => Ok(Type::Custom(typee)),
                 }
             }
-            _ => match self.current_token.typee {
+            _ => match self.current_token.value {
                 Tokens::LeftSquareBraces => {
                     self.advance();
                     res.register_advancement();
 
                     let typee = self.type_expr(res)?;
 
-                    if self.current_token.typee != Tokens::Comma {
+                    if self.current_token.value != Tokens::Comma {
                         return Err(Error::new(
                             "Syntax Error",
                             pos_start,
@@ -167,7 +167,7 @@ impl Parser {
                         return Err(error.clone());
                     }
 
-                    if self.current_token.typee != Tokens::RightSquareBraces {
+                    if self.current_token.value != Tokens::RightSquareBraces {
                         return Err(Error::new(
                             "Syntax Error",
                             pos_start,

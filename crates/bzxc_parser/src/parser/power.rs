@@ -26,7 +26,7 @@ impl Parser {
             return res;
         }
 
-        while self.current_token.typee == Tokens::Power {
+        while self.current_token.value == Tokens::Power {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();

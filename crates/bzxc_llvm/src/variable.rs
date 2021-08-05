@@ -72,7 +72,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         let var = &value.0;
-        match typee.typee.clone() {
+        match typee.value.clone() {
             Tokens::Equals => {
                 self.builder.build_store(*var, val);
                 Ok(val)

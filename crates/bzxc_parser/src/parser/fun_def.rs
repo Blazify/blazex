@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Token, Tokens, Type};
+use bzxc_shared::{Error, Node, Token, Tokens, Type};
 
 impl Parser {
     /*
@@ -21,11 +21,7 @@ impl Parser {
      */
     pub(crate) fn fun_def(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("fun".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("fun") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -38,13 +34,13 @@ impl Parser {
         self.advance();
 
         let mut fun_name: Option<Token> = None;
-        if self.current_token.typee == Tokens::Identifier {
+        if let Tokens::Identifier(_) = self.current_token.value {
             fun_name = Some(self.current_token.clone());
 
             res.register_advancement();
             self.advance();
 
-            if self.current_token.typee != Tokens::LeftParenthesis {
+            if self.current_token.value != Tokens::LeftParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -52,7 +48,7 @@ impl Parser {
                     "Expected '('",
                 ));
             }
-        } else if self.current_token.typee != Tokens::LeftParenthesis {
+        } else if self.current_token.value != Tokens::LeftParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -69,7 +65,7 @@ impl Parser {
             let name = self.current_token.clone();
             res.register_advancement();
             self.advance();
-            if self.current_token.typee != Tokens::Colon {
+            if self.current_token.value != Tokens::Colon {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -86,7 +82,7 @@ impl Parser {
                 Err(e) => return res.failure(e),
             }
 
-            while self.current_token.typee == Tokens::Comma {
+            while self.current_token.value == Tokens::Comma {
                 res.register_advancement();
                 self.advance();
 
@@ -94,7 +90,7 @@ impl Parser {
                     let new_arg_token = self.current_token.clone();
                     res.register_advancement();
                     self.advance();
-                    if self.current_token.typee != Tokens::Colon {
+                    if self.current_token.value != Tokens::Colon {
                         return res.failure(Error::new(
                             "Invalid Syntax",
                             self.current_token.pos_start.clone(),
@@ -120,7 +116,7 @@ impl Parser {
                 }
             }
 
-            if self.current_token.typee != Tokens::RightParenthesis {
+            if self.current_token.value != Tokens::RightParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -128,7 +124,7 @@ impl Parser {
                     "Expected ')' or ','",
                 ));
             }
-        } else if self.current_token.typee != Tokens::RightParenthesis {
+        } else if self.current_token.value != Tokens::RightParenthesis {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -139,7 +135,7 @@ impl Parser {
 
         res.register_advancement();
         self.advance();
-        if self.current_token.typee != Tokens::Colon {
+        if self.current_token.value != Tokens::Colon {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -156,11 +152,7 @@ impl Parser {
             Err(e) => return res.failure(e),
         };
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::LeftCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -176,11 +168,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::RightCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::RightCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

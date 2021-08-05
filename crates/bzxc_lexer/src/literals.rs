@@ -1,4 +1,4 @@
-use bzxc_shared::{DynType, Error, Token, Tokens};
+use bzxc_shared::{to_static_str, Error, Token, Tokens};
 
 use crate::Lexer;
 
@@ -26,17 +26,15 @@ impl Lexer {
 
         return if dot_count > 0 {
             Token::new(
-                Tokens::Float,
+                Tokens::Float(str_num.parse::<f64>().unwrap()),
                 start,
                 self.position.clone(),
-                DynType::Float(str_num.parse::<f64>().unwrap()),
             )
         } else {
             Token::new(
-                Tokens::Int,
+                Tokens::Int(str_num.parse::<i128>().unwrap()),
                 start,
                 self.position.clone(),
-                DynType::Int(str_num.parse::<i128>().unwrap()),
             )
         };
     }
@@ -79,10 +77,9 @@ impl Lexer {
         self.advance();
 
         Token::new(
-            Tokens::String,
+            Tokens::String(to_static_str(str_raw)),
             start,
             self.position.clone(),
-            DynType::String(str_raw),
         )
     }
 
@@ -108,10 +105,9 @@ impl Lexer {
         self.advance();
 
         Ok(Token::new(
-            Tokens::Char,
+            Tokens::Char(new_char.unwrap()),
             start,
             self.position.clone(),
-            DynType::Char(new_char.unwrap()),
         ))
     }
 }

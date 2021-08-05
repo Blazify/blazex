@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -23,11 +23,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let mut constructor_params: Vec<Node> = vec![];
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("new".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("new") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -39,7 +35,8 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee != Tokens::Identifier {
+        if let Tokens::Identifier(_) = self.current_token.value {
+        } else {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -53,11 +50,11 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee == Tokens::LeftParenthesis {
+        if self.current_token.value == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
 
-            if self.current_token.typee == Tokens::RightParenthesis {
+            if self.current_token.value == Tokens::RightParenthesis {
                 res.register_advancement();
                 self.advance();
             } else {
@@ -72,7 +69,7 @@ impl Parser {
                 }
                 constructor_params.push(expr.unwrap());
 
-                while self.current_token.typee == Tokens::Comma {
+                while self.current_token.value == Tokens::Comma {
                     res.register_advancement();
                     self.advance();
 
@@ -88,7 +85,7 @@ impl Parser {
                     constructor_params.push(expr.unwrap());
                 }
 
-                if self.current_token.typee != Tokens::RightParenthesis {
+                if self.current_token.value != Tokens::RightParenthesis {
                     return res.failure(Error::new(
                         "Invalid Syntax",
                         self.current_token.pos_start.clone(),

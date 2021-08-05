@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -23,24 +23,15 @@ impl Parser {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
 
-        if self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String(String::from("val")))
-            || self
-                .current_token
-                .clone()
-                .matches(Tokens::Keyword, DynType::String(String::from("var")))
+        if self.current_token.value == Tokens::Keyword("val")
+            || self.current_token.value == Tokens::Keyword("var")
         {
-            let var_type: String;
-            match self.current_token.value.clone() {
-                DynType::String(value) => var_type = value,
-                _ => panic!(),
-            };
+            let var_type: String = self.current_token.value.into_string();
             res.register_advancement();
             self.advance();
 
-            if self.current_token.typee != Tokens::Identifier {
+            if let Tokens::Identifier(_) = self.current_token.value {
+            } else {
                 return res.failure(Error::new(
                     "Invalid Syntax Error",
                     self.current_token.pos_start.clone(),
@@ -53,7 +44,7 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
-            if self.current_token.typee != Tokens::Equals {
+            if self.current_token.value != Tokens::Equals {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.pos_start.clone(),
@@ -87,14 +78,8 @@ impl Parser {
             return res;
         }
 
-        while self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("and".to_string()))
-            || self
-                .current_token
-                .clone()
-                .matches(Tokens::Keyword, DynType::String("or".to_string()))
+        while self.current_token.value == Tokens::Keyword("and")
+            || self.current_token.value == Tokens::Keyword("or")
         {
             let op_token = self.current_token.clone();
             res.register_advancement();

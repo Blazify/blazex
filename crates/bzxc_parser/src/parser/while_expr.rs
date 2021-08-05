@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 use super::Parser;
 use crate::parse_result::ParseResult;
@@ -22,11 +22,7 @@ impl Parser {
      */
     pub(crate) fn while_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("while".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("while") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -43,11 +39,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::LeftCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -64,11 +56,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::RightCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::RightCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

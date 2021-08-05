@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -21,11 +21,7 @@ impl Parser {
      */
     pub(crate) fn for_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("for".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("for") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -37,7 +33,8 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee != Tokens::Identifier {
+        if let Tokens::Identifier(_) = self.current_token.value {
+        } else {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -50,7 +47,7 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        if self.current_token.typee != Tokens::Equals {
+        if self.current_token.value != Tokens::Equals {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -67,11 +64,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("to".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("to") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -88,11 +81,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("step".to_string()))
-        {
+        if self.current_token.value != Tokens::Keyword("step") {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start,
@@ -109,11 +98,7 @@ impl Parser {
         }
         let step = expr.unwrap();
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::LeftCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -130,11 +115,7 @@ impl Parser {
             return res;
         }
 
-        if !self
-            .current_token
-            .clone()
-            .matches(Tokens::RightCurlyBraces, DynType::None)
-        {
+        if self.current_token.value != Tokens::RightCurlyBraces {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),

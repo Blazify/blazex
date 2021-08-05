@@ -23,7 +23,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
 
-        if [Tokens::Plus, Tokens::Minus].contains(&self.current_token.typee) {
+        if [Tokens::Plus, Tokens::Minus].contains(&self.current_token.value) {
             res.register_advancement();
             self.advance();
             let factor = res.register(self.factor());

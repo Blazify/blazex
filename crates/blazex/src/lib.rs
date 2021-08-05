@@ -122,6 +122,7 @@ pub fn compile(
         }
         Err(err) => {
             err.prettify();
+            return 1;
         }
     }
     return 0;

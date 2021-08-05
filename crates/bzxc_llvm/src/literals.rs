@@ -12,7 +12,7 @@
 */
 
 use bzxc_llvm_wrapper::{values::BasicValueEnum, AddressSpace};
-use bzxc_shared::{DynType, Error, Token};
+use bzxc_shared::{Error, Token, Tokens};
 
 use crate::Compiler;
 
@@ -49,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     pub(crate) fn num(&self, token: Token) -> Result<BasicValueEnum<'ctx>, Error> {
-        if let DynType::Float(i) = token.value {
+        if let Tokens::Float(i) = token.value {
             Ok(self.context.f64_type().const_float(i).into())
         } else {
             Ok(self

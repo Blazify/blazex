@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -23,11 +23,7 @@ impl Parser {
         let mut res = ParseResult::new();
         let pos_start = self.current_token.clone().pos_start;
 
-        if self
-            .current_token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("not".to_string()))
-        {
+        if self.current_token.value == Tokens::Keyword("not") {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();
@@ -56,7 +52,7 @@ impl Parser {
             Tokens::GreaterThan,
             Tokens::GreaterThanEquals,
         ]
-        .contains(&self.current_token.typee)
+        .contains(&self.current_token.value)
         {
             let op_token = self.current_token.clone();
             res.register_advancement();

@@ -11,7 +11,8 @@ impl Parser {
     pub(crate) fn var_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
-        if self.current_token.typee != Tokens::Identifier {
+        if let Tokens::Identifier(_) = self.current_token.value {
+        } else {
             return res.failure(Error::new(
                 "Invalid Syntax",
                 self.current_token.pos_start.clone(),
@@ -33,7 +34,7 @@ impl Parser {
             Tokens::DivideEquals,
             Tokens::PowerEquals,
         ]
-        .contains(&type_tok.typee)
+        .contains(&type_tok.value)
         {
             res.register_advancement();
             self.advance();

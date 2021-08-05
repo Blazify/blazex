@@ -1,4 +1,4 @@
-use bzxc_shared::{DynType, Error, Token, Tokens};
+use bzxc_shared::{Error, Token, Tokens};
 
 use crate::Lexer;
 
@@ -12,15 +12,10 @@ impl Lexer {
 
         if self.current_char.unwrap_or(' ') == '=' {
             self.advance();
-            return Token::new(
-                Tokens::DoubleEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
+            return Token::new(Tokens::DoubleEquals, start, self.position.clone());
         }
 
-        Token::new(Tokens::Equals, start, self.position.clone(), DynType::None)
+        Token::new(Tokens::Equals, start, self.position.clone())
     }
 
     /*
@@ -31,20 +26,10 @@ impl Lexer {
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '=' {
-            return Token::new(
-                Tokens::LessThanEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
+            return Token::new(Tokens::LessThanEquals, start, self.position.clone());
         }
 
-        Token::new(
-            Tokens::LessThan,
-            start,
-            self.position.clone(),
-            DynType::None,
-        )
+        Token::new(Tokens::LessThan, start, self.position.clone())
     }
 
     /*
@@ -55,20 +40,10 @@ impl Lexer {
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '=' {
-            return Token::new(
-                Tokens::GreaterThanEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
+            return Token::new(Tokens::GreaterThanEquals, start, self.position.clone());
         }
 
-        Token::new(
-            Tokens::GreaterThan,
-            start,
-            self.position.clone(),
-            DynType::None,
-        )
+        Token::new(Tokens::GreaterThan, start, self.position.clone())
     }
 
     /*
@@ -80,20 +55,10 @@ impl Lexer {
 
         if self.current_char.unwrap_or(' ') == '=' {
             self.advance();
-            return Token::new(
-                Tokens::NotEquals,
-                start,
-                self.position.clone(),
-                DynType::None,
-            );
+            return Token::new(Tokens::NotEquals, start, self.position.clone());
         }
 
-        Token::new(
-            Tokens::Keyword,
-            start,
-            self.position.clone(),
-            DynType::String("not".to_string()),
-        )
+        Token::new(Tokens::Keyword("not"), start, self.position.clone())
     }
 
     /*
@@ -106,10 +71,9 @@ impl Lexer {
         if self.current_char.unwrap_or(' ') == '|' {
             self.advance();
             return Ok(Token::new(
-                Tokens::Keyword,
+                Tokens::Keyword("or"),
                 start,
                 self.position.clone(),
-                DynType::String("or".to_string()),
             ));
         }
 
@@ -131,10 +95,9 @@ impl Lexer {
         if self.current_char.unwrap_or(' ') == '&' {
             self.advance();
             return Ok(Token::new(
-                Tokens::Keyword,
+                Tokens::Keyword("and"),
                 start,
                 self.position.clone(),
-                DynType::String("and".to_string()),
             ));
         }
 

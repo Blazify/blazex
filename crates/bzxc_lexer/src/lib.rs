@@ -13,7 +13,7 @@
 
 mod literals;
 mod logical;
-use bzxc_shared::{DynType, Error, Position, Token, Tokens};
+use bzxc_shared::{to_static_str, Error, Position, Token, Tokens};
 
 /*
 * Returns all the keywords in the language
@@ -42,6 +42,7 @@ pub fn get_keywords() -> Vec<String> {
         string("boolean"),
         string("extern"),
         string("variadic"),
+        string("void"),
     ]
 }
 
@@ -137,7 +138,6 @@ impl Lexer {
                     Tokens::Newline,
                     pos_start,
                     self.position.clone(),
-                    DynType::None,
                 ));
                 continue;
             }
@@ -171,33 +171,9 @@ impl Lexer {
                     '<' => tokens.push(self.make_less_than()),
                     '>' => tokens.push(self.make_greater_than()),
                     '=' => tokens.push(self.make_equals()),
-                    '\'' => {
-                        let result = self.make_char();
-                        match result {
-                            Ok(token) => tokens.push(token),
-                            Err(e) => {
-                                return Err(e);
-                            }
-                        };
-                    }
-                    '|' => {
-                        let result = self.make_or();
-                        match result {
-                            Ok(token) => tokens.push(token),
-                            Err(e) => {
-                                return Err(e);
-                            }
-                        };
-                    }
-                    '&' => {
-                        let result = self.make_and();
-                        match result {
-                            Ok(token) => tokens.push(token),
-                            Err(e) => {
-                                return Err(e);
-                            }
-                        };
-                    }
+                    '\'' => tokens.push(self.make_char()?),
+                    '|' => tokens.push(self.make_or()?),
+                    '&' => tokens.push(self.make_and()?),
                     _ => {
                         let no = self.current_char.unwrap().to_digit(36);
                         if no.is_some() {
@@ -218,7 +194,7 @@ impl Lexer {
                     }
                 }
             } else {
-                tokens.push(Token::new(token, start, end, DynType::None));
+                tokens.push(Token::new(token, start, end));
                 self.advance();
             }
 
@@ -243,7 +219,6 @@ impl Lexer {
             Tokens::EOF,
             self.position.clone(),
             self.position.clone(),
-            DynType::None,
         ));
         Ok(tokens)
     }
@@ -257,10 +232,10 @@ impl Lexer {
 
         if self.current_char.unwrap_or(' ') == '=' {
             self.advance();
-            return Token::new(eq, start, self.position, DynType::None);
+            return Token::new(eq, start, self.position);
         }
 
-        return Token::new(no_eq, start, self.position, DynType::None);
+        return Token::new(no_eq, start, self.position);
     }
 
     /*
@@ -281,22 +256,13 @@ impl Lexer {
         }
 
         let identifier_type = if get_keywords().contains(&identifier) {
-            Tokens::Keyword
+            Tokens::Keyword(to_static_str(identifier))
         } else if identifier == "true".to_string() || identifier == "false".to_string() {
-            Tokens::Boolean
+            Tokens::Boolean(identifier.parse().ok().unwrap())
         } else {
-            Tokens::Identifier
+            Tokens::Identifier(to_static_str(identifier))
         };
-        Token::new(
-            identifier_type,
-            start,
-            self.position.clone(),
-            if identifier_type != Tokens::Boolean {
-                DynType::String(identifier)
-            } else {
-                DynType::Boolean(identifier.parse::<bool>().unwrap())
-            },
-        )
+        Token::new(identifier_type, start, self.position.clone())
     }
 
     /*

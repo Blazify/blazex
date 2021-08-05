@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Node, Tokens};
+use bzxc_shared::{Node, Tokens};
 
 impl Parser {
     /*
@@ -22,11 +22,7 @@ impl Parser {
     pub(crate) fn statement(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
-        if self
-            .clone()
-            .current_token
-            .matches(Tokens::Keyword, DynType::String("return".to_string()))
-        {
+        if self.current_token.value == Tokens::Keyword("return") {
             res.register_advancement();
             self.advance();
 

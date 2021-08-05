@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{DynType, Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -23,44 +23,44 @@ impl Parser {
         let mut res = ParseResult::new();
         let token = self.current_token.clone();
 
-        if [Tokens::Int, Tokens::Float].contains(&token.typee) {
+        if let Tokens::Int(_) | Tokens::Float(_) = token.value {
             res.register_advancement();
             self.advance();
             return res.success(Node::NumberNode {
                 token: token.clone(),
             });
-        } else if token.typee == Tokens::Boolean {
+        } else if let Tokens::Boolean(_) = token.value {
             res.register_advancement();
             self.advance();
             return res.success(Node::BooleanNode {
                 token: token.clone(),
             });
-        } else if token.typee == Tokens::String {
+        } else if let Tokens::String(_) = token.value {
             res.register_advancement();
             self.advance();
             return res.success(Node::StringNode {
                 token: token.clone(),
             });
-        } else if token.typee == Tokens::Char {
+        } else if let Tokens::Char(_) = token.value {
             res.register_advancement();
             self.advance();
             return res.success(Node::CharNode {
                 token: token.clone(),
             });
-        } else if token.typee == Tokens::Identifier {
+        } else if let Tokens::Identifier(_) = token.value {
             let var_expr = res.register(self.var_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(var_expr.unwrap());
-        } else if token.typee == Tokens::LeftParenthesis {
+        } else if token.value == Tokens::LeftParenthesis {
             res.register_advancement();
             self.advance();
             let expr = res.register(self.expr());
             if res.error.is_some() {
                 return res;
             }
-            if self.current_token.clone().typee != Tokens::RightParenthesis {
+            if self.current_token.clone().value != Tokens::RightParenthesis {
                 return res.failure(Error::new(
                     "Invalid Syntax",
                     self.current_token.clone().pos_start,
@@ -72,76 +72,55 @@ impl Parser {
             res.register_advancement();
             self.advance();
             return res.success(expr.unwrap());
-        } else if token.typee == Tokens::LeftSquareBraces {
+        } else if token.value == Tokens::LeftSquareBraces {
             let array_expr = res.register(self.array_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(array_expr.unwrap());
-        } else if token.typee == Tokens::LeftCurlyBraces {
+        } else if token.value == Tokens::LeftCurlyBraces {
             let obj_expr = res.register(self.obj_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(obj_expr.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("if".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("if") {
             let if_expr = res.register(self.if_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(if_expr.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("while".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("while") {
             let while_expr = res.register(self.while_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(while_expr.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("for".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("for") {
             let for_expr = res.register(self.for_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(for_expr.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("fun".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("fun") {
             let fun_def = res.register(self.fun_def());
             if res.error.is_some() {
                 return res;
             }
             return res.success(fun_def.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("extern".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("extern") {
             let extern_expr = res.register(self.extern_expr());
             if res.error.is_some() {
                 return res;
             }
             return res.success(extern_expr.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("class".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("class") {
             let class_def = res.register(self.class_def());
             if res.error.is_some() {
                 return res;
             }
             return res.success(class_def.unwrap());
-        } else if token
-            .clone()
-            .matches(Tokens::Keyword, DynType::String("new".to_string()))
-        {
+        } else if token.value == Tokens::Keyword("new") {
             let class_init = res.register(self.class_init());
             if res.error.is_some() {
                 return res;

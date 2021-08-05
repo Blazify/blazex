@@ -12,15 +12,23 @@
 */
 
 use bzxc_llvm_wrapper::values::BasicValueEnum;
-use bzxc_shared::{Error, Node, Position, Token};
+use bzxc_shared::{Error, Node, Position, Token, Type};
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn class_decl(
         &mut self,
+        name: Token,
+        constructor: (Vec<(Token, Type)>, Box<Node>),
+        properties: Vec<(Token, Node)>,
+        methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)>,
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
+        println!(
+            "{:#?}\n{:#?}\n{:#?}\n{:#?}",
+            name, constructor, properties, methods
+        );
         Err(self.error(pos, "Node can't be compiled"))
     }
 
