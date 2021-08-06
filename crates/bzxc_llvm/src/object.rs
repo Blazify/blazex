@@ -99,7 +99,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let struct_val = self.compile_node(object)?;
-        println!("{:#?}", struct_val);
         if !struct_val.is_pointer_value() {
             return Err(self.error(pos, "Expected 'object'"));
         }

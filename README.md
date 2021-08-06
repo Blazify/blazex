@@ -1,21 +1,15 @@
 # [BlazeX](https://gitter.im/BlazifyOrg-blazex/community)
 
-A intermediate AOT compiled language which is kinda statically typed (plan: move to gradual typing) and object oriented
+A AOT compiled language which is kinda statically typed (plan: move to gradual typing) and object oriented
 
 ## Installing
 
-In Ubuntu Or MacOS
+In Ubuntu Or MacOS or Windows (WSL)
 
 ```shell
 $ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install | bash
 ```
 
-In Windows (WSL for now)
-
-```shell
-$ Invoke-WebRequest https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install -o install
-$ bash install
-```
 
 Confirm Installation
 
@@ -35,13 +29,14 @@ For more information try --help
 
 ## Note
 
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazexscript-vscode) and i am also looking for collaborators
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazex-vscode) and i am also looking for collaborators
 
 ## Example
 
 - Printing the famous "Hello World"
 
 ```bzx
+extern variadic fun printf(string): void;
 printf("Hello World!") @ yep as simple as that
 ```
 
@@ -62,7 +57,7 @@ fun sum(a: int, b: int): int {
     return c;
 }
 
-printf(sum(2, 2));
+printf("%i", sum(2, 2));
 ```
 
 - Working around with objects
@@ -72,34 +67,34 @@ var obj = {
     prop: 5 @ properties should be Identifier or there will be Invalid Syntax Error
 }
 
-println(obj.prop); @ accessing object property
+println("%i\n", obj.prop); @ accessing object property
 
 obj.prop = 10; @ editing object property value
-printf(obj.prop) @ 10
+printf("%i\n", obj.prop) @ 10
 ```
 
-- Classes (Not implemented)
+- Classes
 
 ```bzx
 class Main {
     var a = 10; @ this is a property
 
     @ this is constructor
-    fun(): Main {
+    fun(): void {
         soul.a = 5; @ soul is the current object it's operating on
+	return soul;
     }
 
     @ this is a method
-    fun sum_to_a(b): Main {
+    fun sum_to_a(b): int {
         soul.a = soul.a + b;
-        return soul;
+        return soul.a;
     }
 }
 
 var ins = new Main(); @ creating/initializing a class, returns a object with the properties
-printf(ins);
 
-printf(ins.sum_to_a(5));
+printf("%s\n", ins.sum_to_a(5));
 ```
 
 ## Dependencies
@@ -134,13 +129,11 @@ printf(ins.sum_to_a(5));
 
 - Gradual type system (Hybrid Dynamic & Static Typing)
 - Implementing return-ing in functions
-- Class Definition and Initializing LLVM code generation
 
 ## TODO
 
-- [ ] Bugs Fixed
 - [ ] Type System (gradual typing)
-- [ ] LLVM
+- [x] LLVM
   - [x] Executables
   - [x] Statements
   - [x] Int & Floats
@@ -156,7 +149,7 @@ printf(ins.sum_to_a(5));
   - [x] Functions
   - [x] Arrays
   - [x] Objects
-  - [ ] Classes
+  - [x] Classes
 - [x] Errors
   - [x] Lexer
   - [x] Parser
