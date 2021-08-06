@@ -328,6 +328,11 @@ pub enum Node {
         property: Token,
         new_val: Box<Node>,
     },
+    ObjectMethodCall {
+        object: Box<Node>,
+        property: Token,
+        args: Vec<Node>,
+    },
     ClassDefNode {
         methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)>,
         properties: Vec<(Token, Node)>,
@@ -441,6 +446,18 @@ impl Node {
                 property: _,
                 new_val,
             } => (object.get_pos().0, new_val.get_pos().1),
+            Node::ObjectMethodCall {
+                object,
+                property,
+                args,
+            } => (
+                object.get_pos().0,
+                if !args.is_empty() {
+                    args.last().unwrap().get_pos().1
+                } else {
+                    property.pos_end
+                },
+            ),
             Node::ClassDefNode { name, .. } => (name.pos_start, name.pos_end),
             Node::ClassInitNode {
                 name,

@@ -3,18 +3,26 @@ extern variadic fun printf(string): void
 class A {
     var a = "hi there";
     fun(): void {
-        printf("%s\n", soul.a)
+        printf("%s\n", soul.a);
         soul
+    }
+
+    fun b(): void {
+        printf("%s\n", soul.a);
     }
 }
 
-var a = new A()
-printf("%s\n", a.a);
+var x = new A()
+x.b();
 
-a.a = "hello there";
-printf("%s\n", a.a)
+x.a = "hello there";
+x.b()
 
-var b = new A();
-printf("%s\n", b.a);
+var y = new A();
+y.b();
+
+y.a = "hello there";
+y.b()
+
 
 0

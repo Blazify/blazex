@@ -11,8 +11,11 @@
  * limitations under the License.
 */
 
-use bzxc_llvm_wrapper::{types::BasicTypeEnum, values::BasicValueEnum};
-use bzxc_shared::{Error, Node, Position, Token, Type};
+use bzxc_llvm_wrapper::{
+    types::{AnyTypeEnum, BasicTypeEnum},
+    values::{BasicValueEnum, PointerValue},
+};
+use bzxc_shared::{to_static_str, Error, Node, Position, Token, Type};
 
 use crate::{Compiler, Function, Prototype};
 
@@ -26,31 +29,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let obj = self.obj_decl(properties)?.into_pointer_value();
-
-        let mut constr_args = vec![("soul".to_string(), obj.get_type().into())];
-        constr_args.extend(
-            constructor
-                .0
-                .iter()
-                .map(|x| {
-                    (
-                        x.0.value.into_string(),
-                        x.1.to_llvm_type(&self.context).to_basic_type_enum(),
-                    )
-                })
-                .collect::<Vec<(String, BasicTypeEnum)>>(),
-        );
-
-        let constr = Function {
-            prototype: Prototype {
-                name: Some(name.value.into_string() + &"Init"),
-                args: constr_args,
-                ret_type: obj.get_type().into(),
-            },
-            body: *constructor.1,
-        };
+        self.classes
+            .insert(obj.get_type(), name.value.into_string());
 
         self.variables.insert(name.value.into_string(), obj);
+
+        for (m_name, args, body, ret) in methods {
+            let constr = self.class_method(
+                name,
+                obj,
+                to_static_str(m_name.value.into_string()),
+                args,
+                body,
+                ret.to_llvm_type(self.context),
+            );
+            self.compile_fn(constr)?;
+        }
+
+        let constr = self.class_method(
+            name,
+            obj,
+            "Init",
+            constructor.0,
+            *constructor.1,
+            obj.get_type().into(),
+        );
 
         let compiled_constr = self.compile_fn(constr)?;
         Ok(compiled_constr.as_global_value().as_pointer_value().into())
@@ -89,5 +92,38 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         } else {
             Err(self.error(pos, "No class found"))
         }
+    }
+
+    fn class_method(
+        &mut self,
+        name: Token,
+        obj: PointerValue<'ctx>,
+        method: &'static str,
+        args: Vec<(Token, Type)>,
+        body: Node,
+        ret_type: AnyTypeEnum<'ctx>,
+    ) -> Function<'ctx> {
+        let mut constr_args = vec![("soul".to_string(), obj.get_type().into())];
+        constr_args.extend(
+            args.iter()
+                .map(|x| {
+                    (
+                        x.0.value.into_string(),
+                        x.1.to_llvm_type(&self.context).to_basic_type_enum(),
+                    )
+                })
+                .collect::<Vec<(String, BasicTypeEnum)>>(),
+        );
+
+        let constr = Function {
+            prototype: Prototype {
+                name: Some(name.value.into_string() + &method),
+                args: constr_args,
+                ret_type,
+            },
+            body,
+        };
+
+        constr
     }
 }

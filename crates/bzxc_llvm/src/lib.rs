@@ -57,6 +57,7 @@ pub struct Compiler<'a, 'ctx> {
     fn_value_opt: Option<FunctionValue<'ctx>>,
     objects: HashMap<(PointerType<'ctx>, String), u32>,
     object_aligner: u32,
+    classes: HashMap<PointerType<'ctx>, String>,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -163,6 +164,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 property,
                 new_val,
             } => self.obj_edit(*object, property, *new_val, node.get_pos()),
+            Node::ObjectMethodCall {
+                args,
+                object,
+                property,
+            } => self.obj_method_call(*object, property, args, node.get_pos()),
             Node::ClassDefNode {
                 methods,
                 properties,
@@ -204,6 +210,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             fn_value_opt: None,
             objects: HashMap::new(),
             object_aligner: 0,
+            classes: HashMap::new(),
         }
     }
 }

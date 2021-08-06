@@ -11,7 +11,7 @@
  * limitations under the License.
 */
 
-use bzxc_llvm_wrapper::values::BasicValueEnum;
+use bzxc_llvm_wrapper::values::{BasicValueEnum, PointerValue};
 use bzxc_shared::{Error, Node, Position, Token};
 
 use crate::Compiler;
@@ -70,25 +70,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
         let struct_val = self.compile_node(object)?;
-        if !struct_val.is_pointer_value() {
-            return Err(self.error(pos, "Expected 'object'"));
-        }
+        let ptr = self.obj_prop_pointer(struct_val, property.value.into_string(), pos)?;
 
-        let prop = self
-            .objects
-            .get(&(
-                struct_val.into_pointer_value().get_type(),
-                property.value.into_string(),
-            ))
-            .ok_or(self.error(pos, "Property not found on object"))?;
-
-        let val = self
-            .builder
-            .build_struct_gep(struct_val.into_pointer_value(), *prop, "extract_obj")
-            .ok()
-            .ok_or(self.error(pos, "Property not found on object"))?;
-
-        Ok(self.builder.build_load(val, "obj_prop"))
+        Ok(self.builder.build_load(ptr, "obj_prop"))
     }
 
     pub(crate) fn obj_edit(
@@ -101,7 +85,79 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let val = self.compile_node(new_val)?;
 
         let struct_val = self.compile_node(object)?;
+        let ptr = self.obj_prop_pointer(struct_val, property.value.into_string(), pos)?;
+        self.builder.build_store(ptr, val);
 
+        Ok(struct_val.into())
+    }
+
+    pub(crate) fn obj_method_call(
+        &mut self,
+        object: Node,
+        property: Token,
+        args: Vec<Node>,
+        pos: (Position, Position),
+    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        let struct_val = self.compile_node(object)?;
+        println!("{:#?}", struct_val);
+        if !struct_val.is_pointer_value() {
+            return Err(self.error(pos, "Expected 'object'"));
+        }
+        let prop = property.value.into_string();
+
+        let ptr = struct_val.into_pointer_value();
+        let class_name = self.classes.get(&ptr.get_type()).clone();
+        let is_class = class_name.is_some();
+        let method = if is_class {
+            Some(class_name.unwrap().to_owned() + &prop)
+        } else {
+            None
+        };
+
+        let mut compiled_args = Vec::with_capacity(args.len());
+
+        if is_class {
+            compiled_args.push(ptr.into());
+        }
+        for arg in args {
+            compiled_args.push(self.compile_node(arg)?);
+        }
+
+        if !is_class {
+            let func = self.obj_prop_pointer(struct_val, prop, pos)?;
+            let call = self
+                .builder
+                .build_call(func, &compiled_args[..], "obj_func_call")
+                .ok()
+                .unwrap();
+
+            return Ok(call
+                .try_as_basic_value()
+                .left_or(self.context.i128_type().const_int(0, false).into()));
+        }
+
+        let fun = self.get_function(&method.unwrap());
+        if fun.is_none() {
+            return Err(self.error(pos, "No method found"));
+        }
+
+        let call = self
+            .builder
+            .build_call(fun.unwrap(), &compiled_args[..], "tmpcall")
+            .ok()
+            .unwrap();
+
+        Ok(call
+            .try_as_basic_value()
+            .left_or(self.context.i128_type().const_int(0, false).into()))
+    }
+
+    fn obj_prop_pointer(
+        &mut self,
+        struct_val: BasicValueEnum<'ctx>,
+        prop: String,
+        pos: (Position, Position),
+    ) -> Result<PointerValue<'ctx>, Error> {
         if !struct_val.is_pointer_value() {
             return Err(self.error(pos, "Expected 'object'"));
         }
@@ -110,7 +166,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let i = self
             .objects
-            .get(&(struct_ptr.get_type(), property.value.into_string()))
+            .get(&(struct_ptr.get_type(), prop))
             .ok_or(self.error(pos, "Property not found on object"))?;
 
         let ptr = self
@@ -118,8 +174,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .build_struct_gep(struct_ptr, *i, "struct_gep")
             .ok()
             .ok_or(self.error(pos, "Property not found on object"))?;
-        self.builder.build_store(ptr, val);
 
-        Ok(struct_ptr.into())
+        Ok(ptr)
     }
 }

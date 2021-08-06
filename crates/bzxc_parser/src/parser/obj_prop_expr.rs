@@ -45,6 +45,8 @@ impl Parser {
             res.register_advancement();
             self.advance();
 
+            let mut l;
+
             if self.current_token.value == Tokens::Equals {
                 res.register_advancement();
                 self.advance();
@@ -59,12 +61,65 @@ impl Parser {
                     property: id,
                     new_val: Box::new(expr.unwrap()),
                 });
-            }
+            } else if self.current_token.value == Tokens::LeftParenthesis {
+                let mut arg_nodes: Vec<Node> = vec![];
+                res.register_advancement();
+                self.advance();
 
-            let mut l = Node::ObjectPropAccess {
-                object: Box::new(index.clone().unwrap()),
-                property: id,
-            };
+                if self.current_token.value == Tokens::RightParenthesis {
+                    res.register_advancement();
+                    self.advance();
+                } else {
+                    let expr = res.register(self.expr());
+                    if res.error.is_some() {
+                        return res.failure(Error::new(
+                            "Invalid Syntax",
+                            self.current_token.pos_start.clone(),
+                            self.current_token.pos_end.clone(),
+                            "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                        ));
+                    }
+                    arg_nodes.push(expr.unwrap());
+
+                    while self.current_token.value == Tokens::Comma {
+                        res.register_advancement();
+                        self.advance();
+
+                        let expr = res.register(self.expr());
+                        if res.error.is_some() {
+                            return res.failure(Error::new(
+                                "Invalid Syntax",
+                                self.current_token.pos_start.clone(),
+                                self.current_token.pos_end.clone(),
+                                "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                            ));
+                        }
+                        arg_nodes.push(expr.unwrap());
+                    }
+
+                    if self.current_token.value != Tokens::RightParenthesis {
+                        return res.failure(Error::new(
+                            "Invalid Syntax",
+                            self.current_token.pos_start.clone(),
+                            self.current_token.pos_end.clone(),
+                            "Expected ')' or ','",
+                        ));
+                    }
+                    res.register_advancement();
+                    self.advance();
+                }
+
+                l = Node::ObjectMethodCall {
+                    object: Box::new(index.clone().unwrap()),
+                    property: id,
+                    args: arg_nodes,
+                }
+            } else {
+                l = Node::ObjectPropAccess {
+                    object: Box::new(index.clone().unwrap()),
+                    property: id,
+                };
+            }
 
             while self.current_token.value == Tokens::Dot {
                 self.advance();
@@ -99,12 +154,65 @@ impl Parser {
                         property: id,
                         new_val: Box::new(expr.unwrap()),
                     });
-                }
+                } else if self.current_token.value == Tokens::LeftParenthesis {
+                    let mut arg_nodes: Vec<Node> = vec![];
+                    res.register_advancement();
+                    self.advance();
 
-                l = Node::ObjectPropAccess {
-                    object: Box::new(l),
-                    property: id,
-                };
+                    if self.current_token.value == Tokens::RightParenthesis {
+                        res.register_advancement();
+                        self.advance();
+                    } else {
+                        let expr = res.register(self.expr());
+                        if res.error.is_some() {
+                            return res.failure(Error::new(
+                                "Invalid Syntax",
+                                self.current_token.pos_start.clone(),
+                                self.current_token.pos_end.clone(),
+                                "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                            ));
+                        }
+                        arg_nodes.push(expr.unwrap());
+
+                        while self.current_token.value == Tokens::Comma {
+                            res.register_advancement();
+                            self.advance();
+
+                            let expr = res.register(self.expr());
+                            if res.error.is_some() {
+                                return res.failure(Error::new(
+                                    "Invalid Syntax",
+                                    self.current_token.pos_start.clone(),
+                                    self.current_token.pos_end.clone(),
+                                    "Expected ')', 'var', int, float, identifier, '+', '-' or ','",
+                                ));
+                            }
+                            arg_nodes.push(expr.unwrap());
+                        }
+
+                        if self.current_token.value != Tokens::RightParenthesis {
+                            return res.failure(Error::new(
+                                "Invalid Syntax",
+                                self.current_token.pos_start.clone(),
+                                self.current_token.pos_end.clone(),
+                                "Expected ')' or ','",
+                            ));
+                        }
+                        res.register_advancement();
+                        self.advance();
+                    }
+
+                    l = Node::ObjectMethodCall {
+                        object: Box::new(l),
+                        property: id,
+                        args: arg_nodes,
+                    }
+                } else {
+                    l = Node::ObjectPropAccess {
+                        object: Box::new(l),
+                        property: id,
+                    };
+                }
             }
             return res.success(l);
         } else if self.current_token.value == Tokens::LeftParenthesis {
