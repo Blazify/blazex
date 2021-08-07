@@ -16,14 +16,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: x86_64-unknown-linux-gnu
+            artifact_name: blazex-linux
             exe: main
           - os: macos-10.15
             artifact_name: x86_64-apple-darwin
-            exe: main
+            exe: blazex-apple
           - os: windows-latest
             artifact_name: x86_64-pc-windows-msvc.exe
-            exe: main.exe
+            exe: blazex-windows.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -34,8 +34,8 @@ jobs:
           directory: ${{ runner.temp }}/llvm
       - name: Build project
         run: bash build ${{ runner.temp }}/llvm
-          env:
-            LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
+        env:
+          LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
       - name: Compile to Object Code
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzx
       - name: Link to libc and compile to native machine executable
