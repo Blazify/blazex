@@ -14,7 +14,7 @@ jobs:
       - name: Bump version and push tag/create release point
         if: contains(github.event.head_commit.message, 'release')
         id: bump_version
-        uses: anothrNick/github-tag-action@1.17.2
+        uses: anothrNick/github-tag-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true

@@ -16,10 +16,3 @@ bzxc_type_system = { path = "../bzxc_type_system" }
 bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }
 bzxc_llvm = { path = "../bzxc_llvm" }
 bzxc_shared = { path = "../bzxc_shared" }
-
-[dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
-
-[[bench]]
-name = "blazex"
-harness = false
