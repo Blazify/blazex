@@ -19,11 +19,11 @@ jobs:
             artifact_name: blazex-linux
             exe: main
           - os: macos-10.15
-            artifact_name: x86_64-apple-darwin
-            exe: blazex-apple
+            artifact_name: blazex-apple
+            exe: main
           - os: windows-latest
-            artifact_name: x86_64-pc-windows-msvc.exe
-            exe: blazex-windows.exe
+            artifact_name: blazex-windows.exe
+            exe: main.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -39,6 +39,6 @@ jobs:
       - name: Compile to Object Code
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzx
       - name: Link to libc and compile to native machine executable
-        run: clang -o${{ matrix.exe }} -lc examples/main.o
+        run: clang -o${{ matrix.exe }} -Ofast -lc examples/main.o
       - name: Run Native Executable
         run: ./${{ matrix.exe }}
