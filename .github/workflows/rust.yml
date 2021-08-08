@@ -33,9 +33,9 @@ jobs:
           version: "11.0"
           directory: ${{ runner.temp }}/llvm
       - name: Build project
-        run: bash build ${{ runner.temp }}/llvm
+        run: bash build
         env:
-          LLVM_SYS_110_PREFIX: ${{ runner.temp }/llvm
+          LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
       - name: Compile to Object Code
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzx
       - name: Link to libc and compile to native machine executable
