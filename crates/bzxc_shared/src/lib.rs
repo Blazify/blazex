@@ -432,10 +432,13 @@ impl Node {
                 statements.first().unwrap().get_pos().0,
                 statements.last().unwrap().get_pos().1,
             ),
-            Node::ReturnNode { value } => (
-                value.clone().unwrap().get_pos().0,
-                value.clone().unwrap().get_pos().1,
-            ),
+            Node::ReturnNode { value } => {
+                if let Some(val) = *value.clone() {
+                    (val.get_pos().0, val.get_pos().1)
+                } else {
+                    (Position::proto(), Position::proto())
+                }
+            }
             Node::ObjectDefNode { properties } => (
                 properties.first().unwrap().0.pos_start,
                 properties.last().unwrap().1.get_pos().1,
@@ -496,7 +499,10 @@ impl<'ctx> Type {
             Type::Boolean => AnyTypeEnum::IntType(ctx.bool_type()),
             Type::Char => AnyTypeEnum::IntType(ctx.i8_type()),
             Type::String => AnyTypeEnum::PointerType(ctx.i8_type().ptr_type(AddressSpace::Generic)),
-            Type::Void => AnyTypeEnum::VoidType(ctx.void_type()),
+            Type::Void => ctx
+                .struct_type(&[], false)
+                .ptr_type(AddressSpace::Generic)
+                .into(),
             Type::Function(params, ret) => ret
                 .to_llvm_type(ctx)
                 .fn_type(

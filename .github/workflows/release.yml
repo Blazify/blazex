@@ -15,8 +15,8 @@ jobs:
             artifact_name: blazex-linux
           - os: macos-10.15
             artifact_name: blazex-apple
-          - os: windows-latest
-            artifact_name: blazex-windows
+          # - os: windows-latest
+          #   artifact_name: blazex-windows
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,8 +27,8 @@ jobs:
           directory: ${{ runner.temp }}/llvm
       - name: Build project
         run: bash build ${{ runner.temp }}/llvm
-          env:
-            LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
+        env:
+          LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:

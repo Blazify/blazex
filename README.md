@@ -1,6 +1,10 @@
-# [BlazeX](https://gitter.im/BlazifyOrg-blazex/community)
+# [BlazeX](https://bzx.blazify.rocks)
 
-A AOT compiled language which is kinda statically typed (plan: move to gradual typing) and object oriented
+- [Discord](https://discord.gg/R9NhMfr9Fu)
+- [Gitter](https://gitter.im/BlazifyOrg-blazex/community)
+- [Blazify](https://blazify.rocks)
+
+A object orineted AOT compiled language which is kinda statically typed (plan: move to gradual typing)
 
 ## Installing
 
@@ -9,7 +13,6 @@ In Ubuntu Or MacOS or Windows (WSL)
 ```shell
 $ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install | bash
 ```
-
 
 Confirm Installation
 
@@ -36,7 +39,7 @@ This language is very much work in-progress. We are also working on a [VSCode Ex
 - Printing the famous "Hello World"
 
 ```bzx
-extern variadic fun printf(string): void;
+extern variadic fun printf(string): int;
 printf("Hello World!") @ yep as simple as that
 ```
 
@@ -82,11 +85,11 @@ class Main {
     @ this is constructor
     fun(): void {
         soul.a = 5; @ soul is the current object it's operating on
-	return soul;
+	    return soul;
     }
 
     @ this is a method
-    fun sum_to_a(b): int {
+    fun sum_to_a(b: int): int {
         soul.a = soul.a + b;
         return soul.a;
     }
@@ -94,7 +97,7 @@ class Main {
 
 var ins = new Main(); @ creating/initializing a class, returns a object with the properties
 
-printf("%s\n", ins.sum_to_a(5));
+printf("%i\n", ins.sum_to_a(5));
 ```
 
 ## Dependencies
@@ -128,7 +131,6 @@ printf("%s\n", ins.sum_to_a(5));
 ## Need Help with
 
 - Gradual type system (Hybrid Dynamic & Static Typing)
-- Implementing return-ing in functions
 
 ## TODO
 

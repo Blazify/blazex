@@ -1,28 +1,23 @@
-extern variadic fun printf(string): void
+extern variadic fun printf(string): int
 
-class A {
-    var a = "hi there";
+class Main {
+    var a = 10; @ this is a instance variable
+
+    @ this is constructor
     fun(): void {
-        printf("%s\n", soul.a);
-        soul
+        soul.a = 5; @ soul is the current object it's operating on
+	    return soul;
     }
 
-    fun b(): void {
-        printf("%s\n", soul.a);
+    @ this is a method
+    fun sum_to_a(b: int): int {
+        soul.a = soul.a + b;
+        return soul.a;
     }
 }
 
-var x = new A()
-x.b();
+var ins = new Main(); @ creating/initializing a class, returns a object with the properties
 
-x.a = "hello there";
-x.b()
+printf("%i\n", ins.sum_to_a(5));
 
-var y = new A();
-y.b();
-
-y.a = "hello there";
-y.b()
-
-
-0
+return 0

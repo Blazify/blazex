@@ -104,7 +104,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .insert(var_name_token.value.into_string(), val);
         }
 
-        Ok(self.context.i128_type().const_int(0, false).into())
+        Ok(self.null())
     }
 
     pub(crate) fn while_loop(
@@ -132,6 +132,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(after_block);
 
-        Ok(self.context.i128_type().const_int(0, false).into())
+        Ok(self.null())
     }
 }

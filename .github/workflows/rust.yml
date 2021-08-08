@@ -21,9 +21,9 @@ jobs:
           - os: macos-10.15
             artifact_name: blazex-apple
             exe: main
-          - os: windows-latest
-            artifact_name: blazex-windows.exe
-            exe: main.exe
+          # - os: windows-latest
+          #   artifact_name: blazex-windows.exe
+          #   exe: main.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,7 +35,7 @@ jobs:
       - name: Build project
         run: bash build ${{ runner.temp }}/llvm
         env:
-          LLVM_SYS_110_PREFIX: ${{ runner.temp }}/llvm
+          LLVM_SYS_110_PREFIX: ${{ runner.temp }/llvm
       - name: Compile to Object Code
         run: ./bin/${{ matrix.artifact_name }} examples/main.bzx
       - name: Link to libc and compile to native machine executable

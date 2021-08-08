@@ -13,7 +13,7 @@
 
 use bzxc_llvm_wrapper::{
     module::Linkage,
-    types::{AnyTypeEnum, BasicTypeEnum},
+    types::BasicTypeEnum,
     values::{BasicValue, BasicValueEnum, FunctionValue},
 };
 use bzxc_shared::{Error, Node, Position, Token, Type};
@@ -86,12 +86,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         let body = self.compile_node(func.body.clone())?;
-
-        if let AnyTypeEnum::VoidType(_) = func.prototype.ret_type {
-            self.builder.build_return(None);
-        } else {
-            self.builder.build_return(Some(&body));
-        }
 
         if parental_block.is_some() {
             self.builder.position_at_end(parental_block.unwrap());
@@ -184,11 +178,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     pub(crate) fn ret(
-        &self,
+        &mut self,
         node: Option<Node>,
         pos: (Position, Position),
     ) -> Result<BasicValueEnum<'ctx>, Error> {
-        Err(self.error(pos, "Node can't be compiled"))
+        if let Some(ret) = node {
+            let rett = self.compile_node(ret)?;
+            self.builder.build_return(Some(&rett));
+            Ok(rett)
+        } else {
+            let null = self.null();
+            self.builder.build_return(Some(&null));
+            Ok(null)
+        }
     }
 
     pub(crate) fn to_func_with_proto(

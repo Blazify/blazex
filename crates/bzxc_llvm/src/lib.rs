@@ -92,6 +92,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         builder.build_alloca(ty, name)
     }
 
+    fn null(&self) -> BasicValueEnum<'ctx> {
+        let null = self.context.struct_type(&[], false).get_undef();
+        let ptr = self.create_entry_block_alloca("null", null.get_type());
+        self.builder.build_store(ptr, null);
+
+        ptr.into()
+    }
+
     fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, Error> {
         match node.clone() {
             Node::Statements { statements } => {
@@ -189,8 +197,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     pub fn compile_main(&mut self) -> Result<FunctionValue<'ctx>, Error> {
-        let func = self.function.clone();
-        self.compile_fn(func)
+        self.compile_fn(self.function.clone())
     }
 
     pub fn init(

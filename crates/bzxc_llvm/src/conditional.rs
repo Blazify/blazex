@@ -11,8 +11,8 @@
  * limitations under the License.
 */
 
-use bzxc_shared::{Error, Node};
 use bzxc_llvm_wrapper::values::BasicValueEnum;
+use bzxc_shared::{Error, Node};
 
 use crate::Compiler;
 
@@ -67,6 +67,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         self.builder.position_at_end(after_block);
 
-        Ok(self.context.i128_type().const_int(0, false).into())
+        Ok(self.null())
     }
 }

@@ -115,15 +115,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .collect::<Vec<(String, BasicTypeEnum)>>(),
         );
 
-        let constr = Function {
+        Function {
             prototype: Prototype {
                 name: Some(name.value.into_string() + &method),
                 args: constr_args,
                 ret_type,
             },
             body,
-        };
-
-        constr
+        }
     }
 }
