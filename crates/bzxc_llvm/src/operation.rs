@@ -27,24 +27,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let left_val = self.compile_node(left)?;
         let right_val = self.compile_node(right)?;
 
-        match op_token.value {
-            Tokens::DoubleEquals => {
-                return Ok(self
-                    .context
-                    .bool_type()
-                    .const_int((left_val == right_val) as u64, false)
-                    .into())
-            }
-            Tokens::NotEquals => {
-                return Ok(self
-                    .context
-                    .bool_type()
-                    .const_int((left_val != right_val) as u64, false)
-                    .into())
-            }
-            _ => (),
-        }
-
         if left_val.is_int_value() && right_val.is_int_value() {
             let lhs = left_val.into_int_value();
             let rhs = right_val.into_int_value();
@@ -69,6 +51,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 Tokens::GreaterThanEquals => {
                     self.builder
                         .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
+                }
+                Tokens::DoubleEquals => {
+                    self.builder
+                        .build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp")
+                }
+                Tokens::NotEquals => {
+                    self.builder
+                        .build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp")
                 }
                 _ => {
                     if op_token.value == Tokens::Keyword("and") {
@@ -129,6 +119,28 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     let cmp =
                         self.builder
                             .build_float_compare(FloatPredicate::OGE, rhs, lhs, "tmpcmp");
+
+                    self.builder.build_unsigned_int_to_float(
+                        cmp,
+                        self.context.f64_type(),
+                        "tmpbool",
+                    )
+                }
+                Tokens::DoubleEquals => {
+                    let cmp =
+                        self.builder
+                            .build_float_compare(FloatPredicate::OEQ, rhs, lhs, "tmpcmp");
+
+                    self.builder.build_unsigned_int_to_float(
+                        cmp,
+                        self.context.f64_type(),
+                        "tmpbool",
+                    )
+                }
+                Tokens::NotEquals => {
+                    let cmp =
+                        self.builder
+                            .build_float_compare(FloatPredicate::ONE, rhs, lhs, "tmpcmp");
 
                     self.builder.build_unsigned_int_to_float(
                         cmp,

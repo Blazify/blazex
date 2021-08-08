@@ -13,7 +13,7 @@
 
 use bzxc_llvm_wrapper::{
     module::Linkage,
-    types::BasicTypeEnum,
+    types::{AnyTypeEnum, BasicTypeEnum},
     values::{BasicValue, BasicValueEnum, FunctionValue},
 };
 use bzxc_shared::{Error, Node, Position, Token, Type};
@@ -85,12 +85,33 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.variables.insert(proto.args[i].0.clone(), alloca);
         }
 
+        self.ret = false;
         let body = self.compile_node(func.body.clone())?;
+
+        if !self.ret {
+            if parental_block.is_none() {
+                self.ret = true;
+                self.builder
+                    .build_return(Some(&self.context.i128_type().const_int(0, false)));
+            } else {
+                if let AnyTypeEnum::PointerType(x) = proto.ret_type {
+                    if x == self.null().into_pointer_value().get_type() {
+                        self.ret = true;
+                        self.builder.build_return(Some(&self.null()));
+                    }
+                }
+            }
+        }
+
+        if !self.ret {
+            return Err(self.error(func.body.get_pos(), "Expected 'return'"));
+        }
 
         if parental_block.is_some() {
             self.builder.position_at_end(parental_block.unwrap());
         }
 
+        self.ret = false;
         self.fn_value_opt = parent;
 
         if function.verify(true) {
@@ -145,9 +166,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall");
 
         match call {
-            Ok(call) => Ok(call
-                .try_as_basic_value()
-                .left_or(self.context.i128_type().const_int(0, false).into())),
+            Ok(call) => Ok(call.try_as_basic_value().left_or(self.null())),
             Err(_) => Err(self.error(pos, "Not a function")),
         }
     }
@@ -185,10 +204,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         if let Some(ret) = node {
             let rett = self.compile_node(ret)?;
             self.builder.build_return(Some(&rett));
+            self.ret = true;
             Ok(rett)
         } else {
             let null = self.null();
             self.builder.build_return(Some(&null));
+            self.ret = true;
             Ok(null)
         }
     }

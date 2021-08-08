@@ -30,12 +30,16 @@ impl Parser {
             self.advance();
         }
 
-        let mut statement = res.register(self.statement());
+        let mut statement = res.try_register(self.statement());
         if res.error.is_some() {
             return res;
         };
-        statements.push(statement.unwrap());
-        let mut more_statements = true;
+        if let Some(ref smt) = statement {
+            statements.push(smt.clone());
+        } else {
+            self.reverse(res.to_reverse_count);
+        }
+        let mut more_statements = statement.is_some();
 
         loop {
             let mut newline_ct = 0;

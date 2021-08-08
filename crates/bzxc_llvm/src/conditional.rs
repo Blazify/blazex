@@ -56,7 +56,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(conditional_block);
             self.compile_node(body.clone())?;
-            self.builder.build_unconditional_branch(after_block);
+            if !self.ret {
+                self.builder.build_unconditional_branch(after_block);
+            };
         }
 
         if let Some(else_block) = else_block {
@@ -66,6 +68,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         self.builder.position_at_end(after_block);
+        self.ret = false;
 
         Ok(self.null())
     }

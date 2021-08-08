@@ -58,6 +58,7 @@ pub struct Compiler<'a, 'ctx> {
     objects: HashMap<(PointerType<'ctx>, String), u32>,
     object_aligner: u32,
     classes: HashMap<PointerType<'ctx>, String>,
+    ret: bool,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -105,6 +106,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Node::Statements { statements } => {
                 let mut ret = None;
                 for statement in statements {
+                    if self.ret {
+                        continue;
+                    }
                     ret = Some(self.compile_node(statement)?);
                 }
 
@@ -218,6 +222,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             objects: HashMap::new(),
             object_aligner: 0,
             classes: HashMap::new(),
+            ret: false,
         }
     }
 }

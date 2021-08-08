@@ -86,9 +86,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .ok()
                 .unwrap();
 
-            Ok(call
-                .try_as_basic_value()
-                .left_or(self.context.i128_type().const_int(0, false).into()))
+            Ok(call.try_as_basic_value().left_or(self.null()))
         } else {
             Err(self.error(pos, "No class found"))
         }
