@@ -55,7 +55,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             Ok(self
                 .context
                 .i128_type()
-                .const_int(token.value.into_int() as u64, false)
+                .const_int(token.value.into_int() as u64, true)
                 .into())
         }
     }

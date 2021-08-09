@@ -68,7 +68,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let name_str = name.value.into_string();
         let class = self.variables.get(&name_str);
         if let Some(klass) = class {
-            let constructor = self.get_function(&(name_str + &"Init")).unwrap().clone();
+            let constructor = self.get_function(&(name_str + &"%Init")).unwrap().clone();
             let mut compiled_args: Vec<BasicValueEnum> =
                 Vec::with_capacity(constructor_params.len() + 1);
             let klas_ = self.builder.build_load(*klass, "base_class_obj");
@@ -80,13 +80,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 compiled_args.push(self.compile_node(arg)?);
             }
 
-            let call = self
+            Ok(self
                 .builder
                 .build_call(constructor, &compiled_args[..], "tmpcall")
                 .ok()
-                .unwrap();
-
-            Ok(call.try_as_basic_value().left_or(self.null()))
+                .ok_or(self.error(pos, "Not a function"))?
+                .try_as_basic_value()
+                .left_or(self.null()))
         } else {
             Err(self.error(pos, "No class found"))
         }
@@ -115,7 +115,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         Function {
             prototype: Prototype {
-                name: Some(name.value.into_string() + &method),
+                name: Some(name.value.into_string() + &"%" + &method),
                 args: constr_args,
                 ret_type,
             },

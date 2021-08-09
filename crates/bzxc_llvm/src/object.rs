@@ -105,6 +105,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let prop = property.value.into_string();
 
         let ptr = struct_val.into_pointer_value();
+        if self
+            .builder
+            .build_load(ptr, "struct_check")
+            .is_struct_value()
+        {
+            return Err(self.error(pos, "Expected 'object'"));
+        }
         let class_name = self.classes.get(&ptr.get_type()).clone();
         let is_class = class_name.is_some();
         let method = if is_class {
@@ -162,6 +169,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         let struct_ptr = struct_val.into_pointer_value();
+
+        if self
+            .builder
+            .build_load(struct_ptr, "struct_check")
+            .is_struct_value()
+        {
+            return Err(self.error(pos, "Expected 'object'"));
+        }
 
         let i = self
             .objects

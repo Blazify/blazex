@@ -278,7 +278,9 @@ pub enum Node {
     FunDef {
         name: Option<Token>,
         body_node: Box<Node>,
+        // TODO: arg_tokens: Vec<Token>
         arg_tokens: Vec<(Token, Type)>,
+        // TODO: remove return_type
         return_type: Type,
     },
     ForNode {
@@ -334,8 +336,10 @@ pub enum Node {
         args: Vec<Node>,
     },
     ClassDefNode {
+        // TODO: methods: Vec<(Token, Vec<Token>, Node)>,
         methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)>,
         properties: Vec<(Token, Node)>,
+        // TODO: (Vec<Token>, Box<Node>)
         constructor: (Vec<(Token, Type)>, Box<Node>),
         name: Token,
     },
@@ -345,8 +349,11 @@ pub enum Node {
     },
     ExternNode {
         name: Token,
+        // TODO: arg_tokens: Vec<String>,
         arg_tokens: Vec<Type>,
+        // TODO: return_type: String,
         return_type: Type,
+        // TODO: remove var_args
         var_args: bool,
     },
 }
@@ -478,6 +485,70 @@ impl Node {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum TypedNode<'ctx> {
+    Statements(&'ctx Vec<&'ctx TypedNode<'ctx>>),
+    While(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>),
+    VarReassign(&'static str, Token, &'ctx TypedNode<'ctx>),
+    VarAssign(&'static str, &'ctx TypedNode<'ctx>),
+    VarAccess(&'static str),
+    Unary(&'ctx TypedNode<'ctx>, Token),
+    String(&'static str),
+    Int(i128),
+    Float(f64),
+    If(&'ctx Vec<(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>)>),
+    Fun(
+        &'static str,
+        &'ctx Vec<(&'static str, AnyTypeEnum<'ctx>)>,
+        &'ctx TypedNode<'ctx>,
+        AnyTypeEnum<'ctx>,
+    ),
+    For(
+        &'static str,
+        &'ctx TypedNode<'ctx>,
+        &'ctx TypedNode<'ctx>,
+        &'ctx TypedNode<'ctx>,
+        &'ctx TypedNode<'ctx>,
+    ),
+    Char(char),
+    Call(&'ctx TypedNode<'ctx>, &'ctx Vec<&'ctx TypedNode<'ctx>>),
+    Boolean(bool),
+    Binary(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>, Token),
+    Array(AnyTypeEnum<'ctx>, &'ctx TypedNode<'ctx>),
+    Index(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>),
+    Return(&'ctx TypedNode<'ctx>),
+    Object(&'ctx Vec<(&'static str, &'ctx TypedNode<'ctx>)>),
+    ObjectAccess(&'ctx TypedNode<'ctx>, &'static str),
+    ObjectEdit(&'ctx TypedNode<'ctx>, &'static str, &'ctx TypedNode<'ctx>),
+    ObjectCall(
+        &'ctx TypedNode<'ctx>,
+        &'static str,
+        &'ctx Vec<&'ctx TypedNode<'ctx>>,
+    ),
+    Class(
+        &'static str,
+        (
+            &'ctx Vec<(&'ctx TypedNode<'ctx>, AnyTypeEnum<'ctx>)>,
+            &'ctx TypedNode<'ctx>,
+        ),
+        &'ctx Vec<(&'static str, &'ctx TypedNode<'ctx>)>,
+        &'ctx Vec<(
+            &'static str,
+            Vec<(&'static str, AnyTypeEnum<'ctx>)>,
+            &'ctx TypedNode<'ctx>,
+            AnyTypeEnum<'ctx>,
+        )>,
+    ),
+    ClassInit(&'static str, &'ctx Vec<&'ctx TypedNode<'ctx>>),
+    Extern(
+        &'static str,
+        &'ctx Vec<AnyTypeEnum<'ctx>>,
+        AnyTypeEnum<'ctx>,
+        bool,
+    ),
+}
+
+// TODO: remove `Type` Struct and impl
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,

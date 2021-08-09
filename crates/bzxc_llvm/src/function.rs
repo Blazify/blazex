@@ -17,7 +17,6 @@ use bzxc_llvm_wrapper::{
     values::{BasicValue, BasicValueEnum, FunctionValue},
 };
 use bzxc_shared::{Error, Node, Position, Token, Type};
-use rand::{distributions::Alphanumeric, Rng};
 
 use crate::{Compiler, Function, Prototype};
 
@@ -36,17 +35,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let fn_type = ret_type.fn_type(args_types, false);
         let fn_val = self.module.add_function(
-            proto
-                .name
-                .as_ref()
-                .unwrap_or(
-                    &rand::thread_rng()
-                        .sample_iter(&Alphanumeric)
-                        .take(20)
-                        .map(char::from)
-                        .collect(),
-                )
-                .as_str(),
+            proto.name.as_ref().unwrap_or(&"%".to_string()).as_str(),
             fn_type,
             None,
         );
@@ -161,14 +150,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             return Err(self.error(pos, "Expected a Function pointer found something else"));
         }
 
-        let call =
-            self.builder
-                .build_call(func.into_pointer_value(), &compiled_args[..], "tmpcall");
+        let ptr = func.into_pointer_value();
 
-        match call {
-            Ok(call) => Ok(call.try_as_basic_value().left_or(self.null())),
-            Err(_) => Err(self.error(pos, "Not a function")),
-        }
+        Ok(self
+            .builder
+            .build_call(ptr, &compiled_args[..], "tmpcall")
+            .ok()
+            .ok_or(self.error(pos, "Not a function"))?
+            .try_as_basic_value()
+            .left_or(self.null()))
     }
 
     pub(crate) fn fun_extern(

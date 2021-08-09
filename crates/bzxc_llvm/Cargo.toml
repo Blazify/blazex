@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }
-rand = "0.8.3"
 bzxc_shared = { path = "../bzxc_shared" }

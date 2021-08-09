@@ -35,22 +35,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
                 Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
                 Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
-                Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
+                Tokens::Divide => self.builder.build_int_signed_div(lhs, rhs, "tmpdiv"),
                 Tokens::LessThan => {
                     self.builder
-                        .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::SLT, lhs, rhs, "tmpcmp")
                 }
                 Tokens::GreaterThan => {
                     self.builder
-                        .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::SGT, lhs, rhs, "tmpcmp")
                 }
                 Tokens::LessThanEquals => {
                     self.builder
-                        .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::SLE, lhs, rhs, "tmpcmp")
                 }
                 Tokens::GreaterThanEquals => {
                     self.builder
-                        .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::SGE, lhs, rhs, "tmpcmp")
                 }
                 Tokens::DoubleEquals => {
                     self.builder
@@ -62,9 +62,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
                 _ => {
                     if op_token.value == Tokens::Keyword("and") {
-                        lhs.const_and(rhs)
+                        self.builder.build_and(lhs, rhs, "and")
                     } else if op_token.value == Tokens::Keyword("or") {
-                        lhs.const_or(rhs)
+                        self.builder.build_or(lhs, rhs, "or")
                     } else {
                         return Err(self.error(pos, "Unknown operation"));
                     }

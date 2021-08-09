@@ -18,6 +18,7 @@ mod arith_expr;
 mod array_expr;
 mod atom;
 mod call;
+mod call_access_expr;
 mod class_def;
 mod class_init;
 mod comp_expr;
