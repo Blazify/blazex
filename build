@@ -3,14 +3,11 @@ set -e
 
 if [ "$OS" = "Windows_NT" ]; then
 	target="x86_64-pc-windows-msvc"
-	exe="blazex-windows"
 	exten=".exe"
 else
 	case $(uname -sm) in
-	"Darwin x86_64") target="x86_64-apple-darwin"
-	exe="blazex-apple";;
-	*) target="x86_64-unknown-linux-gnu"
-	exe="blazex-linux";;
+	"Darwin x86_64") target="x86_64-apple-darwin";;
+	*) target="x86_64-unknown-linux-gnu";;
 	esac
 	exten=""
 fi
@@ -20,9 +17,10 @@ cargo build --locked --target $target --release
 if [ ! -d "./bin" ]; then
 	mkdir -p "./bin"
 fi
-if [ -f "./bin/$exe" ]; then
-    rm -r "./bin/$exe"
+
+if [ -f "./bin/blazex$exten" ]; then
+    rm -r "./bin/blazex$exten"
 fi
 
-cp "./target/$target/release/blazex$exten" "./bin/$exe$exten"
-strip "./bin/$exe$exten"
+cp "./target/$target/release/blazex$exten" "./bin/blazex$exten"
+strip "./bin/blazex$exten"

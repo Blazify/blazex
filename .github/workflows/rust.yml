@@ -16,10 +16,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: blazex-linux
+            artifact_name: blazex
             exe: main
           - os: macos-10.15
-            artifact_name: blazex-apple
+            artifact_name: blazex
             exe: main
           # - os: windows-latest
           #   artifact_name: blazex-windows.exe
