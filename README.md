@@ -11,7 +11,7 @@ A object orineted AOT compiled language which is kinda statically typed (plan: m
 In Ubuntu Or MacOS or Windows (WSL)
 
 ```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/install | bash
+$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/Makefile | make install
 ```
 
 Confirm Installation
@@ -32,7 +32,7 @@ For more information try --help
 
 ## Note
 
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazex-vscode) and i am also looking for collaborators
+This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazex-vscode) and I am also looking for collaborators
 
 ## Example
 
