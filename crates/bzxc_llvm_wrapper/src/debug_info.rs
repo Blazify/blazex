@@ -1135,7 +1135,7 @@ mod flags {
         const PROTECTED: Self;
         const PUBLIC: Self;
         const FWD_DECL: Self;
-        const MACOS_BLOCK: Self;
+        const APPLE_BLOCK: Self;
         //#[llvm_versions(7.0..=9.0)]
         //const BLOCK_BYREF_STRUCT: Self;
         const VIRTUAL: Self;
@@ -1182,7 +1182,7 @@ mod flags {
         const PROTECTED: DIFlags = llvm_sys::debuginfo::LLVMDIFlagProtected;
         const PUBLIC: DIFlags = llvm_sys::debuginfo::LLVMDIFlagPublic;
         const FWD_DECL: DIFlags = llvm_sys::debuginfo::LLVMDIFlagFwdDecl;
-        const MACOS_BLOCK: DIFlags = llvm_sys::debuginfo::LLVMDIFlagMacOSBlock;
+        const APPLE_BLOCK: DIFlags = llvm_sys::debuginfo::LLVMDIFlagAppleBlock;
         //#[llvm_versions(7.0..=9.0)]
         //const BLOCK_BYREF_STRUCT: DIFlags = llvm_sys::debuginfo::LLVMDIFlagBlockByrefStruct;
         const VIRTUAL: DIFlags = llvm_sys::debuginfo::LLVMDIFlagVirtual;
