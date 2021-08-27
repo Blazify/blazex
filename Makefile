@@ -22,7 +22,7 @@ ifeq ($(PLATFORM), Darwin x86_64)
 	TARGET := x86_64-apple-darwin
 	DOWNLOAD_TARGET := blazex-macos
 endif
-ifeq ($(PLATFORM), Linux)
+ifeq ($(PLATFORM), Linux x86_64)
 	TARGET := x86_64-unknown-linux-gnu
 	DOWNLOAD_TARGET := blazex-linux
 endif
@@ -43,7 +43,7 @@ endif
 ifeq ($(shell test -e ./bin/blazex$(EXTENSION) ; echo $$?), 0)
 	@rm -r "./bin/blazex$(EXTENSION)"
 endif
-	
+
 	cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "./bin/blazex$(EXTENSION)"
 	strip "./bin/blazex$(EXTENSION)"
 
