@@ -23,7 +23,6 @@ mod class_def;
 mod class_init;
 mod comp_expr;
 mod expr;
-mod extern_expr;
 mod factor;
 mod for_expr;
 mod fun_def;
@@ -35,7 +34,6 @@ mod power;
 mod statement;
 mod statements;
 mod term;
-mod type_expr;
 mod var_expr;
 mod while_expr;
 
@@ -101,15 +99,5 @@ impl Parser {
     fn reverse(&mut self, cnt: usize) {
         self.token_index -= cnt;
         self.update_current_token();
-    }
-
-    /*
-     * Checks whether is a type declaration
-     */
-    fn is_type_decl(&self) -> bool {
-        matches!(
-            self.current_token.value,
-            Tokens::LeftSquareBraces | Tokens::Identifier(_) | Tokens::Keyword(_)
-        )
     }
 }

@@ -278,10 +278,7 @@ pub enum Node {
     FunDef {
         name: Option<Token>,
         body_node: Box<Node>,
-        // TODO: arg_tokens: Vec<Token>
-        arg_tokens: Vec<(Token, Type)>,
-        // TODO: remove return_type
-        return_type: Type,
+        arg_tokens: Vec<Token>,
     },
     ForNode {
         var_name_token: Token,
@@ -336,11 +333,9 @@ pub enum Node {
         args: Vec<Node>,
     },
     ClassDefNode {
-        // TODO: methods: Vec<(Token, Vec<Token>, Node)>,
-        methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)>,
+        methods: Vec<(Token, Vec<Token>, Node)>,
         properties: Vec<(Token, Node)>,
-        // TODO: (Vec<Token>, Box<Node>)
-        constructor: (Vec<(Token, Type)>, Box<Node>),
+        constructor: (Vec<Token>, Box<Node>),
         name: Token,
     },
     ClassInitNode {
@@ -349,12 +344,8 @@ pub enum Node {
     },
     ExternNode {
         name: Token,
-        // TODO: arg_tokens: Vec<String>,
-        arg_tokens: Vec<Type>,
-        // TODO: return_type: String,
-        return_type: Type,
-        // TODO: remove var_args
-        var_args: bool,
+        arg_tokens: Vec<String>,
+        return_type: String,
     },
 }
 
@@ -391,12 +382,11 @@ impl Node {
                 name,
                 body_node,
                 arg_tokens,
-                return_type: _,
             } => (
                 if name.is_some() {
                     name.clone().unwrap().pos_start
                 } else if !arg_tokens.is_empty() {
-                    arg_tokens.first().unwrap().0.pos_start
+                    arg_tokens.first().unwrap().pos_start
                 } else {
                     body_node.get_pos().0
                 },

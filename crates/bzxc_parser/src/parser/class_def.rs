@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{Error, Node, Token, Tokens, Type};
+use bzxc_shared::{Error, Node, Tokens};
 
 impl Parser {
     /*
@@ -48,10 +48,9 @@ impl Parser {
         }
 
         let mut constructor_def = false;
-        let mut methods: Vec<(Token, Vec<(Token, Type)>, Node, Type)> = vec![];
-        let mut constructor: (Vec<(Token, Type)>, Box<Node>) =
-            (vec![], Box::new(Node::Statements { statements: vec![] }));
-        let mut properties: Vec<(Token, Node)> = vec![];
+        let mut methods = vec![];
+        let mut constructor = (vec![], Box::new(Node::Statements { statements: vec![] }));
+        let mut properties = vec![];
 
         if self.current_token.value != Tokens::LeftCurlyBraces {
             return res.failure(Error::new(
@@ -84,7 +83,6 @@ impl Parser {
                         name,
                         arg_tokens,
                         body_node,
-                        return_type,
                     } => {
                         if name.is_none() {
                             if constructor_def {
@@ -99,7 +97,7 @@ impl Parser {
                             constructor_def = true;
                             constructor = (arg_tokens, body_node);
                         } else {
-                            methods.push((name.unwrap(), arg_tokens, *body_node, return_type))
+                            methods.push((name.unwrap(), arg_tokens, *body_node))
                         }
                     }
                     _ => {

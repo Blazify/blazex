@@ -108,12 +108,6 @@ impl Parser {
                 return res;
             }
             return res.success(fun_def.unwrap());
-        } else if token.value == Tokens::Keyword("extern") {
-            let extern_expr = res.register(self.extern_expr());
-            if res.error.is_some() {
-                return res;
-            }
-            return res.success(extern_expr.unwrap());
         } else if token.value == Tokens::Keyword("class") {
             let class_def = res.register(self.class_def());
             if res.error.is_some() {
