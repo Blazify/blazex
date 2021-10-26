@@ -487,65 +487,122 @@ impl Node {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TypedNode<'ctx> {
-    Statements(&'ctx Vec<&'ctx TypedNode<'ctx>>),
-    While(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>),
-    VarReassign(&'static str, Token, &'ctx TypedNode<'ctx>),
-    VarAssign(&'static str, &'ctx TypedNode<'ctx>),
-    VarAccess(&'static str),
-    Unary(&'ctx TypedNode<'ctx>, Token),
-    String(&'static str),
-    Int(i128),
-    Float(f64),
-    If(&'ctx Vec<(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>)>),
-    Fun(
-        &'static str,
-        &'ctx Vec<(&'static str, AnyTypeEnum<'ctx>)>,
-        &'ctx TypedNode<'ctx>,
-        AnyTypeEnum<'ctx>,
-    ),
-    For(
-        &'static str,
-        &'ctx TypedNode<'ctx>,
-        &'ctx TypedNode<'ctx>,
-        &'ctx TypedNode<'ctx>,
-        &'ctx TypedNode<'ctx>,
-    ),
-    Char(char),
-    Call(&'ctx TypedNode<'ctx>, &'ctx Vec<&'ctx TypedNode<'ctx>>),
-    Boolean(bool),
-    Binary(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>, Token),
-    Array(AnyTypeEnum<'ctx>, &'ctx TypedNode<'ctx>),
-    Index(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>),
-    Return(&'ctx TypedNode<'ctx>),
-    Object(&'ctx Vec<(&'static str, &'ctx TypedNode<'ctx>)>),
-    ObjectAccess(&'ctx TypedNode<'ctx>, &'static str),
-    ObjectEdit(&'ctx TypedNode<'ctx>, &'static str, &'ctx TypedNode<'ctx>),
-    ObjectCall(
-        &'ctx TypedNode<'ctx>,
-        &'static str,
-        &'ctx Vec<&'ctx TypedNode<'ctx>>,
-    ),
-    Class(
-        &'static str,
-        (
-            &'ctx Vec<(&'ctx TypedNode<'ctx>, AnyTypeEnum<'ctx>)>,
+    Statements {
+        statements: &'ctx [&'ctx TypedNode<'ctx>],
+    },
+    While {
+        condition_node: &'ctx TypedNode<'ctx>,
+        body_node: &'ctx TypedNode<'ctx>,
+    },
+    VarReassign {
+        name: &'static str,
+        typee: Token,
+        value: &'ctx TypedNode<'ctx>,
+    },
+    VarAssign {
+        name: &'static str,
+        value: &'ctx TypedNode<'ctx>,
+    },
+    VarAccess {
+        token: &'static str,
+    },
+    Unary {
+        node: &'ctx TypedNode<'ctx>,
+        op_token: Token,
+    },
+    String {
+        token: &'static str,
+    },
+    Int {
+        token: i128,
+    },
+    Float {
+        token: f64,
+    },
+    If {
+        cases: &'ctx [(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>)],
+        else_case: Option<&'ctx TypedNode<'ctx>>,
+    },
+    Fun {
+        name: Option<&'static str>,
+        arg_tokens: &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
+        body: &'ctx TypedNode<'ctx>,
+        return_type: AnyTypeEnum<'ctx>,
+    },
+    For {
+        var_name_token: &'static str,
+        start_value: &'ctx TypedNode<'ctx>,
+        end_value: &'ctx TypedNode<'ctx>,
+        body_node: &'ctx TypedNode<'ctx>,
+        step_value_node: &'ctx TypedNode<'ctx>,
+    },
+    Char {
+        token: char,
+    },
+    Call {
+        node_to_call: &'ctx TypedNode<'ctx>,
+        args: &'ctx [&'ctx TypedNode<'ctx>],
+    },
+    Boolean {
+        token: bool,
+    },
+    Binary {
+        left: &'ctx TypedNode<'ctx>,
+        right: &'ctx TypedNode<'ctx>,
+        op_token: Token,
+    },
+    Array {
+        typee: &'ctx AnyTypeEnum<'ctx>,
+        element_nodes: &'ctx [&'ctx TypedNode<'ctx>],
+    },
+    Index {
+        array: &'ctx TypedNode<'ctx>,
+        index: &'ctx TypedNode<'ctx>,
+    },
+    Return {
+        value: Option<&'ctx TypedNode<'ctx>>,
+    },
+    Object {
+        properties: &'ctx [(&'static str, &'ctx TypedNode<'ctx>)],
+    },
+    ObjectAccess {
+        object: &'ctx TypedNode<'ctx>,
+        property: &'static str,
+    },
+    ObjectEdit {
+        object: &'ctx TypedNode<'ctx>,
+        property: &'static str,
+        new_val: &'ctx TypedNode<'ctx>,
+    },
+    ObjectCall {
+        object: &'ctx TypedNode<'ctx>,
+        property: &'static str,
+        args: &'ctx [&'ctx TypedNode<'ctx>],
+    },
+    Class {
+        name: &'static str,
+        constructor: (
+            &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
             &'ctx TypedNode<'ctx>,
         ),
-        &'ctx Vec<(&'static str, &'ctx TypedNode<'ctx>)>,
-        &'ctx Vec<(
+        properties: &'ctx [(&'static str, &'ctx TypedNode<'ctx>)],
+        methods: &'ctx [(
             &'static str,
-            Vec<(&'static str, AnyTypeEnum<'ctx>)>,
+            &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
             &'ctx TypedNode<'ctx>,
             AnyTypeEnum<'ctx>,
-        )>,
-    ),
-    ClassInit(&'static str, &'ctx Vec<&'ctx TypedNode<'ctx>>),
-    Extern(
-        &'static str,
-        &'ctx Vec<AnyTypeEnum<'ctx>>,
-        AnyTypeEnum<'ctx>,
-        bool,
-    ),
+        )],
+    },
+    ClassInit {
+        name: &'static str,
+        constructor_params: &'ctx [&'ctx TypedNode<'ctx>],
+    },
+    Extern {
+        name: &'static str,
+        arg_tokens: &'ctx [AnyTypeEnum<'ctx>],
+        return_type: AnyTypeEnum<'ctx>,
+        var_args: bool,
+    },
 }
 
 // TODO: remove `Type` Struct and impl

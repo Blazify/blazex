@@ -54,8 +54,6 @@ pub fn compile(
         }
     }
 
-    let typed = TypeSystem::new(parsed.node.unwrap()).typed_node();
-
     let context = Context::create();
     let module = context.create_module(name);
     let builder = context.create_builder();
@@ -72,7 +70,7 @@ pub fn compile(
     enable_llvm_pretty_stack_trace();
 
     let func = Function {
-        body: typed,
+        body: TypeSystem::new(parsed.node.unwrap(), &context).typed_node(),
         prototype: Prototype {
             name: Some(String::from("main")),
             args: vec![],
@@ -80,51 +78,45 @@ pub fn compile(
         },
     };
 
-    match Compiler::init(&context, &builder, &module, &fpm, func).compile_main() {
+    Compiler::init(&context, &builder, &module, &fpm, func).compile_main();
+    if llvm {
+        println!("LLVM IR:\n{}", module.print_to_string().to_string());
+    }
+
+    if jit_ {
+        jit(module.clone());
+        if !watch {
+            return 1;
+        }
+    };
+
+    let path = Path::new(&out_file);
+
+    Target::initialize_all(&InitializationConfig::default());
+    let target = Target::from_name("x86-64").unwrap();
+    let target_machine = target
+        .create_target_machine(
+            &TargetMachine::get_default_triple(),
+            "x86-64",
+            TargetMachine::get_host_cpu_features().to_string().as_str(),
+            OptimizationLevel::Aggressive,
+            RelocMode::Default,
+            CodeModel::Default,
+        )
+        .unwrap();
+
+    match target_machine.write_to_file(&module, FileType::Object, &path) {
         Ok(_) => {
-            if llvm {
-                println!("LLVM IR:\n{}", module.print_to_string().to_string());
-            }
-
-            if jit_ {
-                jit(module.clone());
-                if !watch {
-                    return 1;
-                }
-            };
-
-            let path = Path::new(&out_file);
-
-            Target::initialize_all(&InitializationConfig::default());
-            let target = Target::from_name("x86-64").unwrap();
-            let target_machine = target
-                .create_target_machine(
-                    &TargetMachine::get_default_triple(),
-                    "x86-64",
-                    TargetMachine::get_host_cpu_features().to_string().as_str(),
-                    OptimizationLevel::Aggressive,
-                    RelocMode::Default,
-                    CodeModel::Default,
-                )
-                .unwrap();
-
-            match target_machine.write_to_file(&module, FileType::Object, &path) {
-                Ok(_) => {
-                    if !is_quiet {
-                        println!("Wrote object file to {}", out_file);
-                    }
-                }
-                Err(e) => {
-                    eprintln!("{}", e.to_string());
-                    return 1;
-                }
+            if !is_quiet {
+                println!("Wrote object file to {}", out_file);
             }
         }
-        Err(err) => {
-            err.prettify();
+        Err(e) => {
+            eprintln!("{}", e.to_string());
             return 1;
         }
     }
+
     return 0;
 }
 

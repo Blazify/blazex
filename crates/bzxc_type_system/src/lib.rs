@@ -11,19 +11,21 @@
  * limitations under the License.
 */
 
-/// NO idea how type system should be implemented
-use bzxc_shared::Node;
+use bzxc_llvm_wrapper::context::Context;
+use bzxc_shared::{Node, TypedNode};
 
-pub struct TypeSystem {
+/// NO idea how type system should be implemented
+pub struct TypeSystem<'ctx> {
     pub node: Node,
+    pub ctx: &'ctx Context,
 }
 
-impl TypeSystem {
-    pub fn new(node: Node) -> Self {
-        TypeSystem { node }
+impl<'ctx> TypeSystem<'ctx> {
+    pub fn new(node: Node, ctx: &'ctx Context) -> Self {
+        TypeSystem { node, ctx }
     }
 
-    pub fn typed_node(&self) -> Node {
-        self.node.clone()
+    pub fn typed_node(&self) -> TypedNode<'ctx> {
+        TypedNode::Statements { statements: &[] }
     }
 }

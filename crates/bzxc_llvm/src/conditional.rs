@@ -12,16 +12,16 @@
 */
 
 use bzxc_llvm_wrapper::values::BasicValueEnum;
-use bzxc_shared::{Error, Node};
+use bzxc_shared::TypedNode;
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn if_decl(
         &mut self,
-        cases: Vec<(Node, Node)>,
-        else_case: Option<Node>,
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        cases: &'ctx [(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>)],
+        else_case: Option<&'ctx TypedNode<'ctx>>,
+    ) -> BasicValueEnum<'ctx> {
         let mut blocks = vec![self.builder.get_insert_block().unwrap()];
         let parent = self.fn_value();
         for _ in 1..cases.len() {
@@ -45,7 +45,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(then_block);
 
-            let condition = self.compile_node(cond.clone())?;
+            let condition = self.compile_node(*cond.clone());
             let conditional_block = self.context.prepend_basic_block(else_block, "if_body");
 
             self.builder.build_conditional_branch(
@@ -55,7 +55,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             );
 
             self.builder.position_at_end(conditional_block);
-            self.compile_node(body.clone())?;
+            self.compile_node(*body.clone());
             if !self.ret {
                 self.builder.build_unconditional_branch(after_block);
             };
@@ -63,13 +63,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         if let Some(else_block) = else_block {
             self.builder.position_at_end(else_block);
-            self.compile_node(else_case.unwrap())?;
+            self.compile_node(*else_case.unwrap());
             self.builder.build_unconditional_branch(after_block);
         }
 
         self.builder.position_at_end(after_block);
         self.ret = false;
 
-        Ok(self.null())
+        self.null()
     }
 }

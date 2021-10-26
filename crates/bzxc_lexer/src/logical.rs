@@ -26,6 +26,7 @@ impl Lexer {
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '=' {
+            self.advance();
             return Token::new(Tokens::LessThanEquals, start, self.position.clone());
         }
 
@@ -40,6 +41,7 @@ impl Lexer {
         self.advance();
 
         if self.current_char.unwrap_or(' ') == '=' {
+            self.advance();
             return Token::new(Tokens::GreaterThanEquals, start, self.position.clone());
         }
 

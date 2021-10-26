@@ -1,4 +1,4 @@
-# [BlazeX](https://bzx.blazify.rocks)
+# [BlazeX](https://blazex.blazify.rocks)
 
 - [Discord](https://discord.gg/R9NhMfr9Fu)
 - [Gitter](https://gitter.im/BlazifyOrg-blazex/community)
@@ -11,7 +11,9 @@ A object orineted AOT compiled language which is kinda statically typed (plan: m
 In Ubuntu Or MacOS or Windows (WSL)
 
 ```shell
-$ curl -fsSL https://raw.githubusercontent.com/BlazifyOrg/blazex/main/Makefile | make install
+$ curl https://raw.githubusercontent.com/BlazifyOrg/blazex/main/Makefile
+$ make install
+$ rm -r Makefile
 ```
 
 Confirm Installation

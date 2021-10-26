@@ -12,25 +12,24 @@
 */
 
 use bzxc_llvm_wrapper::{values::BasicValueEnum, FloatPredicate, IntPredicate};
-use bzxc_shared::{Error, Node, Position, Token};
+use bzxc_shared::TypedNode;
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn for_loop(
         &mut self,
-        var_name_token: Token,
-        start_value: Node,
-        end_value: Node,
-        body_node: Node,
-        step_value_node: Node,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        var_name_token: &'static str,
+        start_value: TypedNode<'ctx>,
+        end_value: TypedNode<'ctx>,
+        body_node: TypedNode<'ctx>,
+        step_value_node: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
         let parent = self.fn_value();
 
-        let start = self.compile_node(start_value)?;
+        let start = self.compile_node(start_value);
         let start_alloca =
-            self.create_entry_block_alloca(&var_name_token.value.into_string(), start.get_type());
+            self.create_entry_block_alloca(&var_name_token.to_string(), start.get_type());
 
         self.builder.build_store(start_alloca, start);
 
@@ -39,26 +38,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.build_unconditional_branch(loop_block);
         self.builder.position_at_end(loop_block);
 
-        let old_val = self.variables.remove(&var_name_token.value.into_string());
+        let old_val = self.variables.remove(&var_name_token.to_string());
 
         self.variables
-            .insert(var_name_token.value.into_string(), start_alloca);
+            .insert(var_name_token.to_string(), start_alloca);
 
-        self.compile_node(body_node)?;
-        let step = self.compile_node(step_value_node)?;
-        let end_condition = self.compile_node(end_value)?;
+        self.compile_node(body_node);
+        let step = self.compile_node(step_value_node);
+        let end_condition = self.compile_node(end_value);
 
         let curr_var = self
             .builder
-            .build_load(start_alloca, &var_name_token.value.into_string());
-
-        if !((curr_var.is_int_value() && step.is_int_value() && end_condition.is_int_value())
-            || (curr_var.is_float_value()
-                && step.is_float_value()
-                && end_condition.is_float_value()))
-        {
-            return Err(self.error(pos, "Expected same type in all start, step and end"));
-        }
+            .build_load(start_alloca, &var_name_token.to_string());
 
         let next_var: BasicValueEnum = if curr_var.is_int_value() {
             self.builder
@@ -97,41 +88,40 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder
             .build_conditional_branch(end_condition, loop_block, after_block);
         self.builder.position_at_end(after_block);
-        self.variables.remove(&var_name_token.value.into_string());
+        self.variables.remove(&var_name_token.to_string());
 
         if let Some(val) = old_val {
-            self.variables
-                .insert(var_name_token.value.into_string(), val);
+            self.variables.insert(var_name_token.to_string(), val);
         }
 
-        Ok(self.null())
+        self.null()
     }
 
     pub(crate) fn while_loop(
         &mut self,
-        condition_node: Node,
-        body_node: Node,
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        condition_node: TypedNode<'ctx>,
+        body_node: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
         let parent = self.fn_value();
         let loop_block = self.context.append_basic_block(parent, "while_loop");
 
         let after_block = self.context.append_basic_block(parent, "afterloop");
 
         self.builder.build_conditional_branch(
-            self.compile_node(condition_node.clone())?.into_int_value(),
+            self.compile_node(condition_node.clone()).into_int_value(),
             loop_block,
             after_block,
         );
 
         self.builder.position_at_end(loop_block);
-        self.compile_node(body_node)?;
+        self.compile_node(body_node);
         self.builder.build_conditional_branch(
-            self.compile_node(condition_node.clone())?.into_int_value(),
+            self.compile_node(condition_node.clone()).into_int_value(),
             loop_block,
             after_block,
         );
         self.builder.position_at_end(after_block);
 
-        Ok(self.null())
+        self.null()
     }
 }

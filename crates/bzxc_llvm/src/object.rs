@@ -12,15 +12,15 @@
 */
 
 use bzxc_llvm_wrapper::values::{BasicValueEnum, PointerValue};
-use bzxc_shared::{Error, Node, Position, Token};
+use bzxc_shared::TypedNode;
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn obj_decl(
         &mut self,
-        properties: Vec<(Token, Node)>,
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        properties: &'ctx [(&'static str, &'ctx TypedNode<'ctx>)],
+    ) -> BasicValueEnum<'ctx> {
         let arr = self
             .context
             .i8_type()
@@ -33,11 +33,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let mut types = vec![arr.get_type().into()];
         let mut names = vec![String::new()];
 
-        for (k, v) in &properties {
-            let val = self.compile_node(v.clone())?;
+        for (k, v) in properties {
+            let val = self.compile_node(*v.clone());
             values.push(val);
             types.push(val.get_type());
-            names.push(k.value.into_string());
+            names.push(k.to_string());
         }
 
         let mut struct_val = self.context.struct_type(&types[..], false).get_undef();
@@ -60,58 +60,47 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .insert((struct_ptr.get_type(), name.clone()), i as u32);
         }
 
-        Ok(struct_ptr.into())
+        struct_ptr.into()
     }
 
     pub(crate) fn obj_get(
         &mut self,
-        object: Node,
-        property: Token,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let struct_val = self.compile_node(object)?;
-        let ptr = self.obj_prop_pointer(struct_val, property.value.into_string(), pos)?;
+        object: TypedNode<'ctx>,
+        property: &'static str,
+    ) -> BasicValueEnum<'ctx> {
+        let struct_val = self.compile_node(object);
+        let ptr = self.obj_prop_pointer(struct_val, property.to_string());
 
-        Ok(self.builder.build_load(ptr, "obj_prop"))
+        self.builder.build_load(ptr, "obj_prop")
     }
 
     pub(crate) fn obj_edit(
         &mut self,
-        object: Node,
-        property: Token,
-        new_val: Node,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let val = self.compile_node(new_val)?;
+        object: TypedNode<'ctx>,
+        property: &'static str,
+        new_val: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
+        let val = self.compile_node(new_val);
 
-        let struct_val = self.compile_node(object)?;
-        let ptr = self.obj_prop_pointer(struct_val, property.value.into_string(), pos)?;
+        let struct_val = self.compile_node(object);
+        let ptr = self.obj_prop_pointer(struct_val, property.to_string());
         self.builder.build_store(ptr, val);
 
-        Ok(struct_val.into())
+        struct_val.into()
     }
 
     pub(crate) fn obj_method_call(
         &mut self,
-        object: Node,
-        property: Token,
-        args: Vec<Node>,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let struct_val = self.compile_node(object)?;
-        if !struct_val.is_pointer_value() {
-            return Err(self.error(pos, "Expected 'object'"));
-        }
-        let prop = property.value.into_string();
+        object: TypedNode<'ctx>,
+        property: &'static str,
+        args: &'ctx [&'ctx TypedNode<'ctx>],
+    ) -> BasicValueEnum<'ctx> {
+        let struct_val = self.compile_node(object);
+
+        let prop = property.to_string();
 
         let ptr = struct_val.into_pointer_value();
-        if self
-            .builder
-            .build_load(ptr, "struct_check")
-            .is_struct_value()
-        {
-            return Err(self.error(pos, "Expected 'object'"));
-        }
+
         let class_name = self.classes.get(&ptr.get_type()).clone();
         let is_class = class_name.is_some();
         let method = if is_class {
@@ -126,26 +115,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             compiled_args.push(ptr.into());
         }
         for arg in args {
-            compiled_args.push(self.compile_node(arg)?);
+            compiled_args.push(self.compile_node(**arg));
         }
 
         if !is_class {
-            let func = self.obj_prop_pointer(struct_val, prop, pos)?;
+            let func = self.obj_prop_pointer(struct_val, prop.to_string());
             let call = self
                 .builder
                 .build_call(func, &compiled_args[..], "obj_func_call")
                 .ok()
                 .unwrap();
 
-            return Ok(call
+            return call
                 .try_as_basic_value()
-                .left_or(self.context.i128_type().const_int(0, false).into()));
+                .left_or(self.context.i128_type().const_int(0, false).into());
         }
 
         let fun = self.get_function(&method.unwrap());
-        if fun.is_none() {
-            return Err(self.error(pos, "No method found"));
-        }
 
         let call = self
             .builder
@@ -153,42 +139,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .ok()
             .unwrap();
 
-        Ok(call
-            .try_as_basic_value()
-            .left_or(self.context.i128_type().const_int(0, false).into()))
+        call.try_as_basic_value()
+            .left_or(self.context.i128_type().const_int(0, false).into())
     }
 
     fn obj_prop_pointer(
         &mut self,
         struct_val: BasicValueEnum<'ctx>,
         prop: String,
-        pos: (Position, Position),
-    ) -> Result<PointerValue<'ctx>, Error> {
-        if !struct_val.is_pointer_value() {
-            return Err(self.error(pos, "Expected 'object'"));
-        }
-
+    ) -> PointerValue<'ctx> {
         let struct_ptr = struct_val.into_pointer_value();
 
-        if self
-            .builder
-            .build_load(struct_ptr, "struct_check")
-            .is_struct_value()
-        {
-            return Err(self.error(pos, "Expected 'object'"));
-        }
-
-        let i = self
-            .objects
-            .get(&(struct_ptr.get_type(), prop))
-            .ok_or(self.error(pos, "Property not found on object"))?;
+        let i = self.objects.get(&(struct_ptr.get_type(), prop)).unwrap();
 
         let ptr = self
             .builder
             .build_struct_gep(struct_ptr, *i, "struct_gep")
             .ok()
-            .ok_or(self.error(pos, "Property not found on object"))?;
+            .unwrap();
 
-        Ok(ptr)
+        ptr
     }
 }

@@ -11,37 +11,33 @@
  * limitations under the License.
 */
 
-use bzxc_llvm_wrapper::{types::BasicType, values::BasicValueEnum};
-use bzxc_shared::{Error, Node, Position};
+use bzxc_llvm_wrapper::{types::AnyTypeEnum, values::BasicValueEnum};
+use bzxc_shared::TypedNode;
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn array_decl(
         &mut self,
-        element_nodes: Vec<Node>,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
+        typee: &'ctx AnyTypeEnum<'ctx>,
+        element_nodes: &'ctx [&'ctx TypedNode<'ctx>],
+    ) -> BasicValueEnum<'ctx> {
         if element_nodes.is_empty() {
-            return Ok(self.context.i128_type().array_type(0).const_zero().into());
+            return typee.array_type(0).const_zero().into();
         }
-
-        let ty = self
-            .compile_node(element_nodes.get(0).unwrap().clone())?
-            .get_type();
 
         let size = element_nodes.len() as u32;
 
         let array_alloca = self
             .builder
-            .build_alloca(ty.array_type(size), "array_alloca");
+            .build_alloca(typee.array_type(size), "array_alloca");
         let mut array = self
             .builder
             .build_load(array_alloca, "array_load")
             .into_array_value();
 
         for (i, k) in element_nodes.iter().enumerate() {
-            let elem = self.compile_node(k.clone())?;
+            let elem = self.compile_node(*k.clone());
 
             array = self
                 .builder
@@ -50,23 +46,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_array_value();
         }
 
-        Ok(array.into())
+        array.into()
     }
 
     pub(crate) fn array_access(
         &mut self,
-        array: Node,
-        index: Node,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let array = self.compile_node(array)?;
-        if !array.is_array_value() {
-            return Err(self.error(pos, "Expected a 'array'"));
-        }
-        let idx = self.compile_node(index)?;
-        if !idx.is_int_value() {
-            return Err(self.error(pos, "Expected a index"));
-        }
+        array: TypedNode<'ctx>,
+        index: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
+        let array = self.compile_node(array);
+        let idx = self.compile_node(index);
 
         let arr = array.into_array_value();
         let array_alloca = self.builder.build_alloca(arr.get_type(), "arr_alloc");
@@ -84,6 +73,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         };
         let array_elem = self.builder.build_load(array_elem_ptr, "array_elem");
 
-        Ok(array_elem)
+        array_elem
     }
 }

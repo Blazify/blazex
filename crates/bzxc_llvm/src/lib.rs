@@ -31,7 +31,7 @@ use bzxc_llvm_wrapper::{
     types::{AnyTypeEnum, BasicType, BasicTypeEnum, PointerType},
     values::{BasicValueEnum, FunctionValue, PointerValue},
 };
-use bzxc_shared::{Error, Node, Position};
+use bzxc_shared::TypedNode;
 
 #[derive(Debug, Clone)]
 pub struct Prototype<'ctx> {
@@ -43,7 +43,7 @@ pub struct Prototype<'ctx> {
 #[derive(Debug, Clone)]
 pub struct Function<'ctx> {
     pub prototype: Prototype<'ctx>,
-    pub body: Node,
+    pub body: TypedNode<'ctx>,
 }
 
 pub struct Compiler<'a, 'ctx> {
@@ -62,10 +62,6 @@ pub struct Compiler<'a, 'ctx> {
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    fn error(&self, pos: (Position, Position), description: &'static str) -> Error {
-        Error::new("Compiler Error", pos.0, pos.1, description)
-    }
-
     #[inline]
     fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
         self.module.get_function(name)
@@ -101,46 +97,44 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         ptr.into()
     }
 
-    fn compile_node(&mut self, node: Node) -> Result<BasicValueEnum<'ctx>, Error> {
+    fn compile_node(&mut self, node: TypedNode<'ctx>) -> BasicValueEnum<'ctx> {
         match node.clone() {
-            Node::Statements { statements } => {
+            TypedNode::Statements { statements } => {
                 let mut ret = None;
                 for statement in statements {
                     if self.ret {
                         continue;
                     }
-                    ret = Some(self.compile_node(statement)?);
+                    ret = Some(self.compile_node(**statement));
                 }
 
-                return Ok(if ret.is_none() {
+                return if ret.is_none() {
                     self.context.i128_type().const_int(0, false).into()
                 } else {
                     ret.unwrap()
-                });
+                };
             }
-            Node::WhileNode {
+            TypedNode::While {
                 condition_node,
                 body_node,
             } => self.while_loop(*condition_node, *body_node),
-            Node::VarReassignNode { name, typee, value } => {
-                self.var_reassign(name, *value, typee, node.get_pos())
-            }
-            Node::VarAssignNode { name, value, .. } => self.var_assign(name, *value),
-            Node::VarAccessNode { token } => self.var_access(token, node.get_pos()),
-            Node::UnaryNode {
+            TypedNode::VarReassign { name, typee, value } => self.var_reassign(name, *value, typee),
+            TypedNode::VarAssign { name, value } => self.var_assign(name, *value),
+            TypedNode::VarAccess { token } => self.var_access(token),
+            TypedNode::Unary {
                 node: child,
                 op_token,
-            } => self.unary_op(*child, op_token, node.get_pos()),
-            Node::StringNode { token } => self.string(token),
-            Node::NumberNode { token } => self.num(token),
-            Node::IfNode { cases, else_case } => self.if_decl(cases, *else_case),
-            Node::FunDef {
+            } => self.unary_op(*child, op_token),
+            TypedNode::String { token } => self.string(token),
+            TypedNode::Int { token } => self.int(token),
+            TypedNode::If { cases, else_case } => self.if_decl(cases, else_case),
+            TypedNode::Fun {
                 name,
                 arg_tokens,
-                body_node,
+                body,
                 return_type,
-            } => self.fun_decl(arg_tokens, *body_node, name, return_type),
-            Node::ForNode {
+            } => self.fun_decl(name, arg_tokens, *body, return_type),
+            TypedNode::For {
                 var_name_token,
                 start_value,
                 end_value,
@@ -152,55 +146,54 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 *end_value,
                 *body_node,
                 *step_value_node,
-                node.get_pos(),
             ),
-            Node::CharNode { token } => self.char(token),
-            Node::CallNode { node_to_call, args } => {
-                self.fun_call(*node_to_call, args, node.get_pos())
-            }
-            Node::BooleanNode { token } => self.boolean(token),
-            Node::BinaryNode {
+            TypedNode::Char { token } => self.char(token),
+            TypedNode::Call { node_to_call, args } => self.fun_call(*node_to_call, args),
+            TypedNode::Boolean { token } => self.boolean(token),
+            TypedNode::Binary {
                 left,
                 right,
                 op_token,
-            } => self.binary_op(*left, op_token, *right, node.get_pos()),
-            Node::ArrayNode { element_nodes } => self.array_decl(element_nodes, node.get_pos()),
-            Node::ArrayAcess { array, index } => self.array_access(*array, *index, node.get_pos()),
-            Node::ReturnNode { value } => self.ret(*value, node.get_pos()),
-            Node::ObjectDefNode { properties } => self.obj_decl(properties),
-            Node::ObjectPropAccess { object, property } => {
-                self.obj_get(*object, property, node.get_pos())
-            }
-            Node::ObjectPropEdit {
+            } => self.binary_op(*left, op_token, *right),
+            TypedNode::Array {
+                typee,
+                element_nodes,
+            } => self.array_decl(typee, element_nodes),
+            TypedNode::Index { array, index } => self.array_access(*array, *index),
+            TypedNode::Return { value } => self.ret(value),
+            TypedNode::Object { properties } => self.obj_decl(properties),
+            TypedNode::ObjectAccess { object, property } => self.obj_get(*object, property),
+            TypedNode::ObjectEdit {
                 object,
                 property,
                 new_val,
-            } => self.obj_edit(*object, property, *new_val, node.get_pos()),
-            Node::ObjectMethodCall {
+            } => self.obj_edit(*object, property, *new_val),
+            TypedNode::ObjectCall {
                 args,
                 object,
                 property,
-            } => self.obj_method_call(*object, property, args, node.get_pos()),
-            Node::ClassDefNode {
+            } => self.obj_method_call(*object, property, args),
+            TypedNode::Class {
                 methods,
                 properties,
                 constructor,
                 name,
-            } => self.class_decl(name, constructor, properties, methods, node.get_pos()),
-            Node::ClassInitNode {
+            } => self.class_decl(name, constructor, properties, methods),
+            TypedNode::ClassInit {
                 name,
                 constructor_params,
-            } => self.class_init(name, constructor_params, node.get_pos()),
-            Node::ExternNode {
+            } => self.class_init(name, constructor_params),
+            TypedNode::Extern {
                 name,
                 arg_tokens,
                 return_type,
                 var_args,
             } => self.fun_extern(name, arg_tokens, return_type, var_args),
+            TypedNode::Float { token } => self.float(token),
         }
     }
 
-    pub fn compile_main(&mut self) -> Result<FunctionValue<'ctx>, Error> {
+    pub fn compile_main(&mut self) -> FunctionValue<'ctx> {
         self.compile_fn(self.function.clone())
     }
 

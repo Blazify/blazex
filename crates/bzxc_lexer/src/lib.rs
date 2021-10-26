@@ -43,6 +43,7 @@ pub fn get_keywords() -> Vec<String> {
         string("extern"),
         string("variadic"),
         string("void"),
+        string("soul"),
     ]
 }
 

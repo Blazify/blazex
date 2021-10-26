@@ -12,20 +12,19 @@
 */
 
 use bzxc_llvm_wrapper::{values::BasicValueEnum, FloatPredicate, IntPredicate};
-use bzxc_shared::{Error, Node, Position, Token, Tokens};
+use bzxc_shared::{Token, Tokens, TypedNode};
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn binary_op(
         &mut self,
-        left: Node,
+        left: TypedNode<'ctx>,
         op_token: Token,
-        right: Node,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let left_val = self.compile_node(left)?;
-        let right_val = self.compile_node(right)?;
+        right: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
+        let left_val = self.compile_node(left);
+        let right_val = self.compile_node(right);
 
         if left_val.is_int_value() && right_val.is_int_value() {
             let lhs = left_val.into_int_value();
@@ -38,19 +37,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 Tokens::Divide => self.builder.build_int_signed_div(lhs, rhs, "tmpdiv"),
                 Tokens::LessThan => {
                     self.builder
-                        .build_int_compare(IntPredicate::SLT, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
                 }
                 Tokens::GreaterThan => {
                     self.builder
-                        .build_int_compare(IntPredicate::SGT, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
                 }
                 Tokens::LessThanEquals => {
                     self.builder
-                        .build_int_compare(IntPredicate::SLE, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
                 }
                 Tokens::GreaterThanEquals => {
                     self.builder
-                        .build_int_compare(IntPredicate::SGE, lhs, rhs, "tmpcmp")
+                        .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
                 }
                 Tokens::DoubleEquals => {
                     self.builder
@@ -66,11 +65,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     } else if op_token.value == Tokens::Keyword("or") {
                         self.builder.build_or(lhs, rhs, "or")
                     } else {
-                        return Err(self.error(pos, "Unknown operation"));
+                        panic!();
                     }
                 }
             };
-            return Ok(ret.into());
+            return ret.into();
         }
 
         if left_val.is_float_value() && right_val.is_float_value() {
@@ -148,30 +147,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         "tmpbool",
                     )
                 }
-                _ => return Err(self.error(pos, "Unknown operation")),
+                _ => panic!(),
             };
-            return Ok(ret.into());
+            return ret.into();
         }
 
-        Err(self.error(pos, "Unknown operation"))
+        panic!()
     }
 
     pub(crate) fn unary_op(
         &mut self,
-        child: Node,
+        child: TypedNode<'ctx>,
         op_token: Token,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let val = self.compile_node(child)?;
+    ) -> BasicValueEnum<'ctx> {
+        let val = self.compile_node(child);
 
         if val.is_float_value() {
             let built = val.into_float_value();
             let ret = match op_token.value {
                 Tokens::Plus => built,
                 Tokens::Minus => built.const_neg(),
-                _ => return Err(self.error(pos, "Unknown unary operation")),
+                _ => panic!(),
             };
-            return Ok(ret.into());
+            return ret.into();
         }
 
         if val.is_int_value() {
@@ -179,11 +177,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let ret = match op_token.value {
                 Tokens::Plus => built,
                 Tokens::Minus => built.const_neg(),
-                _ => return Err(self.error(pos, "Unknown unary operation")),
+                _ => panic!(),
             };
-            return Ok(ret.into());
+            return ret.into();
         }
 
-        Err(self.error(pos, "Unknown unary operation"))
+        panic!()
     }
 }

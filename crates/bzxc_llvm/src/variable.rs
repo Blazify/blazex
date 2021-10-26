@@ -12,40 +12,34 @@
 */
 
 use bzxc_llvm_wrapper::values::BasicValueEnum;
-use bzxc_shared::{Error, Node, Position, Token, Tokens};
+use bzxc_shared::{Token, Tokens, TypedNode};
 
 use crate::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub(crate) fn var_assign(
         &mut self,
-        name: Token,
-        value: Node,
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let var_name = name.value.into_string();
-        let initial_val = self.compile_node(value)?;
+        name: &'static str,
+        value: TypedNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
+        let var_name = name.to_string();
+        let initial_val = self.compile_node(value);
         let alloca = self.create_entry_block_alloca(var_name.as_str(), initial_val.get_type());
 
         self.builder.build_store(alloca, initial_val);
 
         self.variables.insert(var_name, alloca);
-        Ok(initial_val)
+        initial_val
     }
 
-    pub(crate) fn var_access(
-        &self,
-        token: Token,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        match self.variables.get(token.value.into_string().as_str()) {
-            Some(var) => Ok(self
-                .builder
-                .build_load(*var, token.value.into_string().as_str())),
+    pub(crate) fn var_access(&self, token: &'static str) -> BasicValueEnum<'ctx> {
+        match self.variables.get(token) {
+            Some(var) => self.builder.build_load(*var, token),
             None => {
-                let func = self.get_function(token.value.into_string().as_str());
+                let func = self.get_function(token);
                 match func {
-                    Some(fun) => Ok(fun.as_global_value().as_pointer_value().into()),
-                    None => Err(self.error(pos, "Variable not found")),
+                    Some(fun) => fun.as_global_value().as_pointer_value().into(),
+                    None => panic!(),
                 }
             }
         }
@@ -53,23 +47,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     pub(crate) fn var_reassign(
         &mut self,
-        name: Token,
-        value: Node,
+        name: &'static str,
+        value: TypedNode<'ctx>,
         typee: Token,
-        pos: (Position, Position),
-    ) -> Result<BasicValueEnum<'ctx>, Error> {
-        let name = name.value.into_string();
-        let val = self.compile_node(value)?;
+    ) -> BasicValueEnum<'ctx> {
+        let name = name.to_string();
+        let val = self.compile_node(value);
 
-        let value = self
-            .variables
-            .get(name.as_str())
-            .ok_or(self.error(pos, "Variable not found to be reassigned"))?;
+        let value = self.variables.get(name.as_str()).unwrap();
 
         match typee.value.clone() {
             Tokens::Equals => {
                 self.builder.build_store(*value, val);
-                Ok(val)
+                val
             }
             Tokens::PlusEquals => {
                 let curr_var = self.builder.build_load(*value, &name);
@@ -87,11 +77,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         )
                         .into()
                 } else {
-                    return Err(self.error(pos, "Unknown compound assignment"));
+                    panic!()
                 };
 
                 self.builder.build_store(*value, new_var);
-                Ok(new_var.into())
+                new_var.into()
             }
             Tokens::MinusEquals => {
                 let curr_var = self.builder.build_load(*value, &name);
@@ -109,11 +99,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         )
                         .into()
                 } else {
-                    return Err(self.error(pos, "Unknown compound assignment"));
+                    panic!()
                 };
 
                 self.builder.build_store(*value, new_var);
-                Ok(new_var)
+                new_var
             }
             Tokens::MultiplyEquals => {
                 let curr_var = self.builder.build_load(*value, &name);
@@ -131,11 +121,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         )
                         .into()
                 } else {
-                    return Err(self.error(pos, "Unknown compound assignment"));
+                    panic!()
                 };
 
                 self.builder.build_store(*value, new_var);
-                Ok(new_var)
+                new_var
             }
             Tokens::DivideEquals => {
                 let curr_var = self.builder.build_load(*value, &name);
@@ -157,13 +147,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         )
                         .into()
                 } else {
-                    return Err(self.error(pos, "Unknown compound assignment"));
+                    panic!()
                 };
 
                 self.builder.build_store(*value, new_var);
-                Ok(new_var)
+                new_var
             }
-            _ => Err(self.error(pos, "Unknown compound assignment")),
+            _ => panic!(),
         }
     }
 }

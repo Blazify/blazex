@@ -99,6 +99,7 @@ dependencies = [
 name = "bzxc_type_system"
 version = "0.1.0"
 dependencies = [
+ "bzxc_llvm_wrapper",
  "bzxc_shared",
 ]
 
