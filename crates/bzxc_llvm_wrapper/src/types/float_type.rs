@@ -9,7 +9,7 @@ use crate::values::{ArrayValue, AsValueRef, FloatValue, GenericValue, IntValue};
 use crate::AddressSpace;
 
 /// A `FloatType` is the type of a floating point constant or variable.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct FloatType<'ctx> {
     float_type: Type<'ctx>,
 }

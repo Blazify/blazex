@@ -1,7 +1,9 @@
+#![allow(dead_code, unused_variables, unused_imports)]
+
 use bzxc_lexer::Lexer;
-use bzxc_llvm::Compiler;
-use bzxc_llvm::Function;
-use bzxc_llvm::Prototype;
+// use bzxc_llvm::Compiler;
+//use bzxc_llvm::Function;
+//use bzxc_llvm::Prototype;
 use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
 use bzxc_llvm_wrapper::{
     context::Context,
@@ -54,6 +56,9 @@ pub fn compile(
         }
     }
 
+    let typed = TypeSystem::new(parsed.node.unwrap()).typed_node();
+
+    /*
     let context = Context::create();
     let module = context.create_module(name);
     let builder = context.create_builder();
@@ -69,8 +74,9 @@ pub fn compile(
     fpm.initialize();
     enable_llvm_pretty_stack_trace();
 
+
     let func = Function {
-        body: TypeSystem::new(parsed.node.unwrap(), &context).typed_node(),
+        body: typed,
         prototype: Prototype {
             name: Some(String::from("main")),
             args: vec![],
@@ -116,6 +122,7 @@ pub fn compile(
             return 1;
         }
     }
+    */
 
     return 0;
 }

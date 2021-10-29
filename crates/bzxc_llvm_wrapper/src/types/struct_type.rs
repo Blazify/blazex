@@ -15,7 +15,7 @@ use crate::values::{ArrayValue, AsValueRef, BasicValueEnum, IntValue, StructValu
 use crate::AddressSpace;
 
 /// A `StructType` is the type of a heterogeneous container of types.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub struct StructType<'ctx> {
     struct_type: Type<'ctx>,
 }

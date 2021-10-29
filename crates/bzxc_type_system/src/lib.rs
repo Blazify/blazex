@@ -10,22 +10,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+#![feature(box_syntax)]
 
-use bzxc_llvm_wrapper::context::Context;
 use bzxc_shared::{Node, TypedNode};
+use type_env::TypeEnv;
 
-/// NO idea how type system should be implemented
-pub struct TypeSystem<'ctx> {
+mod annotate;
+mod constraint;
+mod substitution;
+mod type_env;
+mod unifier;
+
+pub struct TypeSystem {
     pub node: Node,
-    pub ctx: &'ctx Context,
 }
 
-impl<'ctx> TypeSystem<'ctx> {
-    pub fn new(node: Node, ctx: &'ctx Context) -> Self {
-        TypeSystem { node, ctx }
+impl TypeSystem {
+    pub fn new(node: Node) -> Self {
+        TypeSystem { node }
     }
 
-    pub fn typed_node(&self) -> TypedNode<'ctx> {
-        TypedNode::Statements { statements: &[] }
+    pub fn typed_node(&self) -> TypedNode {
+        let annotation = self.annotate(self.node.clone(), &mut TypeEnv::new());
+        let constraints = self.collect(annotation.clone());
+        let substitution = self.unify(constraints.clone());
+        println!("TypedNode: {:#?}\n{:#?}", annotation, substitution);
+        annotation
     }
 }

@@ -7,7 +7,7 @@ use crate::values::{ArrayValue, AsValueRef, BasicValue, IntValue, VectorValue};
 use crate::AddressSpace;
 
 /// A `VectorType` is the type of a multiple value SIMD constant or variable.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct VectorType<'ctx> {
     vec_type: Type<'ctx>,
 }

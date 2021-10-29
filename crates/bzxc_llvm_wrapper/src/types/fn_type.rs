@@ -14,7 +14,7 @@ use crate::types::{AnyType, BasicTypeEnum, PointerType, Type};
 use crate::AddressSpace;
 
 /// A `FunctionType` is the type of a function variable.
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct FunctionType<'ctx> {
     fn_type: Type<'ctx>,
 }

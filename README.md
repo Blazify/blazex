@@ -1,6 +1,6 @@
 # [BlazeX](https://blazex.blazify.rocks)
 
-- [Discord](https://discord.gg/R9NhMfr9Fu)
+- [Discord](https://discord.gg/9bnpjqY)
 - [Gitter](https://gitter.im/BlazifyOrg-blazex/community)
 - [Blazify](https://blazify.rocks)
 
@@ -57,7 +57,7 @@ printf("Hello World!") @ yep as simple as that
 - Creating and calling functions
 
 ```bzx
-fun sum(a: int, b: int): int {
+fun sum(a, b) {
     var c = a + b;
     return c;
 }
@@ -85,13 +85,13 @@ class Main {
     var a = 10; @ this is a property
 
     @ this is constructor
-    fun(): void {
+    fun() {
         soul.a = 5; @ soul is the current object it's operating on
 	    return soul;
     }
 
     @ this is a method
-    fun sum_to_a(b: int): int {
+    fun sum_to_a(b) {
         soul.a = soul.a + b;
         return soul.a;
     }
@@ -138,6 +138,7 @@ printf("%i\n", ins.sum_to_a(5));
 
 - [ ] Type System (gradual typing)
 - [x] LLVM
+  - [ ] Accept TypedNode
   - [x] Executables
   - [x] Statements
   - [x] Int & Floats

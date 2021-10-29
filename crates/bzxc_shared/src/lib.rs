@@ -11,9 +11,8 @@
  * limitations under the License.
 */
 #![allow(unused_must_use)]
-use bzxc_llvm_wrapper::context::Context;
-use bzxc_llvm_wrapper::types::{AnyTypeEnum, BasicTypeEnum};
-use bzxc_llvm_wrapper::AddressSpace;
+use std::hash::Hash;
+
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
@@ -475,167 +474,97 @@ impl Node {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum TypedNode<'ctx> {
-    Statements {
-        statements: &'ctx [&'ctx TypedNode<'ctx>],
-    },
-    While {
-        condition_node: &'ctx TypedNode<'ctx>,
-        body_node: &'ctx TypedNode<'ctx>,
-    },
-    VarReassign {
-        name: &'static str,
-        typee: Token,
-        value: &'ctx TypedNode<'ctx>,
-    },
-    VarAssign {
-        name: &'static str,
-        value: &'ctx TypedNode<'ctx>,
-    },
-    VarAccess {
-        token: &'static str,
-    },
-    Unary {
-        node: &'ctx TypedNode<'ctx>,
-        op_token: Token,
-    },
-    String {
-        token: &'static str,
-    },
+#[derive(Debug, Clone)]
+pub enum TypedNode {
+    Statements(Vec<Self>),
+
     Int {
-        token: i128,
+        ty: Type,
+        val: i128,
     },
     Float {
-        token: f64,
-    },
-    If {
-        cases: &'ctx [(&'ctx TypedNode<'ctx>, &'ctx TypedNode<'ctx>)],
-        else_case: Option<&'ctx TypedNode<'ctx>>,
-    },
-    Fun {
-        name: Option<&'static str>,
-        arg_tokens: &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
-        body: &'ctx TypedNode<'ctx>,
-        return_type: AnyTypeEnum<'ctx>,
-    },
-    For {
-        var_name_token: &'static str,
-        start_value: &'ctx TypedNode<'ctx>,
-        end_value: &'ctx TypedNode<'ctx>,
-        body_node: &'ctx TypedNode<'ctx>,
-        step_value_node: &'ctx TypedNode<'ctx>,
-    },
-    Char {
-        token: char,
-    },
-    Call {
-        node_to_call: &'ctx TypedNode<'ctx>,
-        args: &'ctx [&'ctx TypedNode<'ctx>],
+        ty: Type,
+        val: f64,
     },
     Boolean {
-        token: bool,
+        ty: Type,
+        val: bool,
     },
     Binary {
-        left: &'ctx TypedNode<'ctx>,
-        right: &'ctx TypedNode<'ctx>,
+        ty: Type,
+        left: Box<Self>,
+        right: Box<Self>,
         op_token: Token,
     },
-    Array {
-        typee: &'ctx AnyTypeEnum<'ctx>,
-        element_nodes: &'ctx [&'ctx TypedNode<'ctx>],
+    Fun {
+        ty: Type,
+        params: Vec<Binder>,
+        body: Box<Self>,
     },
-    Index {
-        array: &'ctx TypedNode<'ctx>,
-        index: &'ctx TypedNode<'ctx>,
+    Let {
+        ty: Type,
+        val: Box<Self>,
+    },
+    Var {
+        ty: Type,
+        name: String,
+    },
+    Call {
+        ty: Type,
+        fun: Box<Self>,
+        args: Vec<Self>,
     },
     Return {
-        value: Option<&'ctx TypedNode<'ctx>>,
-    },
-    Object {
-        properties: &'ctx [(&'static str, &'ctx TypedNode<'ctx>)],
-    },
-    ObjectAccess {
-        object: &'ctx TypedNode<'ctx>,
-        property: &'static str,
-    },
-    ObjectEdit {
-        object: &'ctx TypedNode<'ctx>,
-        property: &'static str,
-        new_val: &'ctx TypedNode<'ctx>,
-    },
-    ObjectCall {
-        object: &'ctx TypedNode<'ctx>,
-        property: &'static str,
-        args: &'ctx [&'ctx TypedNode<'ctx>],
-    },
-    Class {
-        name: &'static str,
-        constructor: (
-            &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
-            &'ctx TypedNode<'ctx>,
-        ),
-        properties: &'ctx [(&'static str, &'ctx TypedNode<'ctx>)],
-        methods: &'ctx [(
-            &'static str,
-            &'ctx [(&'static str, AnyTypeEnum<'ctx>)],
-            &'ctx TypedNode<'ctx>,
-            AnyTypeEnum<'ctx>,
-        )],
-    },
-    ClassInit {
-        name: &'static str,
-        constructor_params: &'ctx [&'ctx TypedNode<'ctx>],
-    },
-    Extern {
-        name: &'static str,
-        arg_tokens: &'ctx [AnyTypeEnum<'ctx>],
-        return_type: AnyTypeEnum<'ctx>,
-        var_args: bool,
+        ty: Type,
+        val: Box<Self>,
     },
 }
 
-// TODO: remove `Type` Struct and impl
-#[derive(Debug, Clone, PartialEq)]
+impl TypedNode {
+    pub fn get_type(&self) -> Type {
+        match self {
+            TypedNode::Statements(stmts) => {
+                for stmt in stmts {
+                    if let TypedNode::Return { ty, .. } = stmt {
+                        return ty.clone();
+                    }
+                }
+                return Type::Int;
+            }
+            TypedNode::Int { ty, .. } => ty.clone(),
+            TypedNode::Float { ty, .. } => ty.clone(),
+            TypedNode::Boolean { ty, .. } => ty.clone(),
+            TypedNode::Fun { ty, .. } => ty.clone(),
+            TypedNode::Let { ty, .. } => ty.clone(),
+            TypedNode::Var { ty, .. } => ty.clone(),
+            TypedNode::Call { ty, .. } => ty.clone(),
+            TypedNode::Return { ty, .. } => ty.clone(),
+            TypedNode::Binary { ty, .. } => ty.clone(),
+        }
+    }
+}
+
+static mut I: i32 = 0;
+
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum Type {
     Int,
     Float,
     Boolean,
-    Char,
-    String,
-    Void,
-    Function(Vec<Type>, Box<Type>),
-    Array(Box<Type>, Token),
-    Custom(&'static str),
+    Fun(Vec<Self>, Box<Self>),
+    Var(i32),
 }
 
-impl<'ctx> Type {
-    pub fn to_llvm_type(&self, ctx: &'ctx Context) -> AnyTypeEnum<'ctx> {
-        match self {
-            Type::Int => AnyTypeEnum::IntType(ctx.i128_type()),
-            Type::Float => AnyTypeEnum::FloatType(ctx.f64_type()),
-            Type::Boolean => AnyTypeEnum::IntType(ctx.bool_type()),
-            Type::Char => AnyTypeEnum::IntType(ctx.i8_type()),
-            Type::String => AnyTypeEnum::PointerType(ctx.i8_type().ptr_type(AddressSpace::Generic)),
-            Type::Void => ctx
-                .struct_type(&[], false)
-                .ptr_type(AddressSpace::Generic)
-                .into(),
-            Type::Function(params, ret) => ret
-                .to_llvm_type(ctx)
-                .fn_type(
-                    &params
-                        .iter()
-                        .map(|x| x.to_llvm_type(ctx).to_basic_type_enum())
-                        .collect::<Vec<BasicTypeEnum>>()[..],
-                    false,
-                )
-                .into(),
-            Type::Array(typee, size) => {
-                let size = size.value.into_int() as u32;
-                typee.to_llvm_type(ctx).array_type(size).into()
-            }
-            Type::Custom(_) => panic!("Custom types aren't supported yet!"),
-        }
+impl Type {
+    pub fn fresh_var() -> Self {
+        let ret = unsafe { Self::Var(I) };
+        unsafe { I += 1 };
+        ret
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Binder {
+    pub ty: Type,
+    pub name: String,
 }

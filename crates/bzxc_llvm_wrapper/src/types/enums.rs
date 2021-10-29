@@ -13,7 +13,7 @@ use std::convert::TryFrom;
 
 macro_rules! enum_type_set {
     ($(#[$enum_attrs:meta])* $enum_name:ident: { $($(#[$variant_attrs:meta])* $args:ident,)+ }) => (
-        #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+        #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
         $(#[$enum_attrs])*
         pub enum $enum_name<'ctx> {
             $(

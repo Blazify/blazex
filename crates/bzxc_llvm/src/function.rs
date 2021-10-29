@@ -69,7 +69,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
 
         self.ret = false;
-        let body = self.compile_node(func.body.clone());
+        self.compile_node(func.body.clone());
 
         if !self.ret {
             if parental_block.is_none() {

@@ -6,7 +6,7 @@ use crate::types::{BasicTypeEnum, FunctionType, Type};
 
 /// A `VoidType` is a special type with no possible direct instances. It's only
 /// useful as a function return type.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct VoidType<'ctx> {
     void_type: Type<'ctx>,
 }

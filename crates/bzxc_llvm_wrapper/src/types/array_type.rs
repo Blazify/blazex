@@ -8,7 +8,7 @@ use crate::values::{ArrayValue, AsValueRef, IntValue};
 use crate::AddressSpace;
 
 /// An `ArrayType` is the type of contiguous constants or variables.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct ArrayType<'ctx> {
     array_type: Type<'ctx>,
 }

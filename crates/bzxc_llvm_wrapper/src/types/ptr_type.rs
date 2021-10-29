@@ -10,7 +10,7 @@ use crate::AddressSpace;
 use std::convert::TryFrom;
 
 /// A `PointerType` is the type of a pointer constant or variable.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub struct PointerType<'ctx> {
     ptr_type: Type<'ctx>,
 }

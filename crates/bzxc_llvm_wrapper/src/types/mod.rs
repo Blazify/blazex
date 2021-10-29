@@ -49,7 +49,7 @@ use crate::AddressSpace;
 
 // Worth noting that types seem to be singletons. At the very least, primitives are.
 // Though this is likely only true per thread since LLVM claims to not be very thread-safe.
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 struct Type<'ctx> {
     ty: LLVMTypeRef,
     _marker: PhantomData<&'ctx ()>,
