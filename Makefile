@@ -36,7 +36,7 @@ endif
 build:
 	cargo build --locked --target $(TARGET) --release
 
-ifneq ($(shell test -d $(BIN_DIR) ; echo $$?), 0)
+ifneq ($(shell test -d "bin" ; echo $$?), 0)
 	@mkdir -p "./bin"
 endif
 

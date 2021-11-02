@@ -14,12 +14,13 @@ impl Substitution {
     pub fn apply(&self, constraints: Vec<Constraint>) -> Vec<Constraint> {
         constraints
             .iter()
-            .map(|x| self.apply_constraint(x.clone()))
+            .map(|constraint| {
+                Constraint(
+                    self.apply_ty(constraint.0.clone()),
+                    self.apply_ty(constraint.1.clone()),
+                )
+            })
             .collect()
-    }
-
-    fn apply_constraint(&self, constraint: Constraint) -> Constraint {
-        Constraint(self.apply_ty(constraint.0), self.apply_ty(constraint.1))
     }
 
     pub fn apply_ty(&self, ty: Type) -> Type {
@@ -35,9 +36,6 @@ impl Substitution {
 
     fn substitute_tvar(&self, ty: Type, tvar: i32, sol_ty: Type) -> Type {
         match ty {
-            Type::Int => ty,
-            Type::Float => ty,
-            Type::Boolean => ty,
             Type::Fun(params, ret) => Type::Fun(
                 params
                     .iter()
@@ -52,6 +50,7 @@ impl Substitution {
                     ty
                 }
             }
+            _ => ty,
         }
     }
 

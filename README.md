@@ -136,10 +136,7 @@ printf("%i\n", ins.sum_to_a(5));
 
 ## TODO
 
-- [ ] Type System (gradual typing)
-- [x] LLVM
-  - [ ] Accept TypedNode
-  - [x] Executables
+- [ ] Type System
   - [x] Statements
   - [x] Int & Floats
   - [x] Strings
@@ -149,12 +146,15 @@ printf("%i\n", ins.sum_to_a(5));
   - [x] Unary Operations
   - [x] Variables
   - [x] If else
-  - [x] For loop
-  - [x] While loop
   - [x] Functions
-  - [x] Arrays
-  - [x] Objects
-  - [x] Classes
+  - [ ] For loop
+  - [ ] While loop
+  - [ ] Arrays
+  - [ ] Objects
+  - [ ] Classes
+- [x] LLVM
+  - [ ] Accept TypedNode
+  - [x] Logic of all nodes
 - [x] Errors
   - [x] Lexer
   - [x] Parser

@@ -19,9 +19,6 @@ impl TypeSystem {
 
     pub fn unify_one(&self, constraint: Constraint) -> Substitution {
         match (constraint.0, constraint.1) {
-            (Type::Int, Type::Int)
-            | (Type::Float, Type::Float)
-            | (Type::Boolean, Type::Boolean) => Substitution::empty(),
             (Type::Fun(params, ret1), Type::Fun(args, ret2)) => {
                 let mut constraints = vec![];
 
@@ -38,7 +35,13 @@ impl TypeSystem {
             }
             (Type::Var(tvar), ty) => self.unify_var(tvar, ty),
             (ty, Type::Var(tvar)) => self.unify_var(tvar, ty),
-            (a, b) => panic!("Cannot unify {:#?} with {:#?}", a, b),
+            (a, b) => {
+                if a == b {
+                    Substitution::empty()
+                } else {
+                    panic!("Cannot unify {:#?} with {:#?}", a, b)
+                }
+            }
         }
     }
 

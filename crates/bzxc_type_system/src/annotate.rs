@@ -13,11 +13,11 @@ impl TypeSystem {
             ),
             Node::NumberNode { token } => match token.value {
                 Tokens::Int(i) => TypedNode::Int {
-                    ty: Type::fresh_var(),
+                    ty: Type::Int,
                     val: i,
                 },
                 Tokens::Float(f) => TypedNode::Float {
-                    ty: Type::fresh_var(),
+                    ty: Type::Float,
                     val: f,
                 },
                 _ => unreachable!(),
@@ -32,13 +32,40 @@ impl TypeSystem {
                     unreachable!()
                 }
             }
+            Node::CharNode { token } => TypedNode::Char {
+                ty: Type::fresh_var(),
+                val: token.value.into_char(),
+            },
+            Node::StringNode { token } => TypedNode::String {
+                ty: Type::fresh_var(),
+                val: token.value.into_string(),
+            },
+            Node::UnaryNode { node, op_token } => TypedNode::Unary {
+                ty: Type::fresh_var(),
+                val: box self.annotate(*node, tenv),
+                op_token,
+            },
             Node::BinaryNode {
                 left,
                 op_token,
                 right,
             } => {
-                let left = box self.annotate(*left.clone(), tenv);
-                let right = box self.annotate(*right.clone(), tenv);
+                let mut left = box self.annotate(*left.clone(), tenv);
+                let mut right = box self.annotate(*right.clone(), tenv);
+
+                if left.get_type() != right.get_type() {
+                    if let TypedNode::Int { ty: _, val } = *left.clone() {
+                        left = box TypedNode::Float {
+                            val: val as f64,
+                            ty: Type::fresh_var(),
+                        };
+                    } else if let TypedNode::Int { ty: _, val } = *right.clone() {
+                        right = box TypedNode::Float {
+                            val: val as f64,
+                            ty: Type::fresh_var(),
+                        };
+                    }
+                }
                 TypedNode::Binary {
                     ty: Type::fresh_var(),
                     left,
@@ -105,10 +132,24 @@ impl TypeSystem {
                 val: box if let Some(val) = *value.clone() {
                     self.annotate(val, tenv)
                 } else {
-                    TypedNode::Int {
-                        ty: Type::fresh_var(),
-                        val: 0,
-                    }
+                    TypedNode::Null { ty: Type::Null }
+                },
+            },
+            Node::IfNode { cases, else_case } => TypedNode::If {
+                ty: Type::fresh_var(),
+                cases: cases
+                    .iter()
+                    .map(|x| {
+                        (
+                            self.annotate(x.0.clone(), tenv),
+                            self.annotate(x.1.clone(), tenv),
+                        )
+                    })
+                    .collect(),
+                else_case: if let Some(n) = *else_case.clone() {
+                    Some(box self.annotate(n, tenv))
+                } else {
+                    None
                 },
             },
             _ => panic!("Not implemented node: {:#?}", node),

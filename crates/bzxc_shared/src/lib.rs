@@ -490,6 +490,19 @@ pub enum TypedNode {
         ty: Type,
         val: bool,
     },
+    Char {
+        ty: Type,
+        val: char,
+    },
+    String {
+        ty: Type,
+        val: String,
+    },
+    Unary {
+        ty: Type,
+        val: Box<Self>,
+        op_token: Token,
+    },
     Binary {
         ty: Type,
         left: Box<Self>,
@@ -518,6 +531,14 @@ pub enum TypedNode {
         ty: Type,
         val: Box<Self>,
     },
+    Null {
+        ty: Type,
+    },
+    If {
+        ty: Type,
+        cases: Vec<(Self, Self)>,
+        else_case: Option<Box<Self>>,
+    },
 }
 
 impl TypedNode {
@@ -529,17 +550,22 @@ impl TypedNode {
                         return ty.clone();
                     }
                 }
-                return Type::Int;
+                return Type::Null;
             }
-            TypedNode::Int { ty, .. } => ty.clone(),
-            TypedNode::Float { ty, .. } => ty.clone(),
-            TypedNode::Boolean { ty, .. } => ty.clone(),
-            TypedNode::Fun { ty, .. } => ty.clone(),
-            TypedNode::Let { ty, .. } => ty.clone(),
-            TypedNode::Var { ty, .. } => ty.clone(),
-            TypedNode::Call { ty, .. } => ty.clone(),
-            TypedNode::Return { ty, .. } => ty.clone(),
-            TypedNode::Binary { ty, .. } => ty.clone(),
+            TypedNode::Int { ty, .. }
+            | TypedNode::Float { ty, .. }
+            | TypedNode::Boolean { ty, .. }
+            | TypedNode::Char { ty, .. }
+            | TypedNode::String { ty, .. }
+            | TypedNode::Fun { ty, .. }
+            | TypedNode::Let { ty, .. }
+            | TypedNode::Var { ty, .. }
+            | TypedNode::Call { ty, .. }
+            | TypedNode::Return { ty, .. }
+            | TypedNode::Unary { ty, .. }
+            | TypedNode::Binary { ty, .. }
+            | TypedNode::Null { ty }
+            | TypedNode::If { ty, .. } => ty.clone(),
         }
     }
 }
@@ -551,7 +577,11 @@ pub enum Type {
     Int,
     Float,
     Boolean,
+    Char,
+    String,
     Fun(Vec<Self>, Box<Self>),
+    Null,
+
     Var(i32),
 }
 

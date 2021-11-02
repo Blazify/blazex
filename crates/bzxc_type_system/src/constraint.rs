@@ -22,16 +22,20 @@ impl TypeSystem {
             TypedNode::Boolean { ty, .. } => {
                 vec![Constraint(ty, Type::Boolean)]
             }
+            TypedNode::Char { ty, .. } => vec![Constraint(ty, Type::Char)],
+            TypedNode::String { ty, .. } => vec![Constraint(ty, Type::String)],
+            TypedNode::Unary { ty, val, .. } => {
+                let mut constr = self.collect(*val.clone());
+                constr.push(Constraint(ty, val.get_type()));
+                constr
+            }
             TypedNode::Binary {
                 ty, left, right, ..
             } => {
                 let mut constr = self.collect(*left.clone());
                 constr.extend(self.collect(*right.clone()));
-                constr.push(Constraint(ty.clone(), Type::Int));
-                constr.push(Constraint(ty.clone(), Type::Float));
                 constr.push(Constraint(left.get_type(), right.get_type()));
                 constr.push(Constraint(ty.clone(), left.get_type()));
-                constr.push(Constraint(right.get_type(), ty));
                 constr
             }
             TypedNode::Let { ty, val } => vec![Constraint(ty, val.get_type())],
@@ -62,6 +66,26 @@ impl TypeSystem {
                 let mut constr = self.collect(*val.clone());
                 constr.push(Constraint(ty, val.get_type()));
                 constr
+            }
+            TypedNode::If {
+                ty,
+                cases,
+                else_case,
+            } => {
+                let mut constr = vec![];
+                for (cond, body) in cases {
+                    constr.extend(self.collect(cond.clone()));
+                    constr.push(Constraint(Type::Boolean, cond.get_type()));
+                    constr.extend(self.collect(body.clone()));
+                    constr.push(Constraint(ty.clone(), body.get_type()));
+                }
+
+                if let Some(tn) = else_case {
+                    constr.push(Constraint(ty.clone(), tn.get_type()));
+                    constr.extend(self.collect(*tn));
+                }
+
+                return constr;
             }
             _ => vec![],
         }
