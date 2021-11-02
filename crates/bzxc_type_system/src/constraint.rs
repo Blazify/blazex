@@ -121,6 +121,24 @@ impl TypeSystem {
                 constr.extend(self.collect(*cond));
                 constr
             }
+            TypedNode::Array { ty, elements } => {
+                let mut constr = vec![];
+                constr.push(Constraint(
+                    ty.clone(),
+                    Type::Array(box if let Some(elem) = elements.first() {
+                        elem.get_type()
+                    } else {
+                        Type::Null
+                    }),
+                ));
+
+                for element in elements {
+                    constr.push(Constraint(ty.clone(), Type::Array(box element.get_type())));
+                    constr.extend(self.collect(element));
+                }
+
+                constr
+            }
             _ => vec![],
         }
     }

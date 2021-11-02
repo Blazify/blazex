@@ -552,6 +552,10 @@ pub enum TypedNode {
         step: Box<Self>,
         body: Box<Self>,
     },
+    Array {
+        ty: Type,
+        elements: Vec<Self>,
+    },
 }
 
 impl TypedNode {
@@ -580,7 +584,8 @@ impl TypedNode {
             | TypedNode::Null { ty }
             | TypedNode::If { ty, .. }
             | TypedNode::While { ty, .. }
-            | TypedNode::For { ty, .. } => ty.clone(),
+            | TypedNode::For { ty, .. }
+            | TypedNode::Array { ty, .. } => ty.clone(),
         }
     }
 }
@@ -594,6 +599,7 @@ pub enum Type {
     Boolean,
     Char,
     String,
+    Array(Box<Self>),
     Fun(Vec<Self>, Box<Self>),
     Null,
 

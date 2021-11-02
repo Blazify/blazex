@@ -22,16 +22,10 @@ impl TypeSystem {
                 },
                 _ => unreachable!(),
             },
-            Node::BooleanNode { token } => {
-                if let Tokens::Boolean(b) = token.value {
-                    TypedNode::Boolean {
-                        ty: Type::fresh_var(),
-                        val: b,
-                    }
-                } else {
-                    unreachable!()
-                }
-            }
+            Node::BooleanNode { token } => TypedNode::Boolean {
+                ty: Type::fresh_var(),
+                val: token.value.into_boolean(),
+            },
             Node::CharNode { token } => TypedNode::Char {
                 ty: Type::fresh_var(),
                 val: token.value.into_char(),
@@ -49,30 +43,12 @@ impl TypeSystem {
                 left,
                 op_token,
                 right,
-            } => {
-                let mut left = box self.annotate(*left.clone(), tenv);
-                let mut right = box self.annotate(*right.clone(), tenv);
-
-                if left.get_type() != right.get_type() {
-                    if let TypedNode::Int { ty: _, val } = *left.clone() {
-                        left = box TypedNode::Float {
-                            val: val as f64,
-                            ty: Type::fresh_var(),
-                        };
-                    } else if let TypedNode::Int { ty: _, val } = *right.clone() {
-                        right = box TypedNode::Float {
-                            val: val as f64,
-                            ty: Type::fresh_var(),
-                        };
-                    }
-                }
-                TypedNode::Binary {
-                    ty: Type::fresh_var(),
-                    left,
-                    right,
-                    op_token,
-                }
-            }
+            } => TypedNode::Binary {
+                ty: Type::fresh_var(),
+                left: box self.annotate(*left.clone(), tenv),
+                right: box self.annotate(*right.clone(), tenv),
+                op_token,
+            },
             Node::VarAccessNode { token } => match tenv.get(token.value.into_string()) {
                 Some(ty) => TypedNode::Var {
                     ty,
@@ -173,6 +149,13 @@ impl TypeSystem {
                 end: box self.annotate(*end_value, tenv),
                 step: box self.annotate(*step_value_node, tenv),
                 body: box self.annotate(*body_node, tenv),
+            },
+            Node::ArrayNode { element_nodes } => TypedNode::Array {
+                ty: Type::fresh_var(),
+                elements: element_nodes
+                    .iter()
+                    .map(|x| self.annotate(x.clone(), tenv))
+                    .collect(),
             },
             _ => panic!("Not implemented node: {:#?}", node),
         }

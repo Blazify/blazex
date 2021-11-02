@@ -149,7 +149,7 @@ printf("%i\n", ins.sum_to_a(5));
   - [x] Functions
   - [x] For loop
   - [x] While loop
-  - [ ] Arrays
+  - [x] Arrays
   - [ ] Objects
   - [ ] Classes
 - [x] LLVM
