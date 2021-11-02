@@ -145,7 +145,11 @@ impl TypeSystem {
             } => TypedNode::For {
                 ty: Type::fresh_var(),
                 var: var_name_token,
-                start: box self.annotate(*start_value, tenv),
+                start: {
+                    let start = box self.annotate(*start_value, tenv);
+                    tenv.set(var_name_token.value.into_string(), start.get_type());
+                    start
+                },
                 end: box self.annotate(*end_value, tenv),
                 step: box self.annotate(*step_value_node, tenv),
                 body: box self.annotate(*body_node, tenv),

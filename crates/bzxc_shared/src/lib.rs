@@ -556,6 +556,11 @@ pub enum TypedNode {
         ty: Type,
         elements: Vec<Self>,
     },
+    Index {
+        ty: Type,
+        array: Box<Self>,
+        idx: Box<Self>,
+    },
 }
 
 impl TypedNode {
@@ -585,7 +590,8 @@ impl TypedNode {
             | TypedNode::If { ty, .. }
             | TypedNode::While { ty, .. }
             | TypedNode::For { ty, .. }
-            | TypedNode::Array { ty, .. } => ty.clone(),
+            | TypedNode::Array { ty, .. }
+            | TypedNode::Index { ty, .. } => ty.clone(),
         }
     }
 }
