@@ -1,4 +1,4 @@
-use bzxc_shared::{Type, TypedNode};
+use bzxc_shared::{Tokens, Type, TypedNode};
 
 use crate::TypeSystem;
 
@@ -30,12 +30,23 @@ impl TypeSystem {
                 constr
             }
             TypedNode::Binary {
-                ty, left, right, ..
+                ty,
+                left,
+                right,
+                op_token,
             } => {
                 let mut constr = self.collect(*left.clone());
                 constr.extend(self.collect(*right.clone()));
                 constr.push(Constraint(left.get_type(), right.get_type()));
-                constr.push(Constraint(ty.clone(), left.get_type()));
+                constr.push(Constraint(
+                    ty.clone(),
+                    match op_token.value {
+                        Tokens::Plus | Tokens::Minus | Tokens::Multiply | Tokens::Divide => {
+                            left.get_type()
+                        }
+                        _ => Type::Boolean,
+                    },
+                ));
                 constr
             }
             TypedNode::Let { ty, val } => vec![Constraint(ty, val.get_type())],
@@ -86,6 +97,29 @@ impl TypeSystem {
                 }
 
                 return constr;
+            }
+            TypedNode::For {
+                ty,
+                start,
+                end,
+                step,
+                body,
+                ..
+            } => {
+                let mut constr = self.collect(*start.clone());
+                constr.push(Constraint(ty, body.get_type()));
+                constr.push(Constraint(start.get_type(), end.get_type()));
+                constr.push(Constraint(start.get_type(), step.get_type()));
+                constr.extend(self.collect(*end));
+                constr.extend(self.collect(*step));
+                constr.extend(self.collect(*body));
+                constr
+            }
+            TypedNode::While { ty, cond, body } => {
+                let mut constr = self.collect(*body.clone());
+                constr.push(Constraint(ty, body.get_type()));
+                constr.extend(self.collect(*cond));
+                constr
             }
             _ => vec![],
         }

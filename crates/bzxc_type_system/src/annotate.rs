@@ -152,6 +152,28 @@ impl TypeSystem {
                     None
                 },
             },
+            Node::WhileNode {
+                condition_node,
+                body_node,
+            } => TypedNode::While {
+                ty: Type::fresh_var(),
+                cond: box self.annotate(*condition_node, tenv),
+                body: box self.annotate(*body_node, tenv),
+            },
+            Node::ForNode {
+                var_name_token,
+                start_value,
+                end_value,
+                step_value_node,
+                body_node,
+            } => TypedNode::For {
+                ty: Type::fresh_var(),
+                var: var_name_token,
+                start: box self.annotate(*start_value, tenv),
+                end: box self.annotate(*end_value, tenv),
+                step: box self.annotate(*step_value_node, tenv),
+                body: box self.annotate(*body_node, tenv),
+            },
             _ => panic!("Not implemented node: {:#?}", node),
         }
     }

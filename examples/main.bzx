@@ -1,5 +1,1 @@
-fun a() {
-    return "strings are a thing"
-}
-
-a()
+while 1==1 {}

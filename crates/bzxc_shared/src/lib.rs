@@ -539,6 +539,19 @@ pub enum TypedNode {
         cases: Vec<(Self, Self)>,
         else_case: Option<Box<Self>>,
     },
+    While {
+        ty: Type,
+        cond: Box<Self>,
+        body: Box<Self>,
+    },
+    For {
+        ty: Type,
+        var: Token,
+        start: Box<Self>,
+        end: Box<Self>,
+        step: Box<Self>,
+        body: Box<Self>,
+    },
 }
 
 impl TypedNode {
@@ -565,7 +578,9 @@ impl TypedNode {
             | TypedNode::Unary { ty, .. }
             | TypedNode::Binary { ty, .. }
             | TypedNode::Null { ty }
-            | TypedNode::If { ty, .. } => ty.clone(),
+            | TypedNode::If { ty, .. }
+            | TypedNode::While { ty, .. }
+            | TypedNode::For { ty, .. } => ty.clone(),
         }
     }
 }

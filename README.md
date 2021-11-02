@@ -147,8 +147,8 @@ printf("%i\n", ins.sum_to_a(5));
   - [x] Variables
   - [x] If else
   - [x] Functions
-  - [ ] For loop
-  - [ ] While loop
+  - [x] For loop
+  - [x] While loop
   - [ ] Arrays
   - [ ] Objects
   - [ ] Classes
