@@ -568,8 +568,12 @@ impl TypedNode {
         match self {
             TypedNode::Statements(stmts) => {
                 for stmt in stmts {
-                    if let TypedNode::Return { ty, .. } = stmt {
-                        return ty.clone();
+                    if let TypedNode::Return { ty, val } = stmt {
+                        return if let TypedNode::Array { .. } = *val.clone() {
+                            Type::Array(Box::new(ty.clone()))
+                        } else {
+                            ty.clone()
+                        };
                     }
                 }
                 return Type::Null;

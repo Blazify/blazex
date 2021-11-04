@@ -35,6 +35,8 @@ impl TypeSystem {
             }
             (Type::Var(tvar), ty) => self.unify_var(tvar, ty),
             (ty, Type::Var(tvar)) => self.unify_var(tvar, ty),
+            (Type::Array(box Type::Var(tvar)), Type::Array(ty)) => self.unify_var(tvar, *ty),
+            (Type::Array(ty), Type::Array(box Type::Var(tvar))) => self.unify_var(tvar, *ty),
             (a, b) => {
                 if a == b {
                     Substitution::empty()

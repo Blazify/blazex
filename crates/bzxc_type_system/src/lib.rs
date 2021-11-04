@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-#![feature(box_syntax)]
+#![feature(box_syntax, box_patterns)]
 
 use bzxc_shared::{Node, TypedNode};
 use type_env::TypeEnv;

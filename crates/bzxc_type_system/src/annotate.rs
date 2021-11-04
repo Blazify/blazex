@@ -13,11 +13,11 @@ impl TypeSystem {
             ),
             Node::NumberNode { token } => match token.value {
                 Tokens::Int(i) => TypedNode::Int {
-                    ty: Type::Int,
+                    ty: Type::fresh_var(),
                     val: i,
                 },
                 Tokens::Float(f) => TypedNode::Float {
-                    ty: Type::Float,
+                    ty: Type::fresh_var(),
                     val: f,
                 },
                 _ => unreachable!(),
@@ -160,6 +160,11 @@ impl TypeSystem {
                     .iter()
                     .map(|x| self.annotate(x.clone(), tenv))
                     .collect(),
+            },
+            Node::ArrayAcess { array, index } => TypedNode::Index {
+                ty: Type::fresh_var(),
+                array: box self.annotate(*array, tenv),
+                idx: box self.annotate(*index, tenv),
             },
             _ => panic!("Not implemented node: {:#?}", node),
         }

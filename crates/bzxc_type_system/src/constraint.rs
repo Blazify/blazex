@@ -49,7 +49,11 @@ impl TypeSystem {
                 ));
                 constr
             }
-            TypedNode::Let { ty, val } => vec![Constraint(ty, val.get_type())],
+            TypedNode::Let { ty, val } => {
+                let mut constr = self.collect(*val.clone());
+                constr.push(Constraint(ty, val.get_type()));
+                constr
+            }
             TypedNode::Fun { ty, params, body } => {
                 let mut constr = self.collect(*body.clone());
                 constr.push(Constraint(
@@ -122,21 +126,27 @@ impl TypeSystem {
                 constr
             }
             TypedNode::Array { ty, elements } => {
-                let mut constr = vec![];
-                constr.push(Constraint(
-                    ty.clone(),
-                    Type::Array(box if let Some(elem) = elements.first() {
-                        elem.get_type()
-                    } else {
-                        Type::Null
-                    }),
-                ));
+                let elem_ty = if let Some(elem) = elements.first() {
+                    elem.get_type()
+                } else {
+                    Type::Null
+                };
+                let mut constr = vec![Constraint(ty.clone(), Type::Array(box elem_ty.clone()))];
 
                 for element in elements {
-                    constr.push(Constraint(ty.clone(), Type::Array(box element.get_type())));
-                    constr.extend(self.collect(element));
+                    constr.push(Constraint(elem_ty.clone(), element.get_type()));
+                    constr.extend(self.collect(element.clone()));
                 }
 
+                constr
+            }
+            TypedNode::Index { ty, array, idx } => {
+                let mut constr = self.collect(*array.clone());
+                constr.extend(self.collect(*idx.clone()));
+                constr.push(Constraint(idx.get_type(), Type::Int));
+                let var = Type::fresh_var();
+                constr.push(Constraint(array.get_type(), Type::Array(box var.clone())));
+                constr.push(Constraint(ty, var));
                 constr
             }
             _ => vec![],
