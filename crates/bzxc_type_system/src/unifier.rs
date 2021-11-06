@@ -45,8 +45,12 @@ impl TypeSystem {
 
                 self.unify(constraints)
             }
-            (Type::Array(box Type::Var(tvar)), Type::ElementType(ty)) => self.unify_var(tvar, *ty),
-            (Type::ElementType(ty), Type::Array(box Type::Var(tvar))) => self.unify_var(tvar, *ty),
+            (Type::Array(box Type::Var(tvar), _), Type::ElementType(ty)) => {
+                self.unify_var(tvar, *ty)
+            }
+            (Type::ElementType(ty), Type::Array(box Type::Var(tvar), _)) => {
+                self.unify_var(tvar, *ty)
+            }
             (Type::ElementType(ty), Type::Var(tvar)) => self.unify_var(tvar, Type::ElementType(ty)),
             (Type::Var(tvar), Type::ElementType(ty)) => self.unify_var(tvar, Type::ElementType(ty)),
             (Type::Var(tvar), ty) => self.unify_var(tvar, ty),

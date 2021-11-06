@@ -100,7 +100,7 @@ impl TypeSystem {
                     tenv.set(tok.value.into_string(), ty.clone());
                     tok.value.into_string()
                 } else {
-                    "%%%".to_string()
+                    "%anonymous%".to_string()
                 };
 
                 let fun = TypedNode::Fun {

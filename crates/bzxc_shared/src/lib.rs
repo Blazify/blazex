@@ -665,12 +665,8 @@ impl TypedNode {
         match self {
             TypedNode::Statements(stmts) => {
                 for stmt in stmts {
-                    if let TypedNode::Return { ty, val } = stmt {
-                        return if let TypedNode::Array { .. } = *val.clone() {
-                            Type::Array(Box::new(ty.clone()))
-                        } else {
-                            ty.clone()
-                        };
+                    if let TypedNode::Return { ty, .. } = stmt {
+                        return ty.clone();
                     }
                 }
                 return Type::Null;
@@ -706,7 +702,7 @@ pub enum Type {
     Boolean,
     Char,
     String,
-    Array(Box<Self>),
+    Array(Box<Self>, usize),
     ElementType(Box<Self>),
     Fun(Vec<Self>, Box<Self>),
     Null,
@@ -732,7 +728,7 @@ impl Type {
             Type::Boolean => ctx.bool_type().into(),
             Type::Char => ctx.i8_type().into(),
             Type::String => ctx.i8_type().ptr_type(AddressSpace::Generic).into(),
-            Type::Array(ty) => ty.llvm(ctx, tvars).array_type(u32::MAX).into(),
+            Type::Array(ty, i) => ty.llvm(ctx, tvars).array_type(*i as u32).into(),
             Type::Fun(params, ret) => ret
                 .llvm(ctx, tvars.clone())
                 .fn_type(

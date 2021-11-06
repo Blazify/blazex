@@ -153,7 +153,7 @@ printf("%i\n", ins.sum_to_a(5));
   - [ ] Objects
   - [ ] Classes
 - [x] LLVM
-  - [ ] Accept TypedNode
+  - [x] Accept LLVMNode
   - [x] Logic of all nodes
 - [x] Errors
   - [x] Lexer

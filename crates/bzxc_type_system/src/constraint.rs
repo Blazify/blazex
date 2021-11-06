@@ -145,7 +145,10 @@ impl TypeSystem {
                 } else {
                     Type::Null
                 };
-                let mut constr = vec![Constraint(ty.clone(), Type::Array(box elem_ty.clone()))];
+                let mut constr = vec![Constraint(
+                    ty.clone(),
+                    Type::Array(box elem_ty.clone(), elements.len()),
+                )];
 
                 for element in elements {
                     constr.push(Constraint(elem_ty.clone(), element.get_type()));

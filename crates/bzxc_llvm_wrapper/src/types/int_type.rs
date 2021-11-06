@@ -12,7 +12,7 @@ use crate::types::{ArrayType, BasicTypeEnum, FunctionType, PointerType, Type, Ve
 use crate::values::{ArrayValue, AsValueRef, GenericValue, IntValue};
 use crate::AddressSpace;
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 /// How to interpret a string or digits used to construct an integer constant.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -84,8 +84,14 @@ impl<'ctx> IntType<'ctx> {
     /// let i32_value = i32_type.const_int(42, false);
     /// ```
     // TODOC: Maybe better explain sign extension
-    pub fn const_int(self, value: u64, sign_extend: bool) -> IntValue<'ctx> {
-        unsafe { IntValue::new(LLVMConstInt(self.as_type_ref(), value, sign_extend as i32)) }
+    pub fn const_int(self, value: i128, sign_extend: bool) -> IntValue<'ctx> {
+        unsafe {
+            IntValue::new(LLVMConstInt(
+                self.as_type_ref(),
+                value.try_into().unwrap(),
+                sign_extend as i32,
+            ))
+        }
     }
 
     /// Create an `IntValue` from a string and radix. LLVM provides no error handling here,

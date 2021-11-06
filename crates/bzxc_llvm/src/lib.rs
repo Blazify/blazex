@@ -20,9 +20,9 @@ use bzxc_llvm_wrapper::{
     passes::PassManager,
     types::BasicType,
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace,
+    AddressSpace, FloatPredicate, IntPredicate,
 };
-use bzxc_shared::LLVMNode;
+use bzxc_shared::{LLVMNode, Tokens};
 
 pub struct Compiler<'a, 'ctx> {
     pub context: &'ctx Context,
@@ -131,10 +131,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     ret.unwrap()
                 };
             }
-            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
+            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val, true).into(),
             LLVMNode::Float { ty, val } => ty.into_float_type().const_float(val).into(),
-            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
-            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
+            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as i128, true).into(),
+            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as i128, true).into(),
             LLVMNode::String { ty, val } => self
                 .builder
                 .build_pointer_cast(
@@ -147,13 +147,170 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "str_i8",
                 )
                 .into(),
-            LLVMNode::Unary { ty, val, op_token } => todo!(),
+            LLVMNode::Unary { ty, val, op_token } => {
+                let val = self.compile(*val);
+                if ty.is_int_type() {
+                    match op_token.value {
+                        Tokens::Plus => val,
+                        Tokens::Minus => val.into_int_value().const_neg().into(),
+                        _ => unreachable!(),
+                    }
+                } else {
+                    match op_token.value {
+                        Tokens::Plus => val,
+                        Tokens::Minus => val.into_float_value().const_neg().into(),
+                        _ => unreachable!(),
+                    }
+                }
+            }
             LLVMNode::Binary {
                 ty,
                 left,
                 right,
                 op_token,
-            } => todo!(),
+            } => {
+                if ty.is_int_type() {
+                    let lhs = self.compile(*left).into_int_value();
+                    let rhs = self.compile(*right).into_int_value();
+
+                    match op_token.value {
+                        Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
+                        Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
+                        Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
+                        Tokens::Divide => self.builder.build_int_signed_div(lhs, rhs, "tmpdiv"),
+                        Tokens::LessThan => {
+                            self.builder
+                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::GreaterThan => {
+                            self.builder
+                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::LessThanEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::GreaterThanEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::DoubleEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp")
+                        }
+                        Tokens::NotEquals => {
+                            self.builder
+                                .build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp")
+                        }
+                        _ => {
+                            if op_token.value == Tokens::Keyword("and") {
+                                self.builder.build_and(lhs, rhs, "and")
+                            } else if op_token.value == Tokens::Keyword("or") {
+                                self.builder.build_or(lhs, rhs, "or")
+                            } else {
+                                unreachable!();
+                            }
+                        }
+                    }
+                    .into()
+                } else {
+                    let lhs = self.compile(*left).into_float_value();
+                    let rhs = self.compile(*right).into_float_value();
+
+                    match op_token.value {
+                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd"),
+                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub"),
+                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul"),
+                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv"),
+                        Tokens::LessThan => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ULT,
+                                lhs,
+                                rhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::GreaterThan => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::UGT,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::LessThanEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ULE,
+                                lhs,
+                                rhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::GreaterThanEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::OGE,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::DoubleEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::OEQ,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        Tokens::NotEquals => {
+                            let cmp = self.builder.build_float_compare(
+                                FloatPredicate::ONE,
+                                rhs,
+                                lhs,
+                                "tmpcmp",
+                            );
+
+                            self.builder.build_unsigned_int_to_float(
+                                cmp,
+                                self.context.f64_type(),
+                                "tmpbool",
+                            )
+                        }
+                        _ => unreachable!(),
+                    }
+                    .into()
+                }
+            }
             LLVMNode::Fun {
                 ty,
                 name,
@@ -307,7 +464,59 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 end,
                 step,
                 body,
-            } => todo!(),
+            } => {
+                let parent = self.fn_value();
+
+                let start = self.compile(*start);
+                let var = var.value.into_string();
+                let start_alloca = self.create_entry_block_alloca(&var, start.get_type());
+
+                self.builder.build_store(start_alloca, start);
+
+                let loop_block = self.context.append_basic_block(parent, "for_loop");
+
+                self.builder.build_unconditional_branch(loop_block);
+                self.builder.position_at_end(loop_block);
+
+                let old_val = self.variables.remove(&var);
+
+                self.variables.insert(var.clone(), start_alloca);
+
+                self.compile(*body);
+                let step = self.compile(*step);
+                let end_condition = self.compile(*end);
+
+                let curr_var = self.builder.build_load(start_alloca, &var);
+
+                let next_var: BasicValueEnum = self
+                    .builder
+                    .build_int_add(curr_var.into_int_value(), step.into_int_value(), "nextvar")
+                    .into();
+
+                self.builder.build_store(start_alloca, next_var);
+
+                let end_condition = self.builder.build_int_compare(
+                    IntPredicate::NE,
+                    next_var.into_int_value(),
+                    end_condition.into_int_value(),
+                    "loopcond",
+                );
+
+                let after_block = self.context.append_basic_block(parent, "afterloop");
+
+                self.builder
+                    .build_conditional_branch(end_condition, loop_block, after_block);
+                self.builder.position_at_end(after_block);
+                self.variables.remove(&var);
+
+                if let Some(val) = old_val {
+                    self.variables.insert(var, val);
+                }
+
+                self.ret = false;
+
+                self.null()
+            }
             LLVMNode::Array { ty, elements } => {
                 let array_alloca = self.builder.build_alloca(ty, "array_alloca");
                 let mut array = self
@@ -328,10 +537,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 array.into()
             }
             LLVMNode::Index { ty, array, idx } => {
-                let array_alloca = self
-                    .builder
-                    .build_alloca(ty.array_type(u32::MAX), "arr_alloc");
-                self.builder.build_store(array_alloca, self.compile(*array));
+                let arr = self.compile(*array);
+                let array_alloca = self.builder.build_alloca(arr.get_type(), "arr_alloc");
+                self.builder.build_store(array_alloca, arr);
 
                 let array_elem_ptr = unsafe {
                     self.builder.build_gep(
