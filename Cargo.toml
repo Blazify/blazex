@@ -4,8 +4,8 @@ members = [
     "crates/bzxc_lexer",
     "crates/bzxc_parser",
     "crates/bzxc_shared",
-   # "crates/bzxc_llvm",
-   "crates/bzxc_llvm_wrapper",
+    "crates/bzxc_llvm",
+    "crates/bzxc_llvm_wrapper",
     "crates/bzxc_type_system"
 ]
 

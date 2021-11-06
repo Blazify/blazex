@@ -11,8 +11,12 @@
  * limitations under the License.
 */
 #![allow(unused_must_use)]
+use std::collections::BTreeMap;
 use std::hash::Hash;
 
+use bzxc_llvm_wrapper::context::Context;
+use bzxc_llvm_wrapper::types::BasicTypeEnum;
+use bzxc_llvm_wrapper::AddressSpace;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
@@ -475,6 +479,97 @@ impl Node {
 }
 
 #[derive(Debug, Clone)]
+pub enum LLVMNode<'ctx> {
+    Statements(Vec<Self>),
+
+    Int {
+        ty: BasicTypeEnum<'ctx>,
+        val: i128,
+    },
+    Float {
+        ty: BasicTypeEnum<'ctx>,
+        val: f64,
+    },
+    Boolean {
+        ty: BasicTypeEnum<'ctx>,
+        val: bool,
+    },
+    Char {
+        ty: BasicTypeEnum<'ctx>,
+        val: char,
+    },
+    String {
+        ty: BasicTypeEnum<'ctx>,
+        val: String,
+    },
+    Unary {
+        ty: BasicTypeEnum<'ctx>,
+        val: Box<Self>,
+        op_token: Token,
+    },
+    Binary {
+        ty: BasicTypeEnum<'ctx>,
+        left: Box<Self>,
+        right: Box<Self>,
+        op_token: Token,
+    },
+    Fun {
+        name: String,
+        ty: BasicTypeEnum<'ctx>,
+        params: Vec<(String, BasicTypeEnum<'ctx>)>,
+        body: Box<Self>,
+    },
+    Let {
+        name: String,
+        ty: BasicTypeEnum<'ctx>,
+        val: Box<Self>,
+    },
+    Var {
+        ty: BasicTypeEnum<'ctx>,
+        name: String,
+    },
+    Call {
+        ty: BasicTypeEnum<'ctx>,
+        fun: Box<Self>,
+        args: Vec<Self>,
+    },
+    Return {
+        ty: BasicTypeEnum<'ctx>,
+        val: Box<Self>,
+    },
+    Null {
+        ty: BasicTypeEnum<'ctx>,
+    },
+    If {
+        ty: BasicTypeEnum<'ctx>,
+        cases: Vec<(Self, Self)>,
+        else_case: Option<Box<Self>>,
+    },
+    While {
+        ty: BasicTypeEnum<'ctx>,
+        cond: Box<Self>,
+        body: Box<Self>,
+    },
+    For {
+        ty: BasicTypeEnum<'ctx>,
+        var: Token,
+        start: Box<Self>,
+        end: Box<Self>,
+        step: Box<Self>,
+        body: Box<Self>,
+    },
+    Array {
+        ty: BasicTypeEnum<'ctx>,
+        elements: Vec<Self>,
+    },
+    Index {
+        ty: BasicTypeEnum<'ctx>,
+        array: Box<Self>,
+        idx: Box<Self>,
+    },
+}
+
+#[derive(Debug, Clone)]
 pub enum TypedNode {
     Statements(Vec<Self>),
 
@@ -511,11 +606,13 @@ pub enum TypedNode {
     },
     Fun {
         ty: Type,
+        name: String,
         params: Vec<Binder>,
         body: Box<Self>,
     },
     Let {
         ty: Type,
+        name: String,
         val: Box<Self>,
     },
     Var {
@@ -610,6 +707,7 @@ pub enum Type {
     Char,
     String,
     Array(Box<Self>),
+    ElementType(Box<Self>),
     Fun(Vec<Self>, Box<Self>),
     Null,
 
@@ -621,6 +719,39 @@ impl Type {
         let ret = unsafe { Self::Var(I) };
         unsafe { I += 1 };
         ret
+    }
+
+    pub fn llvm<'ctx>(
+        &self,
+        ctx: &'ctx Context,
+        tvars: BTreeMap<Type, Type>,
+    ) -> BasicTypeEnum<'ctx> {
+        match self {
+            Type::Int => ctx.i128_type().into(),
+            Type::Float => ctx.f64_type().into(),
+            Type::Boolean => ctx.bool_type().into(),
+            Type::Char => ctx.i8_type().into(),
+            Type::String => ctx.i8_type().ptr_type(AddressSpace::Generic).into(),
+            Type::Array(ty) => ty.llvm(ctx, tvars).array_type(u32::MAX).into(),
+            Type::Fun(params, ret) => ret
+                .llvm(ctx, tvars.clone())
+                .fn_type(
+                    &params
+                        .iter()
+                        .map(|x| x.llvm(ctx, tvars.clone()))
+                        .collect::<Vec<BasicTypeEnum>>()[..],
+                    false,
+                )
+                .ptr_type(AddressSpace::Generic)
+                .into(),
+            Type::Null => ctx.struct_type(&[], true).into(),
+            Type::Var(tvar) => tvars
+                .clone()
+                .get(&Type::Var(*tvar))
+                .unwrap()
+                .llvm(ctx, tvars),
+            Type::ElementType(arr) => arr.llvm(ctx, tvars).into_array_type().get_element_type(),
+        }
     }
 }
 

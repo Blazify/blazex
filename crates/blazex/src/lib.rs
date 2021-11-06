@@ -1,9 +1,7 @@
 #![allow(dead_code, unused_variables, unused_imports)]
 
 use bzxc_lexer::Lexer;
-// use bzxc_llvm::Compiler;
-//use bzxc_llvm::Function;
-//use bzxc_llvm::Prototype;
+use bzxc_llvm::Compiler;
 use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
 use bzxc_llvm_wrapper::{
     context::Context,
@@ -14,6 +12,7 @@ use bzxc_llvm_wrapper::{
     OptimizationLevel,
 };
 use bzxc_parser::parser::Parser;
+use bzxc_type_system::llvm_node::LLVMNodeGenerator;
 use bzxc_type_system::TypeSystem;
 use std::path::Path;
 
@@ -56,10 +55,10 @@ pub fn compile(
         }
     }
 
-    let typed = TypeSystem::new(parsed.node.unwrap()).typed_node();
-
-    /*
     let context = Context::create();
+    let (subs, node) = TypeSystem::new(parsed.node.unwrap()).typed_node();
+    let llvm_node = LLVMNodeGenerator { context: &context }.gen(subs, node);
+
     let module = context.create_module(name);
     let builder = context.create_builder();
     let fpm = PassManager::create(&module);
@@ -74,17 +73,7 @@ pub fn compile(
     fpm.initialize();
     enable_llvm_pretty_stack_trace();
 
-
-    let func = Function {
-        body: typed,
-        prototype: Prototype {
-            name: Some(String::from("main")),
-            args: vec![],
-            ret_type: context.i128_type().into(),
-        },
-    };
-
-    Compiler::init(&context, &builder, &module, &fpm, func).compile_main();
+    Compiler::init(&context, &builder, &module, &fpm, llvm_node).compile_main();
     if llvm {
         println!("LLVM IR:\n{}", module.print_to_string().to_string());
     }
@@ -122,7 +111,6 @@ pub fn compile(
             return 1;
         }
     }
-    */
 
     return 0;
 }

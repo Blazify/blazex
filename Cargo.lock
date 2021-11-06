@@ -42,6 +42,7 @@ name = "blazex"
 version = "0.1.0"
 dependencies = [
  "bzxc_lexer",
+ "bzxc_llvm",
  "bzxc_llvm_wrapper",
  "bzxc_parser",
  "bzxc_shared",
@@ -55,6 +56,14 @@ dependencies = [
 name = "bzxc_lexer"
 version = "0.1.0"
 dependencies = [
+ "bzxc_shared",
+]
+
+[[package]]
+name = "bzxc_llvm"
+version = "0.1.0"
+dependencies = [
+ "bzxc_llvm_wrapper",
  "bzxc_shared",
 ]
 
@@ -90,6 +99,7 @@ dependencies = [
 name = "bzxc_type_system"
 version = "0.1.0"
 dependencies = [
+ "bzxc_llvm_wrapper",
  "bzxc_shared",
 ]
 

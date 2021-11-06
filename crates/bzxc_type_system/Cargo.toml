@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 bzxc_shared = { path = "../bzxc_shared" }
+bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }

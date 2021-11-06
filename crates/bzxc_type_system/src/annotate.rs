@@ -1,3 +1,15 @@
+/*
+ * Copyright 2020 to 2021 BlazifyOrg
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
 use bzxc_shared::{Binder, Node, Tokens, Type, TypedNode};
 
 use crate::{type_env::TypeEnv, TypeSystem};
@@ -61,6 +73,7 @@ impl TypeSystem {
                 tenv.set(name.value.into_string(), ty.clone());
                 TypedNode::Let {
                     ty,
+                    name: name.value.into_string(),
                     val: box self.annotate(*value, tenv),
                 }
             }
@@ -83,12 +96,16 @@ impl TypeSystem {
 
                 let ty = Type::fresh_var();
 
-                if let Some(tok) = name {
+                let name = if let Some(tok) = name {
                     tenv.set(tok.value.into_string(), ty.clone());
-                }
+                    tok.value.into_string()
+                } else {
+                    "%%%".to_string()
+                };
 
                 let fun = TypedNode::Fun {
                     ty,
+                    name,
                     params: binders,
                     body: box self.annotate(*body_node, tenv),
                 };

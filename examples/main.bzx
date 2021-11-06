@@ -1,4 +1,1 @@
-fun a() { var x = [0, 1, 2]; return x }
-
-
-a()[0]
+1

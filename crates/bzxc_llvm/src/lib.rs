@@ -1,25 +1,16 @@
 /*
- * Copyright 2020 to 2021 BlazifyOrg
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *    http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+* Copyright 2020 to 2021 BlazifyOrg
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*    http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
-mod array;
-mod class;
-mod conditional;
-mod function;
-mod literals;
-mod loops;
-mod object;
-mod operation;
-mod variable;
-
+#![allow(unused_variables)]
 use std::collections::HashMap;
 
 use bzxc_llvm_wrapper::{
@@ -27,43 +18,42 @@ use bzxc_llvm_wrapper::{
     context::Context,
     module::Module,
     passes::PassManager,
-    types::{AnyTypeEnum, BasicType, BasicTypeEnum, PointerType},
-    values::{BasicValueEnum, FunctionValue, PointerValue},
+    types::BasicType,
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    AddressSpace,
 };
-use bzxc_shared::TypedNode;
-
-#[derive(Debug, Clone)]
-pub struct Prototype<'ctx> {
-    pub name: Option<String>,
-    pub args: Vec<(String, BasicTypeEnum<'ctx>)>,
-    pub ret_type: AnyTypeEnum<'ctx>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Function<'ctx> {
-    pub prototype: Prototype<'ctx>,
-    pub body: TypedNode<'ctx>,
-}
+use bzxc_shared::LLVMNode;
 
 pub struct Compiler<'a, 'ctx> {
     pub context: &'ctx Context,
     pub builder: &'a Builder<'ctx>,
     pub module: &'a Module<'ctx>,
     pub fpm: &'a PassManager<FunctionValue<'ctx>>,
-    pub function: Function<'ctx>,
+    pub main: LLVMNode<'ctx>,
 
-    variables: HashMap<String, PointerValue<'ctx>>,
     fn_value_opt: Option<FunctionValue<'ctx>>,
-    objects: HashMap<(PointerType<'ctx>, String), u32>,
-    object_aligner: u32,
-    classes: HashMap<PointerType<'ctx>, String>,
+    variables: HashMap<String, PointerValue<'ctx>>,
     ret: bool,
 }
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    #[inline]
-    fn get_function(&self, name: &str) -> Option<FunctionValue<'ctx>> {
-        self.module.get_function(name)
+    pub fn init(
+        context: &'ctx Context,
+        builder: &'a Builder<'ctx>,
+        module: &'a Module<'ctx>,
+        fpm: &'a PassManager<FunctionValue<'ctx>>,
+        main: LLVMNode<'ctx>,
+    ) -> Self {
+        Self {
+            builder,
+            context,
+            fpm,
+            module,
+            main,
+            fn_value_opt: None,
+            variables: HashMap::new(),
+            ret: false,
+        }
     }
 
     #[inline]
@@ -96,15 +86,43 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         ptr.into()
     }
 
-    fn compile_node(&mut self, node: TypedNode<'ctx>) -> BasicValueEnum<'ctx> {
-        match node.clone() {
-            TypedNode::Statements { statements } => {
+    pub fn compile_main(&mut self) {
+        let func =
+            self.module
+                .add_function("main", self.context.i32_type().fn_type(&[], false), None);
+
+        let entry = self.context.append_basic_block(func, "entry");
+        self.builder.position_at_end(entry);
+
+        self.fn_value_opt = Some(func);
+        self.compile(self.main.clone());
+        self.builder
+            .build_return(Some(&self.context.i32_type().const_int(0, true)));
+
+        self.ret = true;
+
+        if func.verify(true) {
+            self.fpm.run_on(&func);
+        } else {
+            eprintln!(
+                "Invalid LLVM IR:\n{}",
+                self.module.print_to_string().to_string()
+            );
+            unsafe {
+                func.delete();
+            }
+        }
+    }
+
+    pub(crate) fn compile(&mut self, node: LLVMNode<'ctx>) -> BasicValueEnum<'ctx> {
+        match node {
+            LLVMNode::Statements(stmts) => {
                 let mut ret = None;
-                for statement in statements {
+                for statement in stmts {
                     if self.ret {
                         continue;
                     }
-                    ret = Some(self.compile_node(**statement));
+                    ret = Some(self.compile(statement));
                 }
 
                 return if ret.is_none() {
@@ -113,108 +131,222 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     ret.unwrap()
                 };
             }
-            TypedNode::While {
-                condition_node,
-                body_node,
-            } => self.while_loop(*condition_node, *body_node),
-            TypedNode::VarReassign { name, typee, value } => self.var_reassign(name, *value, typee),
-            TypedNode::VarAssign { name, value } => self.var_assign(name, *value),
-            TypedNode::VarAccess { token } => self.var_access(token),
-            TypedNode::Unary {
-                node: child,
-                op_token,
-            } => self.unary_op(*child, op_token),
-            TypedNode::String { token } => self.string(token),
-            TypedNode::Int { token } => self.int(token),
-            TypedNode::If { cases, else_case } => self.if_decl(cases, else_case),
-            TypedNode::Fun {
-                name,
-                arg_tokens,
-                body,
-                return_type,
-            } => self.fun_decl(name, arg_tokens, *body, return_type),
-            TypedNode::For {
-                var_name_token,
-                start_value,
-                end_value,
-                body_node,
-                step_value_node,
-            } => self.for_loop(
-                var_name_token,
-                *start_value,
-                *end_value,
-                *body_node,
-                *step_value_node,
-            ),
-            TypedNode::Char { token } => self.char(token),
-            TypedNode::Call { node_to_call, args } => self.fun_call(*node_to_call, args),
-            TypedNode::Boolean { token } => self.boolean(token),
-            TypedNode::Binary {
+            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
+            LLVMNode::Float { ty, val } => ty.into_float_type().const_float(val).into(),
+            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
+            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as u64, false).into(),
+            LLVMNode::String { ty, val } => self
+                .builder
+                .build_pointer_cast(
+                    unsafe {
+                        self.builder
+                            .build_global_string(val.as_str(), "str")
+                            .as_pointer_value()
+                    },
+                    self.context.i8_type().ptr_type(AddressSpace::Generic),
+                    "str_i8",
+                )
+                .into(),
+            LLVMNode::Unary { ty, val, op_token } => todo!(),
+            LLVMNode::Binary {
+                ty,
                 left,
                 right,
                 op_token,
-            } => self.binary_op(*left, op_token, *right),
-            TypedNode::Array {
-                typee,
-                element_nodes,
-            } => self.array_decl(typee, element_nodes),
-            TypedNode::Index { array, index } => self.array_access(*array, *index),
-            TypedNode::Return { value } => self.ret(value),
-            TypedNode::Object { properties } => self.obj_decl(properties),
-            TypedNode::ObjectAccess { object, property } => self.obj_get(*object, property),
-            TypedNode::ObjectEdit {
-                object,
-                property,
-                new_val,
-            } => self.obj_edit(*object, property, *new_val),
-            TypedNode::ObjectCall {
-                args,
-                object,
-                property,
-            } => self.obj_method_call(*object, property, args),
-            TypedNode::Class {
-                methods,
-                properties,
-                constructor,
+            } => todo!(),
+            LLVMNode::Fun {
+                ty,
                 name,
-            } => self.class_decl(name, constructor, properties, methods),
-            TypedNode::ClassInit {
-                name,
-                constructor_params,
-            } => self.class_init(name, constructor_params),
-            TypedNode::Extern {
-                name,
-                arg_tokens,
-                return_type,
-                var_args,
-            } => self.fun_extern(name, arg_tokens, return_type, var_args),
-            TypedNode::Float { token } => self.float(token),
-        }
-    }
+                params,
+                body,
+            } => {
+                let func = self
+                    .module
+                    .add_function(name.as_str(), ty.into_pointer_type(), None);
 
-    pub fn compile_main(&mut self) -> FunctionValue<'ctx> {
-        self.compile_fn(self.function.clone())
-    }
+                let parent = self.fn_value_opt.clone();
 
-    pub fn init(
-        context: &'ctx Context,
-        builder: &'a Builder<'ctx>,
-        module: &'a Module<'ctx>,
-        fpm: &'a PassManager<FunctionValue<'ctx>>,
-        function: Function<'ctx>,
-    ) -> Compiler<'a, 'ctx> {
-        Compiler {
-            builder,
-            context,
-            module,
-            fpm,
-            variables: HashMap::new(),
-            function,
-            fn_value_opt: None,
-            objects: HashMap::new(),
-            object_aligner: 0,
-            classes: HashMap::new(),
-            ret: false,
+                let parental_block = self.builder.get_insert_block();
+
+                let entry = self.context.append_basic_block(func, "entry");
+                self.builder.position_at_end(entry);
+
+                self.fn_value_opt = Some(func);
+
+                self.variables.reserve(params.len());
+
+                for (i, arg) in func.get_param_iter().enumerate() {
+                    let arg_name = params.get(i).unwrap().0.as_str().clone();
+                    arg.set_name(arg_name);
+                    let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
+
+                    self.builder.build_store(alloca, arg);
+
+                    self.variables.insert(arg_name.to_string(), alloca);
+                }
+
+                self.ret = false;
+                self.compile(*body);
+
+                self.builder.position_at_end(parental_block.unwrap());
+                self.fn_value_opt = parent;
+
+                func.as_global_value().as_pointer_value().into()
+            }
+            LLVMNode::Let { ty, name, val } => {
+                let alloca = self.create_entry_block_alloca(name.as_str(), ty);
+                self.builder.build_store(alloca, self.compile(*val));
+                self.variables.insert(name, alloca);
+                alloca.into()
+            }
+            LLVMNode::Var { ty: _, name } => self
+                .builder
+                .build_load(*self.variables.get(&name).unwrap(), name.as_str()),
+            LLVMNode::Call { ty, fun, args } => self
+                .builder
+                .build_call(
+                    self.compile(*fun).into_pointer_value(),
+                    &args
+                        .iter()
+                        .map(|x| self.compile(x.clone()))
+                        .collect::<Vec<BasicValueEnum>>()[..],
+                    "build_call",
+                )
+                .unwrap()
+                .try_as_basic_value()
+                .left_or(self.null()),
+            LLVMNode::Return { ty, val } => {
+                let rett = self.compile(*val);
+                self.builder.build_return(Some(&rett));
+                self.ret = true;
+                rett
+            }
+            LLVMNode::Null { ty } => ty.into_struct_type().const_zero().into(),
+            LLVMNode::If {
+                ty,
+                cases,
+                else_case,
+            } => {
+                let mut blocks = vec![self.builder.get_insert_block().unwrap()];
+                let parent = self.fn_value();
+                for _ in 1..cases.len() {
+                    blocks.push(self.context.append_basic_block(parent, "if_start"));
+                }
+
+                let else_block = if else_case.is_some() {
+                    let result = self.context.append_basic_block(parent, "else");
+                    blocks.push(result);
+                    Some(result)
+                } else {
+                    None
+                };
+
+                let after_block = self.context.append_basic_block(parent, "after");
+                blocks.push(after_block);
+
+                for (i, (cond, body)) in cases.iter().enumerate() {
+                    let then_block = blocks[i];
+                    let else_block = blocks[i + 1];
+
+                    self.builder.position_at_end(then_block);
+
+                    let condition = self.compile(cond.clone());
+                    let conditional_block = self.context.prepend_basic_block(else_block, "if_body");
+
+                    self.builder.build_conditional_branch(
+                        condition.into_int_value(),
+                        conditional_block,
+                        else_block,
+                    );
+
+                    self.builder.position_at_end(conditional_block);
+                    self.compile(body.clone());
+                    if !self.ret {
+                        self.builder.build_unconditional_branch(after_block);
+                    };
+                }
+
+                if let Some(else_block) = else_block {
+                    self.builder.position_at_end(else_block);
+                    self.compile(*else_case.unwrap());
+                    self.builder.build_unconditional_branch(after_block);
+                }
+
+                self.builder.position_at_end(after_block);
+                self.ret = false;
+
+                self.null()
+            }
+            LLVMNode::While { ty, cond, body } => {
+                let parent = self.fn_value();
+                let loop_block = self.context.append_basic_block(parent, "while_loop");
+
+                let after_block = self.context.append_basic_block(parent, "afterloop");
+
+                self.builder.build_conditional_branch(
+                    self.compile(*cond.clone()).into_int_value(),
+                    loop_block,
+                    after_block,
+                );
+
+                self.builder.position_at_end(loop_block);
+                self.compile(*body);
+                self.builder.build_conditional_branch(
+                    self.compile(*cond.clone()).into_int_value(),
+                    loop_block,
+                    after_block,
+                );
+                self.builder.position_at_end(after_block);
+
+                self.null()
+            }
+            LLVMNode::For {
+                ty,
+                var,
+                start,
+                end,
+                step,
+                body,
+            } => todo!(),
+            LLVMNode::Array { ty, elements } => {
+                let array_alloca = self.builder.build_alloca(ty, "array_alloca");
+                let mut array = self
+                    .builder
+                    .build_load(array_alloca, "array_load")
+                    .into_array_value();
+
+                for (i, k) in elements.iter().enumerate() {
+                    let elem = self.compile(k.clone());
+
+                    array = self
+                        .builder
+                        .build_insert_value(array, elem, i as u32, "load_array")
+                        .unwrap()
+                        .into_array_value();
+                }
+
+                array.into()
+            }
+            LLVMNode::Index { ty, array, idx } => {
+                let array_alloca = self
+                    .builder
+                    .build_alloca(ty.array_type(u32::MAX), "arr_alloc");
+                self.builder.build_store(array_alloca, self.compile(*array));
+
+                let array_elem_ptr = unsafe {
+                    self.builder.build_gep(
+                        array_alloca,
+                        &[
+                            self.context.i32_type().const_int(0, false),
+                            self.compile(*idx).into_int_value(),
+                        ],
+                        "get_array_elem_ptr",
+                    )
+                };
+                let array_elem = self.builder.build_load(array_elem_ptr, "array_elem");
+
+                array_elem
+            }
         }
     }
 }

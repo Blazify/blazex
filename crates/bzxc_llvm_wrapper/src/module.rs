@@ -1,16 +1,17 @@
 //! A `Module` represets a single code compilation unit.
 
+use either::Either;
 use llvm_sys::analysis::{LLVMVerifierFailureAction, LLVMVerifyModule};
 #[allow(deprecated)]
 use llvm_sys::bit_reader::LLVMParseBitcodeInContext;
 use llvm_sys::bit_writer::{LLVMWriteBitcodeToFile, LLVMWriteBitcodeToMemoryBuffer};
 use llvm_sys::core::{
     LLVMAddFunction, LLVMAddGlobal, LLVMAddGlobalInAddressSpace, LLVMAddNamedMetadataOperand,
-    LLVMCloneModule, LLVMDisposeModule, LLVMDumpModule, LLVMGetFirstFunction, LLVMGetFirstGlobal,
-    LLVMGetLastFunction, LLVMGetLastGlobal, LLVMGetModuleContext, LLVMGetNamedFunction,
-    LLVMGetNamedGlobal, LLVMGetNamedMetadataNumOperands, LLVMGetNamedMetadataOperands,
-    LLVMGetTarget, LLVMGetTypeByName, LLVMPrintModuleToFile, LLVMPrintModuleToString,
-    LLVMSetDataLayout, LLVMSetTarget,
+    LLVMCloneModule, LLVMDisposeModule, LLVMDumpModule, LLVMGetElementType, LLVMGetFirstFunction,
+    LLVMGetFirstGlobal, LLVMGetLastFunction, LLVMGetLastGlobal, LLVMGetModuleContext,
+    LLVMGetNamedFunction, LLVMGetNamedGlobal, LLVMGetNamedMetadataNumOperands,
+    LLVMGetNamedMetadataOperands, LLVMGetTarget, LLVMGetTypeByName, LLVMGetTypeKind,
+    LLVMPrintModuleToFile, LLVMPrintModuleToString, LLVMSetDataLayout, LLVMSetTarget,
 };
 use llvm_sys::core::{LLVMAddModuleFlag, LLVMGetModuleFlag};
 use llvm_sys::core::{LLVMGetModuleIdentifier, LLVMSetModuleIdentifier};
@@ -19,8 +20,8 @@ use llvm_sys::execution_engine::{
     LLVMCreateJITCompilerForModule,
 };
 use llvm_sys::prelude::{LLVMModuleRef, LLVMValueRef};
-use llvm_sys::LLVMLinkage;
 use llvm_sys::LLVMModuleFlagBehavior;
+use llvm_sys::{LLVMLinkage, LLVMTypeKind};
 
 use std::cell::{Cell, Ref, RefCell};
 use std::ffi::CStr;
@@ -39,10 +40,24 @@ use crate::execution_engine::ExecutionEngine;
 use crate::memory_buffer::MemoryBuffer;
 use crate::support::{to_c_str, LLVMString};
 use crate::targets::{InitializationConfig, Target, TargetTriple};
-use crate::types::{AsTypeRef, BasicType, FunctionType, StructType};
+use crate::types::{AsTypeRef, BasicType, FunctionType, PointerType, StructType};
 use crate::values::BasicValue;
 use crate::values::{AsValueRef, FunctionValue, GlobalValue, MetadataValue};
 use crate::{AddressSpace, OptimizationLevel};
+
+type FunctionOrPointerType<'ctx> = Either<FunctionType<'ctx>, PointerType<'ctx>>;
+
+impl<'ctx> Into<FunctionOrPointerType<'ctx>> for FunctionType<'ctx> {
+    fn into(self) -> FunctionOrPointerType<'ctx> {
+        Either::Left(self)
+    }
+}
+
+impl<'ctx> Into<FunctionOrPointerType<'ctx>> for PointerType<'ctx> {
+    fn into(self) -> FunctionOrPointerType<'ctx> {
+        Either::Right(self)
+    }
+}
 
 #[llvm_enum(LLVMLinkage)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -192,18 +207,37 @@ impl<'ctx> Module<'ctx> {
     /// assert_eq!(fn_val.get_name().to_str(), Ok("my_function"));
     /// assert_eq!(fn_val.get_linkage(), Linkage::External);
     /// ```
-    pub fn add_function(
+    pub fn add_function<F>(
         &self,
         name: &str,
-        ty: FunctionType<'ctx>,
+        ty: F,
         linkage: Option<Linkage>,
-    ) -> FunctionValue<'ctx> {
+    ) -> FunctionValue<'ctx>
+    where
+        F: Into<FunctionOrPointerType<'ctx>>,
+    {
         let c_string = to_c_str(name);
         let fn_value = unsafe {
             FunctionValue::new(LLVMAddFunction(
                 self.module.get(),
                 c_string.as_ptr(),
-                ty.as_type_ref(),
+                match ty.into() {
+                    Either::Left(val) => val.as_type_ref(),
+                    Either::Right(val) => {
+                        // If using a pointer value, we must validate it's a valid function ptr
+                        let type_ref = val.as_type_ref();
+                        let ty_kind = LLVMGetTypeKind(LLVMGetElementType(type_ref));
+                        let is_a_fn_ptr = match ty_kind {
+                            LLVMTypeKind::LLVMFunctionTypeKind => true,
+                            _ => false,
+                        };
+
+                        if !is_a_fn_ptr {
+                            panic!()
+                        }
+                        type_ref
+                    }
+                },
             ))
             .expect("add_function should always succeed in adding a new function")
         };

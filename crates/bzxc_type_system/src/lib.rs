@@ -13,10 +13,12 @@
 #![feature(box_syntax, box_patterns)]
 
 use bzxc_shared::{Node, TypedNode};
+use substitution::Substitution;
 use type_env::TypeEnv;
 
 mod annotate;
 mod constraint;
+pub mod llvm_node;
 mod substitution;
 mod type_env;
 mod unifier;
@@ -30,11 +32,10 @@ impl TypeSystem {
         TypeSystem { node }
     }
 
-    pub fn typed_node(&self) -> TypedNode {
+    pub fn typed_node(&self) -> (Substitution, TypedNode) {
         let annotation = self.annotate(self.node.clone(), &mut TypeEnv::new());
         let constraints = self.collect(annotation.clone());
         let substitution = self.unify(constraints.clone());
-        println!("TypedNode: {:#?}\n{:#?}", annotation, substitution);
-        annotation
+        (substitution, annotation)
     }
 }

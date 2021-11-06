@@ -1,3 +1,15 @@
+/*
+ * Copyright 2020 to 2021 BlazifyOrg
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
 use bzxc_shared::{Tokens, Type, TypedNode};
 
 use crate::TypeSystem;
@@ -49,12 +61,14 @@ impl TypeSystem {
                 ));
                 constr
             }
-            TypedNode::Let { ty, val } => {
+            TypedNode::Let { ty, val, .. } => {
                 let mut constr = self.collect(*val.clone());
                 constr.push(Constraint(ty, val.get_type()));
                 constr
             }
-            TypedNode::Fun { ty, params, body } => {
+            TypedNode::Fun {
+                ty, params, body, ..
+            } => {
                 let mut constr = self.collect(*body.clone());
                 constr.push(Constraint(
                     ty,
@@ -144,9 +158,7 @@ impl TypeSystem {
                 let mut constr = self.collect(*array.clone());
                 constr.extend(self.collect(*idx.clone()));
                 constr.push(Constraint(idx.get_type(), Type::Int));
-                let var = Type::fresh_var();
-                constr.push(Constraint(array.get_type(), Type::Array(box var.clone())));
-                constr.push(Constraint(ty, var));
+                constr.push(Constraint(ty, Type::ElementType(box array.get_type())));
                 constr
             }
             _ => vec![],

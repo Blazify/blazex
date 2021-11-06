@@ -378,6 +378,32 @@ impl<'ctx> BasicTypeEnum<'ctx> {
         matches!(self, BasicTypeEnum::VectorType(_))
     }
 
+    pub fn fn_type(
+        self,
+        param_types: &[BasicTypeEnum<'ctx>],
+        is_var_args: bool,
+    ) -> FunctionType<'ctx> {
+        match self {
+            BasicTypeEnum::ArrayType(x) => x.fn_type(param_types, is_var_args),
+            BasicTypeEnum::FloatType(x) => x.fn_type(param_types, is_var_args),
+            BasicTypeEnum::IntType(x) => x.fn_type(param_types, is_var_args),
+            BasicTypeEnum::PointerType(x) => x.fn_type(param_types, is_var_args),
+            BasicTypeEnum::StructType(x) => x.fn_type(param_types, is_var_args),
+            BasicTypeEnum::VectorType(x) => x.fn_type(param_types, is_var_args),
+        }
+    }
+
+    pub fn array_type(self, size: u32) -> ArrayType<'ctx> {
+        match self {
+            BasicTypeEnum::ArrayType(x) => x.array_type(size),
+            BasicTypeEnum::FloatType(x) => x.array_type(size),
+            BasicTypeEnum::IntType(x) => x.array_type(size),
+            BasicTypeEnum::PointerType(x) => x.array_type(size),
+            BasicTypeEnum::StructType(x) => x.array_type(size),
+            BasicTypeEnum::VectorType(x) => x.array_type(size),
+        }
+    }
+
     /// Creates a constant `BasicValueZero`.
     ///
     /// # Example
