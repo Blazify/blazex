@@ -615,6 +615,12 @@ pub enum TypedNode {
         name: String,
         val: Box<Self>,
     },
+    ReLet {
+        ty: Type,
+        prev: Type,
+        name: String,
+        val: Box<Self>,
+    },
     Var {
         ty: Type,
         name: String,
@@ -678,6 +684,7 @@ impl TypedNode {
             | TypedNode::String { ty, .. }
             | TypedNode::Fun { ty, .. }
             | TypedNode::Let { ty, .. }
+            | TypedNode::ReLet { ty, .. }
             | TypedNode::Var { ty, .. }
             | TypedNode::Call { ty, .. }
             | TypedNode::Return { ty, .. }

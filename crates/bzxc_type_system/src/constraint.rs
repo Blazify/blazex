@@ -66,6 +66,12 @@ impl TypeSystem {
                 constr.push(Constraint(ty, val.get_type()));
                 constr
             }
+            TypedNode::ReLet { ty, prev, val, .. } => {
+                let mut constr = self.collect(*val.clone());
+                constr.push(Constraint(prev.clone(), val.get_type()));
+                constr.push(Constraint(ty, prev));
+                constr
+            }
             TypedNode::Fun {
                 ty, params, body, ..
             } => {

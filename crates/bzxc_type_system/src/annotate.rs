@@ -184,7 +184,18 @@ impl TypeSystem {
                 array: box self.annotate(*array, tenv),
                 idx: box self.annotate(*index, tenv),
             },
-            Node::VarReassignNode { name, typee, value } => todo!(),
+            Node::VarReassignNode { name, typee, value } => {
+                let name = name.value.into_string();
+                let val = box self.annotate(*value, tenv);
+                let prev = tenv.get(name.clone()).unwrap().clone();
+
+                TypedNode::ReLet {
+                    ty: val.get_type(),
+                    name,
+                    val,
+                    prev,
+                }
+            }
             Node::ObjectDefNode { properties } => todo!(),
             Node::ObjectPropAccess { object, property } => todo!(),
             Node::ObjectPropEdit {

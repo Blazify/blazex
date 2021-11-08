@@ -64,11 +64,13 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                     .map(|x| (x.name.clone(), llvm(x.ty.clone())))
                     .collect(),
             },
-            TypedNode::Let { ty, name, val } => LLVMNode::Let {
-                ty: llvm(ty),
-                name,
-                val: box self.gen(subs, *val),
-            },
+            TypedNode::Let { ty, name, val } | TypedNode::ReLet { ty, name, val, .. } => {
+                LLVMNode::Let {
+                    ty: llvm(ty),
+                    name,
+                    val: box self.gen(subs, *val),
+                }
+            }
             TypedNode::Var { ty, name } => LLVMNode::Var { ty: llvm(ty), name },
             TypedNode::Call { ty, fun, args } => LLVMNode::Call {
                 ty: llvm(ty),
