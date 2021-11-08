@@ -145,23 +145,24 @@ impl TypeSystem {
                 } else {
                     Type::Null
                 };
-                let mut constr = vec![Constraint(
-                    ty.clone(),
-                    Type::Array(box elem_ty.clone(), elements.len()),
-                )];
+                let mut constr = self.collect(elements.first().unwrap().clone());
 
-                for element in elements {
+                for element in elements.iter().skip(1).collect::<Vec<&TypedNode>>() {
                     constr.push(Constraint(elem_ty.clone(), element.get_type()));
                     constr.extend(self.collect(element.clone()));
                 }
 
+                constr.push(Constraint(
+                    ty.clone(),
+                    Type::Array(box elem_ty.clone(), elements.len()),
+                ));
                 constr
             }
             TypedNode::Index { ty, array, idx } => {
                 let mut constr = self.collect(*array.clone());
                 constr.extend(self.collect(*idx.clone()));
                 constr.push(Constraint(idx.get_type(), Type::Int));
-                constr.push(Constraint(ty, Type::ElementType(box array.get_type())));
+                constr.push(Constraint(array.get_type(), Type::Array(box ty, 0)));
                 constr
             }
             _ => vec![],

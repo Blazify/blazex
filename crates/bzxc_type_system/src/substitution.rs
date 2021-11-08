@@ -55,6 +55,7 @@ impl Substitution {
                     .collect(),
                 box self.substitute_tvar(*ret.clone(), tvar, sol_ty.clone()),
             ),
+            Type::Array(ty, size) => Type::Array(box self.substitute_tvar(*ty, tvar, sol_ty), size),
             Type::Var(tvar2) => {
                 if tvar == tvar2 {
                     sol_ty

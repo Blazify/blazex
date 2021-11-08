@@ -552,7 +552,7 @@ pub enum LLVMNode<'ctx> {
     },
     For {
         ty: BasicTypeEnum<'ctx>,
-        var: Token,
+        var: String,
         start: Box<Self>,
         end: Box<Self>,
         step: Box<Self>,
@@ -643,7 +643,7 @@ pub enum TypedNode {
     },
     For {
         ty: Type,
-        var: Token,
+        var: String,
         start: Box<Self>,
         end: Box<Self>,
         step: Box<Self>,
@@ -703,7 +703,6 @@ pub enum Type {
     Char,
     String,
     Array(Box<Self>, usize),
-    ElementType(Box<Self>),
     Fun(Vec<Self>, Box<Self>),
     Null,
 
@@ -746,7 +745,6 @@ impl Type {
                 .get(&Type::Var(*tvar))
                 .unwrap()
                 .llvm(ctx, tvars),
-            Type::ElementType(arr) => arr.llvm(ctx, tvars).into_array_type().get_element_type(),
         }
     }
 }

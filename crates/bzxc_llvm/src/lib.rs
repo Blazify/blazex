@@ -10,7 +10,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#![allow(unused_variables)]
 use std::collections::HashMap;
 
 use bzxc_llvm_wrapper::{
@@ -20,7 +19,7 @@ use bzxc_llvm_wrapper::{
     passes::PassManager,
     types::BasicType,
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace, FloatPredicate, IntPredicate,
+    FloatPredicate, IntPredicate,
 };
 use bzxc_shared::{LLVMNode, Tokens};
 
@@ -143,7 +142,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .build_global_string(val.as_str(), "str")
                             .as_pointer_value()
                     },
-                    self.context.i8_type().ptr_type(AddressSpace::Generic),
+                    ty.into_pointer_type(),
                     "str_i8",
                 )
                 .into(),
@@ -317,9 +316,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 params,
                 body,
             } => {
-                let func = self
-                    .module
-                    .add_function(name.as_str(), ty.into_pointer_type(), None);
+                let func = self.module.add_function(
+                    name.as_str(),
+                    ty.into_pointer_type()
+                        .get_element_type()
+                        .into_function_type(),
+                    None,
+                );
 
                 let parent = self.fn_value_opt.clone();
 
@@ -332,13 +335,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.variables.reserve(params.len());
 
+                println!("{:#?}", func);
                 for (i, arg) in func.get_param_iter().enumerate() {
                     let arg_name = params.get(i).unwrap().0.as_str().clone();
                     arg.set_name(arg_name);
                     let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
 
                     self.builder.build_store(alloca, arg);
-
                     self.variables.insert(arg_name.to_string(), alloca);
                 }
 
@@ -359,7 +362,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             LLVMNode::Var { ty: _, name } => self
                 .builder
                 .build_load(*self.variables.get(&name).unwrap(), name.as_str()),
-            LLVMNode::Call { ty, fun, args } => self
+            LLVMNode::Call { ty: _, fun, args } => self
                 .builder
                 .build_call(
                     self.compile(*fun).into_pointer_value(),
@@ -372,7 +375,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .unwrap()
                 .try_as_basic_value()
                 .left_or(self.null()),
-            LLVMNode::Return { ty, val } => {
+            LLVMNode::Return { ty: _, val } => {
                 let rett = self.compile(*val);
                 self.builder.build_return(Some(&rett));
                 self.ret = true;
@@ -380,7 +383,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             LLVMNode::Null { ty } => ty.into_struct_type().const_zero().into(),
             LLVMNode::If {
-                ty,
+                ty: _,
                 cases,
                 else_case,
             } => {
@@ -434,7 +437,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.null()
             }
-            LLVMNode::While { ty, cond, body } => {
+            LLVMNode::While { ty: _, cond, body } => {
                 let parent = self.fn_value();
                 let loop_block = self.context.append_basic_block(parent, "while_loop");
 
@@ -458,7 +461,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.null()
             }
             LLVMNode::For {
-                ty,
+                ty: _,
                 var,
                 start,
                 end,
@@ -468,7 +471,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let parent = self.fn_value();
 
                 let start = self.compile(*start);
-                let var = var.value.into_string();
                 let start_alloca = self.create_entry_block_alloca(&var, start.get_type());
 
                 self.builder.build_store(start_alloca, start);
@@ -536,7 +538,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 array.into()
             }
-            LLVMNode::Index { ty, array, idx } => {
+            LLVMNode::Index { ty: _, array, idx } => {
                 let arr = self.compile(*array);
                 let array_alloca = self.builder.build_alloca(arr.get_type(), "arr_alloc");
                 self.builder.build_store(array_alloca, arr);

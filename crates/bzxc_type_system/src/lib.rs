@@ -11,6 +11,7 @@
  * limitations under the License.
 */
 #![feature(box_syntax, box_patterns)]
+#![allow(unused_variables)]
 
 use bzxc_shared::{Node, TypedNode};
 use substitution::Substitution;

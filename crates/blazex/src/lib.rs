@@ -57,6 +57,7 @@ pub fn compile(
 
     let context = Context::create();
     let (subs, node) = TypeSystem::new(parsed.node.unwrap()).typed_node();
+    println!("{:#?} {:#?}", subs, node);
     let llvm_node = LLVMNodeGenerator { context: &context }.gen(subs, node);
 
     let module = context.create_module(name);

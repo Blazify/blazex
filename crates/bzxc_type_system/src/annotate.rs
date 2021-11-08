@@ -69,12 +69,13 @@ impl TypeSystem {
                 None => panic!("No var found"),
             },
             Node::VarAssignNode { name, value, .. } => {
-                let ty = Type::fresh_var();
+                let val = self.annotate(*value, tenv);
+                let ty = val.get_type();
                 tenv.set(name.value.into_string(), ty.clone());
                 TypedNode::Let {
                     ty,
                     name: name.value.into_string(),
-                    val: box self.annotate(*value, tenv),
+                    val: box val,
                 }
             }
             Node::FunDef {
@@ -161,7 +162,7 @@ impl TypeSystem {
                 body_node,
             } => TypedNode::For {
                 ty: Type::fresh_var(),
-                var: var_name_token,
+                var: var_name_token.value.into_string(),
                 start: {
                     let start = box self.annotate(*start_value, tenv);
                     tenv.set(var_name_token.value.into_string(), start.get_type());
@@ -183,7 +184,34 @@ impl TypeSystem {
                 array: box self.annotate(*array, tenv),
                 idx: box self.annotate(*index, tenv),
             },
-            _ => panic!("Not implemented node: {:#?}", node),
+            Node::VarReassignNode { name, typee, value } => todo!(),
+            Node::ObjectDefNode { properties } => todo!(),
+            Node::ObjectPropAccess { object, property } => todo!(),
+            Node::ObjectPropEdit {
+                object,
+                property,
+                new_val,
+            } => todo!(),
+            Node::ObjectMethodCall {
+                object,
+                property,
+                args,
+            } => todo!(),
+            Node::ClassDefNode {
+                methods,
+                properties,
+                constructor,
+                name,
+            } => todo!(),
+            Node::ClassInitNode {
+                name,
+                constructor_params,
+            } => todo!(),
+            Node::ExternNode {
+                name,
+                arg_tokens,
+                return_type,
+            } => todo!(),
         }
     }
 }

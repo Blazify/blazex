@@ -1,5 +1,5 @@
-fun a() {
-    return [0, 1, 2][0]
+fun a(f) {
+    return [0, 1, 2, 3][f()]
 }
 
-a()
+a(fun() { return 3 })

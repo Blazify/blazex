@@ -36,8 +36,8 @@ impl TypeSystem {
 
                 for i in 0..params.len() {
                     constraints.push(Constraint(
-                        params.get(i - 1).unwrap().clone(),
-                        args.get(i - 1).unwrap().clone(),
+                        params.get(i).unwrap().clone(),
+                        args.get(i).unwrap().clone(),
                     ));
                 }
 
@@ -45,14 +45,7 @@ impl TypeSystem {
 
                 self.unify(constraints)
             }
-            (Type::Array(box Type::Var(tvar), _), Type::ElementType(ty)) => {
-                self.unify_var(tvar, *ty)
-            }
-            (Type::ElementType(ty), Type::Array(box Type::Var(tvar), _)) => {
-                self.unify_var(tvar, *ty)
-            }
-            (Type::ElementType(ty), Type::Var(tvar)) => self.unify_var(tvar, Type::ElementType(ty)),
-            (Type::Var(tvar), Type::ElementType(ty)) => self.unify_var(tvar, Type::ElementType(ty)),
+            (Type::Array(ty1, _), Type::Array(ty2, _)) => self.unify_one(Constraint(*ty1, *ty2)),
             (Type::Var(tvar), ty) => self.unify_var(tvar, ty),
             (ty, Type::Var(tvar)) => self.unify_var(tvar, ty),
             (a, b) => {
@@ -90,7 +83,7 @@ impl TypeSystem {
                 p.iter()
                     .map(|x| self.occurs(tvar, x.clone()))
                     .collect::<Vec<bool>>()
-                    .contains(&false)
+                    .contains(&true)
                     | self.occurs(tvar, *r.clone())
             }
             Type::Var(tvar2) => tvar == tvar2,
