@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 /*
  * Copyright 2020 to 2021 BlazifyOrg
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -121,14 +123,17 @@ impl TypeSystem {
                     .map(|x| self.annotate(x.clone(), tenv))
                     .collect(),
             },
-            Node::ReturnNode { value } => TypedNode::Return {
-                ty: Type::fresh_var(),
-                val: box if let Some(val) = *value.clone() {
+            Node::ReturnNode { value } => {
+                let val = box if let Some(val) = *value.clone() {
                     self.annotate(val, tenv)
                 } else {
                     TypedNode::Null { ty: Type::Null }
-                },
-            },
+                };
+                TypedNode::Return {
+                    ty: val.get_type(),
+                    val,
+                }
+            }
             Node::IfNode { cases, else_case } => TypedNode::If {
                 ty: Type::fresh_var(),
                 cases: cases
@@ -196,8 +201,22 @@ impl TypeSystem {
                     prev,
                 }
             }
-            Node::ObjectDefNode { properties } => todo!(),
-            Node::ObjectPropAccess { object, property } => todo!(),
+            Node::ObjectDefNode { properties } => TypedNode::Object {
+                ty: Type::fresh_var(),
+                properties: {
+                    let mut tree = BTreeMap::new();
+
+                    for (name, node) in properties {
+                        tree.insert(name.value.into_string(), self.annotate(node.clone(), tenv));
+                    }
+                    tree.clone()
+                },
+            },
+            Node::ObjectPropAccess { object, property } => TypedNode::ObjectAccess {
+                ty: Type::fresh_var(),
+                object: box self.annotate(*object, tenv),
+                property: property.value.into_string(),
+            },
             Node::ObjectPropEdit {
                 object,
                 property,

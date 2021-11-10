@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 /*
  * Copyright 2020 to 2021 BlazifyOrg
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -169,6 +171,28 @@ impl TypeSystem {
                 constr.extend(self.collect(*idx.clone()));
                 constr.push(Constraint(idx.get_type(), Type::Int));
                 constr.push(Constraint(array.get_type(), Type::Array(box ty, 0)));
+                constr
+            }
+            TypedNode::Object { ty, properties } => {
+                let mut constr = vec![];
+                let mut tree = BTreeMap::new();
+                for (name, node) in properties {
+                    constr.extend(self.collect(node.clone()));
+                    tree.insert(name.clone(), node.get_type());
+                }
+                constr.push(Constraint(ty, Type::create_obj(tree)));
+                constr
+            }
+            TypedNode::ObjectAccess {
+                ty,
+                property,
+                object,
+            } => {
+                let mut constr = self.collect(*object.clone());
+                constr.push(Constraint(
+                    object.get_type(),
+                    Type::Object(BTreeMap::from([(property, ty)])),
+                ));
                 constr
             }
             _ => vec![],

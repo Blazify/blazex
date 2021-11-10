@@ -138,6 +138,22 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                 array: box self.gen(subs.clone(), *array),
                 idx: box self.gen(subs.clone(), *idx),
             },
+            TypedNode::Object { ty, properties } => LLVMNode::Object {
+                ty: llvm(ty),
+                properties: properties
+                    .iter()
+                    .map(|(name, node)| (name.clone(), self.gen(subs.clone(), node.clone())))
+                    .collect(),
+            },
+            TypedNode::ObjectAccess {
+                ty,
+                object,
+                property,
+            } => LLVMNode::ObjectAccess {
+                ty: llvm(ty),
+                object: box self.gen(subs, *object),
+                property,
+            },
         }
     }
 }

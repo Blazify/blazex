@@ -56,6 +56,16 @@ impl Substitution {
                 box self.substitute_tvar(*ret.clone(), tvar, sol_ty.clone()),
             ),
             Type::Array(ty, size) => Type::Array(box self.substitute_tvar(*ty, tvar, sol_ty), size),
+            Type::Object(ty) => Type::Object(
+                ty.iter()
+                    .map(|(name, ty)| {
+                        (
+                            name.clone(),
+                            self.substitute_tvar(ty.clone(), tvar, sol_ty.clone()),
+                        )
+                    })
+                    .collect(),
+            ),
             Type::Var(tvar2) => {
                 if tvar == tvar2 {
                     sol_ty

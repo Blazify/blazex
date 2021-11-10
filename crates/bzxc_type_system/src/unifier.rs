@@ -46,6 +46,26 @@ impl TypeSystem {
                 self.unify(constraints)
             }
             (Type::Array(ty1, _), Type::Array(ty2, _)) => self.unify_one(Constraint(*ty1, *ty2)),
+            (Type::Object(tree1), Type::Object(tree2)) => {
+                let main_tree = if tree1.len() > tree2.len() {
+                    tree1.clone()
+                } else {
+                    tree2.clone()
+                };
+                let other_tree = if tree1.len() < tree2.len() {
+                    tree1
+                } else {
+                    tree2
+                };
+
+                let mut constr = vec![];
+                for (name, ty) in &other_tree {
+                    assert!(main_tree.contains_key(name));
+                    constr.push(Constraint(ty.clone(), main_tree.get(name).unwrap().clone()));
+                }
+
+                self.unify(constr)
+            }
             (Type::Var(tvar), ty) => self.unify_var(tvar, ty),
             (ty, Type::Var(tvar)) => self.unify_var(tvar, ty),
             (a, b) => {

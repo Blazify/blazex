@@ -1,5 +1,9 @@
-fun a(f) {
-    return [0, 1, 2, 3][f()]
+fun a() {
+    var obj = {
+        hi: "hi"
+    }
+
+    return obj.hi
 }
 
-a(fun() { return 3 })
+a()

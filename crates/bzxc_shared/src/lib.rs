@@ -567,6 +567,15 @@ pub enum LLVMNode<'ctx> {
         array: Box<Self>,
         idx: Box<Self>,
     },
+    Object {
+        ty: BasicTypeEnum<'ctx>,
+        properties: Vec<(String, Self)>,
+    },
+    ObjectAccess {
+        ty: BasicTypeEnum<'ctx>,
+        object: Box<Self>,
+        property: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -664,6 +673,15 @@ pub enum TypedNode {
         array: Box<Self>,
         idx: Box<Self>,
     },
+    Object {
+        ty: Type,
+        properties: BTreeMap<String, Self>,
+    },
+    ObjectAccess {
+        ty: Type,
+        object: Box<Self>,
+        property: String,
+    },
 }
 
 impl TypedNode {
@@ -695,12 +713,15 @@ impl TypedNode {
             | TypedNode::While { ty, .. }
             | TypedNode::For { ty, .. }
             | TypedNode::Array { ty, .. }
-            | TypedNode::Index { ty, .. } => ty.clone(),
+            | TypedNode::Index { ty, .. }
+            | TypedNode::Object { ty, .. }
+            | TypedNode::ObjectAccess { ty, .. } => ty.clone(),
         }
     }
 }
 
 static mut I: i32 = 0;
+static mut OBJECT_ALIGNER: usize = 0;
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum Type {
@@ -711,6 +732,7 @@ pub enum Type {
     String,
     Array(Box<Self>, usize),
     Fun(Vec<Self>, Box<Self>),
+    Object(BTreeMap<String, Self>),
     Null,
 
     Var(i32),
@@ -721,6 +743,19 @@ impl Type {
         let ret = unsafe { Self::Var(I) };
         unsafe { I += 1 };
         ret
+    }
+
+    pub fn create_obj(props: BTreeMap<String, Self>) -> Self {
+        unsafe {
+            OBJECT_ALIGNER += 1;
+            let mut tree = BTreeMap::new();
+            tree.insert(
+                "%alignment%".to_string(),
+                Type::Array(Box::new(Type::Int), OBJECT_ALIGNER),
+            );
+            tree.extend(props);
+            Self::Object(tree)
+        }
     }
 
     pub fn llvm<'ctx>(
@@ -752,6 +787,16 @@ impl Type {
                 .get(&Type::Var(*tvar))
                 .unwrap()
                 .llvm(ctx, tvars),
+            Type::Object(tree) => ctx
+                .struct_type(
+                    &tree
+                        .iter()
+                        .map(|(_, ty)| ty.llvm(ctx, tvars.clone()))
+                        .collect::<Vec<BasicTypeEnum>>()[..],
+                    false,
+                )
+                .ptr_type(AddressSpace::Generic)
+                .into(),
         }
     }
 }

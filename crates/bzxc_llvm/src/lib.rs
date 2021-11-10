@@ -17,7 +17,7 @@ use bzxc_llvm_wrapper::{
     context::Context,
     module::Module,
     passes::PassManager,
-    types::BasicType,
+    types::{BasicType, StructType},
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
     FloatPredicate, IntPredicate,
 };
@@ -32,6 +32,7 @@ pub struct Compiler<'a, 'ctx> {
 
     fn_value_opt: Option<FunctionValue<'ctx>>,
     variables: HashMap<String, PointerValue<'ctx>>,
+    objects: HashMap<(String, StructType<'ctx>), usize>,
     ret: bool,
 }
 
@@ -51,6 +52,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             main,
             fn_value_opt: None,
             variables: HashMap::new(),
+            objects: HashMap::new(),
             ret: false,
         }
     }
@@ -335,7 +337,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.variables.reserve(params.len());
 
-                println!("{:#?}", func);
                 for (i, arg) in func.get_param_iter().enumerate() {
                     let arg_name = params.get(i).unwrap().0.as_str().clone();
                     arg.set_name(arg_name);
@@ -556,6 +557,62 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let array_elem = self.builder.build_load(array_elem_ptr, "array_elem");
 
                 array_elem
+            }
+            LLVMNode::Object { ty, properties } => {
+                let ty = ty.into_pointer_type().get_element_type().into_struct_type();
+                let mut struct_val = self
+                    .builder
+                    .build_insert_value(
+                        ty.get_undef(),
+                        ty.get_field_type_at_index(0).unwrap().const_zero(),
+                        0,
+                        "%alignment%",
+                    )
+                    .unwrap()
+                    .into_struct_value();
+                for (i, (name, val)) in properties.iter().enumerate() {
+                    let idx = i + 1;
+                    self.objects.insert((name.clone(), ty), idx);
+                    struct_val = self
+                        .builder
+                        .build_insert_value(
+                            struct_val,
+                            self.compile(val.clone()),
+                            idx as u32,
+                            name.as_str(),
+                        )
+                        .unwrap()
+                        .into_struct_value();
+                }
+
+                let struct_ptr = self
+                    .builder
+                    .build_alloca(struct_val.get_type(), "struct_alloca");
+                self.builder.build_store(struct_ptr, struct_val);
+                struct_ptr.into()
+            }
+            LLVMNode::ObjectAccess {
+                ty: _,
+                object,
+                property,
+            } => {
+                let struct_ptr = self.compile(*object).into_pointer_value();
+
+                let i = self
+                    .objects
+                    .get(&(
+                        property,
+                        struct_ptr.get_type().get_element_type().into_struct_type(),
+                    ))
+                    .unwrap();
+
+                let ptr = self
+                    .builder
+                    .build_struct_gep(struct_ptr, *i as u32, "struct_gep")
+                    .ok()
+                    .unwrap();
+
+                self.builder.build_load(ptr, "struct_load")
             }
         }
     }
