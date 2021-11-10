@@ -90,13 +90,12 @@ impl TypeSystem {
             }
             TypedNode::Call { ty, fun, args } => {
                 let mut constr = self.collect(*fun.clone());
+                let mut args_ty = vec![];
                 for arg in args.clone() {
-                    constr.extend(self.collect(arg));
+                    constr.extend(self.collect(arg.clone()));
+                    args_ty.push(arg.get_type());
                 }
-                constr.push(Constraint(
-                    fun.get_type(),
-                    Type::Fun(args.iter().map(|x| x.get_type()).collect(), box ty),
-                ));
+                constr.push(Constraint(fun.get_type(), Type::Fun(args_ty, box ty)));
                 constr
             }
             TypedNode::Return { ty, val } => {
@@ -192,6 +191,39 @@ impl TypeSystem {
                 constr.push(Constraint(
                     object.get_type(),
                     Type::Object(BTreeMap::from([(property, ty)])),
+                ));
+                constr
+            }
+            TypedNode::ObjectEdit {
+                ty,
+                property,
+                object,
+                new_val,
+            } => {
+                let mut constr = self.collect(*object.clone());
+                constr.extend(self.collect(*new_val.clone()));
+                constr.push(Constraint(ty.clone(), new_val.get_type()));
+                constr.push(Constraint(
+                    object.get_type(),
+                    Type::Object(BTreeMap::from([(property, ty)])),
+                ));
+                constr
+            }
+            TypedNode::ObjectMethodCall {
+                ty,
+                object,
+                args,
+                property,
+            } => {
+                let mut constr = self.collect(*object.clone());
+                let mut args_ty = vec![];
+                for arg in args.clone() {
+                    constr.extend(self.collect(arg.clone()));
+                    args_ty.push(arg.get_type());
+                }
+                constr.push(Constraint(
+                    object.get_type(),
+                    Type::Object(BTreeMap::from([(property, Type::Fun(args_ty, box ty))])),
                 ));
                 constr
             }

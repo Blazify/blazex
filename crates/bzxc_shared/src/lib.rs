@@ -576,6 +576,18 @@ pub enum LLVMNode<'ctx> {
         object: Box<Self>,
         property: String,
     },
+    ObjectEdit {
+        ty: BasicTypeEnum<'ctx>,
+        object: Box<Self>,
+        property: String,
+        new_val: Box<Self>,
+    },
+    ObjectMethodCall {
+        ty: BasicTypeEnum<'ctx>,
+        object: Box<Self>,
+        property: String,
+        args: Vec<Self>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -682,6 +694,18 @@ pub enum TypedNode {
         object: Box<Self>,
         property: String,
     },
+    ObjectEdit {
+        ty: Type,
+        object: Box<Self>,
+        new_val: Box<Self>,
+        property: String,
+    },
+    ObjectMethodCall {
+        ty: Type,
+        object: Box<Self>,
+        property: String,
+        args: Vec<Self>,
+    },
 }
 
 impl TypedNode {
@@ -715,7 +739,9 @@ impl TypedNode {
             | TypedNode::Array { ty, .. }
             | TypedNode::Index { ty, .. }
             | TypedNode::Object { ty, .. }
-            | TypedNode::ObjectAccess { ty, .. } => ty.clone(),
+            | TypedNode::ObjectAccess { ty, .. }
+            | TypedNode::ObjectEdit { ty, .. }
+            | TypedNode::ObjectMethodCall { ty, .. } => ty.clone(),
         }
     }
 }

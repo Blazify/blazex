@@ -154,6 +154,31 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                 object: box self.gen(subs, *object),
                 property,
             },
+            TypedNode::ObjectEdit {
+                ty,
+                property,
+                object,
+                new_val,
+            } => LLVMNode::ObjectEdit {
+                ty: llvm(ty),
+                new_val: box self.gen(subs.clone(), *new_val),
+                object: box self.gen(subs.clone(), *object),
+                property,
+            },
+            TypedNode::ObjectMethodCall {
+                ty,
+                property,
+                object,
+                args,
+            } => LLVMNode::ObjectMethodCall {
+                ty: llvm(ty),
+                property,
+                args: args
+                    .iter()
+                    .map(|x| self.gen(subs.clone(), x.clone()).clone())
+                    .collect(),
+                object: box self.gen(subs, *object),
+            },
         }
     }
 }

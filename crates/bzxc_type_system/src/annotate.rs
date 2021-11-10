@@ -221,12 +221,25 @@ impl TypeSystem {
                 object,
                 property,
                 new_val,
-            } => todo!(),
+            } => TypedNode::ObjectEdit {
+                ty: Type::fresh_var(),
+                object: box self.annotate(*object, tenv),
+                property: property.value.into_string(),
+                new_val: box self.annotate(*new_val, tenv),
+            },
             Node::ObjectMethodCall {
                 object,
                 property,
                 args,
-            } => todo!(),
+            } => TypedNode::ObjectMethodCall {
+                ty: Type::fresh_var(),
+                object: box self.annotate(*object, tenv),
+                property: property.value.into_string(),
+                args: args
+                    .iter()
+                    .map(|x| self.annotate(x.clone(), tenv))
+                    .collect(),
+            },
             Node::ClassDefNode {
                 methods,
                 properties,

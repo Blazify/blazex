@@ -10,6 +10,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
+mod oop;
+
 use std::collections::HashMap;
 
 use bzxc_llvm_wrapper::{
@@ -127,7 +130,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
 
                 return if ret.is_none() {
-                    self.context.i128_type().const_int(0, false).into()
+                    self.null()
                 } else {
                     ret.unwrap()
                 };
@@ -346,11 +349,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     self.variables.insert(arg_name.to_string(), alloca);
                 }
 
+                let ret = self.ret.clone();
                 self.ret = false;
                 self.compile(*body);
 
                 self.builder.position_at_end(parental_block.unwrap());
                 self.fn_value_opt = parent;
+
+                self.ret = ret;
 
                 func.as_global_value().as_pointer_value().into()
             }
@@ -558,61 +564,84 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 array_elem
             }
-            LLVMNode::Object { ty, properties } => {
-                let ty = ty.into_pointer_type().get_element_type().into_struct_type();
-                let mut struct_val = self
-                    .builder
-                    .build_insert_value(
-                        ty.get_undef(),
-                        ty.get_field_type_at_index(0).unwrap().const_zero(),
-                        0,
-                        "%alignment%",
-                    )
-                    .unwrap()
-                    .into_struct_value();
-                for (i, (name, val)) in properties.iter().enumerate() {
-                    let idx = i + 1;
-                    self.objects.insert((name.clone(), ty), idx);
-                    struct_val = self
-                        .builder
-                        .build_insert_value(
-                            struct_val,
-                            self.compile(val.clone()),
-                            idx as u32,
-                            name.as_str(),
-                        )
-                        .unwrap()
-                        .into_struct_value();
-                }
-
-                let struct_ptr = self
-                    .builder
-                    .build_alloca(struct_val.get_type(), "struct_alloca");
-                self.builder.build_store(struct_ptr, struct_val);
-                struct_ptr.into()
-            }
+            LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
             LLVMNode::ObjectAccess {
                 ty: _,
                 object,
                 property,
             } => {
-                let struct_ptr = self.compile(*object).into_pointer_value();
+                let obj = self.compile(*object).into_pointer_value();
+                let ptr = self.obj_property(obj, property);
 
-                let i = self
-                    .objects
-                    .get(&(
-                        property,
-                        struct_ptr.get_type().get_element_type().into_struct_type(),
-                    ))
-                    .unwrap();
+                self.builder.build_load(ptr, "struct_load")
+            }
+            LLVMNode::ObjectEdit {
+                ty: _,
+                object,
+                property,
+                new_val,
+            } => {
+                let val = self.compile(*new_val);
 
-                let ptr = self
+                let struct_ty = self.compile(*object).into_pointer_value();
+                let ptr = self.obj_property(struct_ty, property);
+                self.builder.build_store(ptr, val);
+
+                struct_ty.into()
+            }
+            LLVMNode::ObjectMethodCall {
+                ty: _,
+                property,
+                object,
+                args,
+            } => {
+                let struct_val = self.compile(*object.clone());
+
+                let ptr = struct_val.into_pointer_value();
+
+                let class_name: Option<String> = None; //self.classes.get(&ptr.get_type()).clone();
+                let is_class = class_name.is_some();
+                let method = if is_class {
+                    Some(class_name.unwrap().to_owned() + &property)
+                } else {
+                    None
+                };
+
+                let mut compiled_args = Vec::with_capacity(args.len());
+
+                if is_class {
+                    compiled_args.push(ptr.into());
+                }
+                for arg in args {
+                    compiled_args.push(self.compile(arg.clone()));
+                }
+
+                if !is_class {
+                    let func = self.obj_property(ptr, property);
+                    let call = self
+                        .builder
+                        .build_call(
+                            self.builder
+                                .build_load(func, "func_load")
+                                .into_pointer_value(),
+                            &compiled_args[..],
+                            "obj_func_call",
+                        )
+                        .ok()
+                        .unwrap();
+
+                    return call.try_as_basic_value().left_or(self.null());
+                }
+
+                let fun = self.module.get_function(&method.unwrap());
+
+                let call = self
                     .builder
-                    .build_struct_gep(struct_ptr, *i as u32, "struct_gep")
+                    .build_call(fun.unwrap(), &compiled_args[..], "tmpcall")
                     .ok()
                     .unwrap();
 
-                self.builder.build_load(ptr, "struct_load")
+                call.try_as_basic_value().left_or(self.null())
             }
         }
     }
