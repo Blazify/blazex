@@ -8,14 +8,6 @@ A object orineted AOT compiled language which is kinda statically typed (plan: m
 
 ## Installing
 
-In Ubuntu Or MacOS or Windows (WSL)
-
-```shell
-$ curl https://raw.githubusercontent.com/BlazifyOrg/blazex/main/Makefile
-$ make install
-$ rm -r Makefile
-```
-
 Confirm Installation
 
 ```shell
@@ -150,7 +142,7 @@ printf("%i\n", ins.sum_to_a(5));
   - [x] For loop
   - [x] While loop
   - [x] Arrays
-  - [ ] Objects
+  - [x] Objects
   - [ ] Classes
 - [x] LLVM
   - [x] Accept LLVMNode
