@@ -1,5 +1,7 @@
 .PHONY: build
 
+PLATFORM := $(shell uname -sm)
+
 # Download/build info
 ifeq ($(shell $$OS), Windows_NT)
 	TARGET := x86_64-pc-windows-msvc
@@ -12,10 +14,12 @@ ifeq ($(PLATFORM), Linux x86_64)
 	TARGET := x86_64-unknown-linux-gnu
 endif
 
-
 build:
-ifneq ($(shell test -e "llvm-config --version" ; echo $$?), 0)
-	cargo install llvmenv
+ifeq (, $(shell which llvm-config))
+	cargo install llvmenv	
+ifneq ($(shell test -e "$(HOME)/.config/llvmenv/entry.toml"; echo $$?), 0)
+	llvmenv init
+endif
 	llvmenv build-entry 11.0.0
 endif
 	cargo build --locked --target $(TARGET) --release
