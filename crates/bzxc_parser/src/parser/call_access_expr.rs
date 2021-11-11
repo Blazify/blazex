@@ -35,7 +35,7 @@ impl Parser {
                 res.register_advancement();
                 self.advance();
 
-                let expr = res.register(self.expr());
+                let val = res.register(self.expr());
                 if res.error.is_some() {
                     return res;
                 }
@@ -43,7 +43,7 @@ impl Parser {
                 return res.success(Node::ObjectPropEdit {
                     object: Box::new(expr.clone().unwrap()),
                     property: id,
-                    new_val: Box::new(expr.unwrap()),
+                    new_val: Box::new(val.unwrap()),
                 });
             } else if self.current_token.value == Tokens::LeftParenthesis {
                 let mut arg_nodes: Vec<Node> = vec![];

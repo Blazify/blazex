@@ -47,21 +47,22 @@ impl TypeSystem {
             }
             (Type::Array(ty1, _), Type::Array(ty2, _)) => self.unify_one(Constraint(*ty1, *ty2)),
             (Type::Object(tree1), Type::Object(tree2)) => {
-                let main_tree = if tree1.len() > tree2.len() {
-                    tree1.clone()
+                let main_tree;
+                let other_tree;
+
+                if tree1.len() > tree2.len() {
+                    main_tree = tree1;
+                    other_tree = tree2;
                 } else {
-                    tree2.clone()
-                };
-                let other_tree = if tree1.len() < tree2.len() {
-                    tree1
-                } else {
-                    tree2
+                    main_tree = tree2;
+                    other_tree = tree1;
                 };
 
                 let mut constr = vec![];
-                for (name, ty) in &other_tree {
+                for (name, ty1) in &other_tree {
                     assert!(main_tree.contains_key(name));
-                    constr.push(Constraint(ty.clone(), main_tree.get(name).unwrap().clone()));
+                    let ty2 = main_tree.get(name).unwrap().clone();
+                    constr.push(Constraint(ty1.clone(), ty2));
                 }
 
                 self.unify(constr)
@@ -106,6 +107,12 @@ impl TypeSystem {
                     .contains(&true)
                     | self.occurs(tvar, *r.clone())
             }
+            Type::Array(arr, _) => self.occurs(tvar, *arr),
+            Type::Object(obj) => obj
+                .iter()
+                .map(|(_, ty)| self.occurs(tvar, ty.clone()))
+                .collect::<Vec<bool>>()
+                .contains(&true),
             Type::Var(tvar2) => tvar == tvar2,
             _ => false,
         }

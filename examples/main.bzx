@@ -1,8 +1,14 @@
-var obj = {
-    hi: "hi",
-    hello: fun(x) {
-        return x
+fun a() {
+    var obj = {
+        hi: "hello",
+        hello: fun(x) {
+            return x
+        }
     }
-};
 
-obj.hello(obj.hi)
+    obj.hi = "hi"
+    return obj.hello(obj.hi)
+}
+
+
+a()

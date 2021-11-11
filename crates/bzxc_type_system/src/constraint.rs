@@ -205,7 +205,7 @@ impl TypeSystem {
                 constr.push(Constraint(ty.clone(), new_val.get_type()));
                 constr.push(Constraint(
                     object.get_type(),
-                    Type::Object(BTreeMap::from([(property, ty)])),
+                    Type::Object(BTreeMap::from([(property, new_val.get_type())])),
                 ));
                 constr
             }

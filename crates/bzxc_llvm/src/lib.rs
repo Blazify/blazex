@@ -358,7 +358,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 self.ret = ret;
 
-                func.as_global_value().as_pointer_value().into()
+                let ptr = func.as_global_value().as_pointer_value();
+                let alloca = self.create_entry_block_alloca(name.as_str(), ptr.get_type());
+                self.builder.build_store(alloca, ptr);
+                self.variables.insert(name, alloca);
+                ptr.into()
             }
             LLVMNode::Let { ty, name, val } => {
                 let alloca = self.create_entry_block_alloca(name.as_str(), ty);
@@ -599,7 +603,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 let ptr = struct_val.into_pointer_value();
 
-                let class_name: Option<String> = None; //self.classes.get(&ptr.get_type()).clone();
+                let class_name: Option<String> = None; // self.classes.get(&ptr.get_type()).clone();
                 let is_class = class_name.is_some();
                 let method = if is_class {
                     Some(class_name.unwrap().to_owned() + &property)
