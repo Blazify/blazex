@@ -30,7 +30,8 @@ jobs:
       - name: Cache LLVM builds
         uses: actions/cache@v2
         with:
-          path: ~/.cache
+          path: ~/.blazex
+          key: ${{ matrix.os }}-blazex
       - name: Build project
         run: make build
       - name: Compile to Object Code
