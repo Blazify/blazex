@@ -2,9 +2,9 @@ make --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/home/romeah/Desktop/blazex'
 cargo install llvmenv	
 llvmenv build-entry 11.0.0
-cargo build --locked --target  --release
+cargo build --locked --target x86_64-unknown-linux-gnu --release
 rm -r "./bin/blazex"
-cp "./target//release/blazex" "./bin/blazex"
+cp "./target/x86_64-unknown-linux-gnu/release/blazex" "./bin/blazex"
 strip "./bin/blazex"
 make: Leaving directory '/home/romeah/Desktop/blazex'
  
