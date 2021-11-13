@@ -1,6 +1,13 @@
 make --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/home/romeah/Desktop/blazex'
- 
+mkdir -p /home/romeah/.blazex
+cd /home/romeah/.blazex && \
+wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
+tar xJf llvm-11.0.0.src.tar.xz && \
+mkdir -p llvm-11.0.0.src/build && \
+cd llvm-11.0.0.src/build && \
+cmake .. -DCMAKE_INSTALL_PREFIX=/home/romeah/.blazex/llvm-11.0.0 && \
+cmake --build . --target install
 cargo build --locked --target x86_64-unknown-linux-gnu --release
 mkdir -p "/home/romeah/.blazex/bin"
 cp "./target/x86_64-unknown-linux-gnu/release/blazex" "/home/romeah/.blazex/bin/blazex"

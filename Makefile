@@ -2,7 +2,7 @@
 
 PLATFORM := $(shell uname -sm)
 BLAZEX_DIR := $(HOME)/.blazex
-LLVM_SYS_110_PREFIX := $(BLAZEX_DIR)/llvm-11.0.0-src
+LLVM_SYS_110_PREFIX := $(BLAZEX_DIR)/llvm-11.0.0
 
 # Download/build info
 ifeq ($(shell $$OS), Windows_NT)
@@ -18,23 +18,24 @@ endif
 
 build:
 ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
-	@mkdir -p $(BLAZEX_DIR)
+	mkdir -p $(BLAZEX_DIR)
 	cd $(BLAZEX_DIR) && \
 	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
 	tar xJf llvm-11.0.0.src.tar.xz && \
 	mkdir -p llvm-11.0.0.src/build && \
 	cd llvm-11.0.0.src/build && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=$(BLAZEX_DIR)/llvm-11.0.0 && \
-	cmake --build . --target install
+	cmake --build . --target install && \
+	rm -rf llvm-11.0.0.src llvm-11.0.0.src.tar.xz
 endif
 	cargo build --locked --target $(TARGET) --release
 
 ifneq ($(shell test -d "$(BLAZEX_DIR)/bin" ; echo $$?), 0)
-	@mkdir -p "$(BLAZEX_DIR)/bin"
+	mkdir -p "$(BLAZEX_DIR)/bin"
 endif
 
 ifeq ($(shell test -e $(BLAZEX_DIR)/bin/blazex$(EXTENSION) ; echo $$?), 0)
-	@rm -r "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
+	rm -r "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
 endif
 
 	cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
