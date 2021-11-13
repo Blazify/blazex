@@ -35,7 +35,7 @@ jobs:
       - name: Build project
         run: make build
       - name: Compile to Object Code
-        run: ./bin/${{ matrix.artifact_name }} examples/main.bzx
+        run: ~/.blazex/bin/${{ matrix.artifact_name }} examples/main.bzx
       - name: Link to libc and compile to native machine executable
         run: clang -o${{ matrix.exe }} -Ofast -lc examples/main.o
       - name: Run Native Executable

@@ -2,6 +2,7 @@
 
 PLATFORM := $(shell uname -sm)
 BLAZEX_DIR := $(HOME)/.blazex
+LLVM_SYS_110_PREFIX := $(BLAZEX_DIR)/llvm-11.0.0-src
 
 # Download/build info
 ifeq ($(shell $$OS), Windows_NT)
@@ -16,7 +17,7 @@ ifeq ($(PLATFORM), Linux x86_64)
 endif
 
 build:
-ifneq ($(shell test -d "$(BLAZEX_DIR)/llvm-11.0.0.src" ; echo $$?), 0)
+ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
 	@mkdir -p $(BLAZEX_DIR)
 	cd $(BLAZEX_DIR) && \
 	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
@@ -25,7 +26,6 @@ ifneq ($(shell test -d "$(BLAZEX_DIR)/llvm-11.0.0.src" ; echo $$?), 0)
 	cd llvm-11.0.0.src/build && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=$(BLAZEX_DIR)/llvm-11.0.0 && \
 	cmake --build . --target install
-	LLVM_SYS_110_PREFIX := $(BLAZEX_DIR)/llvm-11.0.0-src
 endif
 	cargo build --locked --target $(TARGET) --release
 
