@@ -1,20 +1,8 @@
 # Ignore Rust Build directory
 /target
 
-# Ignore BlazeX Executables
-*.bze
-
-# Ignore Binary Folder
-bin
-
 # Ignore object files
 *.o
 
 # Ignore Executables
 *.out
-
-# LLVM IR
-*.ll
-
-# Rust STD Lib
-libruststd.a

@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run Tests and publish if commit message contains "release"
 
 on:
   push:
@@ -27,11 +27,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Cache LLVM builds
-        uses: actions/cache@v2
-        with:
-          path: ~/.blazex
-          key: ${{ matrix.os }}-blazex
       - name: Build project
         run: make build
       - name: Compile to Object Code
@@ -40,3 +35,22 @@ jobs:
         run: clang -o${{ matrix.exe }} -Ofast -lc examples/main.o
       - name: Run Native Executable
         run: ./${{ matrix.exe }}
+      - name: Archive into tar.xz
+        if: contains(github.event.head_commit.message, 'release')
+        run: tar cf - ~/.blazex/ | xz -z - > blazex-{{ matrix.os }}.tar.xz
+      - name: Bump version and push tag/create release point
+        if: contains(github.event.head_commit.message, 'release')
+        id: bump_version
+        uses: anothrNick/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
+      - name: Upload binary to release
+        if: contains(github.event.head_commit.message, 'release')
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./blazex-${{ matrix.os }}.tar.xz
+          asset_name: ${{ matrix.artifact_name }}
+          tag: ${{ steps.bump_version.outputs.new_tag }}

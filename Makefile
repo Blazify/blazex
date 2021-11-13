@@ -24,10 +24,13 @@ ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
 	cd $(BLAZEX_DIR) && \
 	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
 	tar xJf llvm-11.0.0.src.tar.xz && \
+	rm -rf llvm-11.0.0.src.tar.xz && \
 	mkdir -p llvm-11.0.0.src/build && \
 	cd llvm-11.0.0.src/build && \
-	cmake .. -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) && \
+	cmake ..  && \
+	cmake --build . && \
 	cmake --build . --target install && \
+	cmake -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) -P cmake_install.cmake && \
 	rm -rf llvm-11.0.0.src llvm-11.0.0.src.tar.xz
 endif
 	cargo build --locked --target $(TARGET) --release
