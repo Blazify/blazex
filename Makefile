@@ -1,8 +1,9 @@
+export LLVM_SYS_110_PREFIX := $(HOME)/.blazex/llvm-11.0.0
+
 .PHONY: build
 
 PLATFORM := $(shell uname -sm)
 BLAZEX_DIR := $(HOME)/.blazex
-LLVM_SYS_110_PREFIX := $(BLAZEX_DIR)/llvm-11.0.0
 
 # Download/build info
 ifeq ($(shell $$OS), Windows_NT)
@@ -16,6 +17,7 @@ ifeq ($(PLATFORM), Linux x86_64)
 	TARGET := x86_64-unknown-linux-gnu
 endif
 
+
 build:
 ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
 	mkdir -p $(BLAZEX_DIR)
@@ -24,7 +26,7 @@ ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
 	tar xJf llvm-11.0.0.src.tar.xz && \
 	mkdir -p llvm-11.0.0.src/build && \
 	cd llvm-11.0.0.src/build && \
-	cmake .. -DCMAKE_INSTALL_PREFIX=$(BLAZEX_DIR)/llvm-11.0.0 && \
+	cmake .. -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) && \
 	cmake --build . --target install && \
 	rm -rf llvm-11.0.0.src llvm-11.0.0.src.tar.xz
 endif

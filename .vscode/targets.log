@@ -1,4 +1,6 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+make: *** No rule to make target 'all'.  Stop.
+ 
 # GNU Make 4.3
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2020 Free Software Foundation, Inc.
@@ -6,7 +8,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Nov 13 09:19:03 2021
+# Make data base, printed on Sat Nov 13 15:23:53 2021
 
 # Variables
 
@@ -15,7 +17,7 @@ GDK_BACKEND = x11
 # environment
 LC_ALL = C
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-f1b4b867-49a4-4f90-bd8c-9057e6c87d0e.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-51b147a5-ba26-449e-b9c0-4df20660daa0.sock
 # environment
 MANDATORY_PATH = /usr/share/gconf/cutefish-xsession.mandatory.path
 # environment
@@ -81,7 +83,7 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 MFLAGS = -pqrR
 # environment
-SSH_AUTH_SOCK = /tmp/ssh-xVIdWrH4jTAP/agent.743
+SSH_AUTH_SOCK = /tmp/ssh-AkIj8iNCNICT/agent.744
 # default
 .SHELLFLAGS := -c
 # environment
@@ -102,8 +104,10 @@ MAKEFILE_LIST := Makefile
 LC_COLLATE = en_US.UTF-8
 # environment
 VSCODE_VERBOSE_LOGGING = true
+# makefile (from 'Makefile', line 1)
+LLVM_SYS_110_PREFIX := /home/romeah/.blazex/llvm-11.0.0
 # environment
-VSCODE_PID = 13353
+VSCODE_PID = 2794
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -122,7 +126,7 @@ CHROME_DESKTOP = code-url-handler.desktop
 DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # automatic
 <D = $(patsubst %/,%,$(dir $<))
-# makefile (from 'Makefile', line 3)
+# makefile (from 'Makefile', line 5)
 PLATFORM := Linux x86_64
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
@@ -171,6 +175,7 @@ XDG_SEAT = seat0
 # environment
 XDG_CURRENT_DESKTOP = Cutefish
 # environment
+ 
 LS_COLORS = 
 # automatic
 +F = $(notdir $+)
@@ -198,7 +203,7 @@ USER = romeah
 DEFAULTS_PATH = /usr/share/gconf/cutefish-xsession.default.path
 # default
 MAKE_VERSION := 4.3
-# makefile (from 'Makefile', line 4)
+# makefile (from 'Makefile', line 6)
 BLAZEX_DIR := /home/romeah/.blazex
 # 'override' directive
 .SHELLSTATUS := 0
@@ -240,7 +245,7 @@ XDG_SESSION_ID = 1
 <F = $(notdir $<)
 # default
 SUFFIXES := 
-# makefile (from 'Makefile', line 15)
+# makefile (from 'Makefile', line 17)
 TARGET := x86_64-unknown-linux-gnu
 # environment
 XDG_CACHE_HOME = /home/romeah/.cache
@@ -251,7 +256,7 @@ QT_AUTO_SCREEN_SCALE_FACTOR = 0
 # environment
 LC_IDENTIFICATION = en_IN
 # variable set hash-table stats:
-# Load=120/1024=12%, Rehash=0, Collisions=16/176=9%
+# Load=121/1024=12%, Rehash=0, Collisions=18/178=10%
 
 # Pattern-specific Variable Values
 
@@ -272,7 +277,8 @@ LC_IDENTIFICATION = en_IN
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2021-11-12 23:18:51.227084537
+ 
+#  Last modified 2021-11-13 15:23:14.836992968
 #  File has been updated.
 #  Successfully updated.
 
@@ -288,18 +294,24 @@ all:
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has not been updated.
- 
-make: *** No rule to make target 'all'.  Stop.
- 
 
 build:
 #  Phony target (prerequisite of .PHONY).
 #  Implicit rule search has not been done.
 #  File does not exist.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 30):
+#  recipe to execute (from 'Makefile', line 23):
+	mkdir -p $(BLAZEX_DIR)
+	cd $(BLAZEX_DIR) && \
+	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
+	tar xJf llvm-11.0.0.src.tar.xz && \
+	mkdir -p llvm-11.0.0.src/build && \
+	cd llvm-11.0.0.src/build && \
+	cmake .. -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) && \
+	cmake --build . --target install && \
+	rm -rf llvm-11.0.0.src llvm-11.0.0.src.tar.xz
 	cargo build --locked --target $(TARGET) --release
-	@mkdir -p "$(BLAZEX_DIR)/bin"
+	mkdir -p "$(BLAZEX_DIR)/bin"
 	cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
 	strip "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
 
@@ -322,6 +334,6 @@ build:
 # strcache performance: lookups = 31 / hit rate = 22%
 # hash-table stats:
 # Load=24/8192=0%, Rehash=0, Collisions=0/31=0%
-# Finished Make data base on Sat Nov 13 09:19:03 2021
+# Finished Make data base on Sat Nov 13 15:23:53 2021
 
  
