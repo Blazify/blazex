@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Nov 13 15:23:53 2021
+# Make data base, printed on Sat Nov 20 12:00:47 2021
 
 # Variables
 
@@ -17,7 +17,7 @@ GDK_BACKEND = x11
 # environment
 LC_ALL = C
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-51b147a5-ba26-449e-b9c0-4df20660daa0.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-baa4ca2a-cd6f-47bb-82a7-90cbb76ff4fd.sock
 # environment
 MANDATORY_PATH = /usr/share/gconf/cutefish-xsession.mandatory.path
 # environment
@@ -57,7 +57,7 @@ VSCODE_LOG_STACK = false
 # environment
 NVM_INC = /home/romeah/.config/nvm/versions/node/v15.0.0/include/node
 # environment
-VSCODE_CODE_CACHE_PATH = /home/romeah/.config/Code/CachedData/6cba118ac49a1b88332f312a8f67186f7f3c1643
+VSCODE_CODE_CACHE_PATH = /home/romeah/.config/Code/CachedData/ccbaa2d27e38e5afa3e5c21c1c7bef4657064247
 # environment
 XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session0
 # environment
@@ -83,7 +83,7 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 MFLAGS = -pqrR
 # environment
-SSH_AUTH_SOCK = /tmp/ssh-AkIj8iNCNICT/agent.744
+SSH_AUTH_SOCK = /tmp/ssh-pc6uRjcJYdKB/agent.742
 # default
 .SHELLFLAGS := -c
 # environment
@@ -105,9 +105,9 @@ LC_COLLATE = en_US.UTF-8
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # makefile (from 'Makefile', line 1)
-LLVM_SYS_110_PREFIX := /home/romeah/.blazex/llvm-11.0.0
+LLVM_SYS_110_PREFIX := /home/romeah/.blazex/llvm-11.1.0
 # environment
-VSCODE_PID = 2794
+VSCODE_PID = 2222
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -175,7 +175,6 @@ XDG_SEAT = seat0
 # environment
 XDG_CURRENT_DESKTOP = Cutefish
 # environment
- 
 LS_COLORS = 
 # automatic
 +F = $(notdir $+)
@@ -212,7 +211,7 @@ XDG_DESKTOP_DIR = /Desktop
 # environment
 LC_MEASUREMENT = en_US.UTF-8
 # environment
-SSH_AGENT_PID = 812
+SSH_AGENT_PID = 811
 # environment
 _ = /usr/share/code/code
 # environment
@@ -236,7 +235,7 @@ HOME = /home/romeah
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-f3d16bf9-1.61.2-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-f3d16bf9-1.62.3-main.sock
 # environment
 XDG_SESSION_ID = 1
 # default
@@ -264,9 +263,9 @@ LC_IDENTIFICATION = en_IN
 
 # Directories
 
-# . (device 2050, inode 28330961): 17 files, no impossibilities.
+# . (device 2050, inode 28330961): 16 files, no impossibilities.
 
-# 17 files, no impossibilities in 1 directories.
+# 16 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -277,12 +276,12 @@ LC_IDENTIFICATION = en_IN
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
- 
-#  Last modified 2021-11-13 15:23:14.836992968
+#  Last modified 2021-11-15 12:11:12.941708244
 #  File has been updated.
 #  Successfully updated.
 
 # Not a target:
+ 
 .DEFAULT:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
@@ -303,13 +302,16 @@ build:
 #  recipe to execute (from 'Makefile', line 23):
 	mkdir -p $(BLAZEX_DIR)
 	cd $(BLAZEX_DIR) && \
-	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz && \
-	tar xJf llvm-11.0.0.src.tar.xz && \
-	mkdir -p llvm-11.0.0.src/build && \
-	cd llvm-11.0.0.src/build && \
-	cmake .. -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) && \
+	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz && \
+	tar xJf llvm-11.1.0.src.tar.xz && \
+	rm -rf llvm-11.1.0.src.tar.xz && \
+	mkdir -p llvm-11.1.0.src/build && \
+	cd llvm-11.1.0.src/build && \
+	cmake ..  && \
+	cmake --build . && \
 	cmake --build . --target install && \
-	rm -rf llvm-11.0.0.src llvm-11.0.0.src.tar.xz
+	cmake -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) -P cmake_install.cmake && \
+	rm -rf llvm-11.1.0.src
 	cargo build --locked --target $(TARGET) --release
 	mkdir -p "$(BLAZEX_DIR)/bin"
 	cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
@@ -328,12 +330,12 @@ build:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 24 / storage = 202 B / avg = 8 B
-# current buf: size = 8162 B / used = 202 B / count = 24 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 23 / storage = 198 B / avg = 8 B
+# current buf: size = 8162 B / used = 198 B / count = 23 / avg = 8 B
 
-# strcache performance: lookups = 31 / hit rate = 22%
+# strcache performance: lookups = 30 / hit rate = 23%
 # hash-table stats:
-# Load=24/8192=0%, Rehash=0, Collisions=0/31=0%
-# Finished Make data base on Sat Nov 13 15:23:53 2021
+# Load=23/8192=0%, Rehash=0, Collisions=0/30=0%
+# Finished Make data base on Sat Nov 20 12:00:47 2021
 
  

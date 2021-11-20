@@ -66,6 +66,7 @@ impl Substitution {
                     })
                     .collect(),
             ),
+            Type::Class(obj) => self.substitute_tvar(*obj, tvar, sol_ty),
             Type::Var(tvar2) => {
                 if tvar == tvar2 {
                     sol_ty

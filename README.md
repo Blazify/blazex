@@ -143,7 +143,7 @@ printf("%i\n", ins.sum_to_a(5));
   - [x] While loop
   - [x] Arrays
   - [x] Objects
-  - [ ] Classes
+  - [x] Classes
 - [x] LLVM
   - [x] Accept LLVMNode
   - [x] Logic of all nodes

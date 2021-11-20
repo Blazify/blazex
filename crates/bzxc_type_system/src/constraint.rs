@@ -227,6 +227,58 @@ impl TypeSystem {
                 ));
                 constr
             }
+            TypedNode::Class {
+                ty,
+                constructor,
+                methods,
+                properties,
+                name,
+            } => {
+                let mut constr = self.collect(*constructor.clone());
+                let mut tree = BTreeMap::new();
+
+                tree.insert(
+                    name.clone() + &"%constructor%".to_string(),
+                    constructor.get_type(),
+                );
+                for (name_, val) in properties {
+                    tree.insert(name.clone() + &name_, val.get_type());
+                    constr.extend(self.collect(val.clone()));
+                }
+
+                for (name_, val) in methods {
+                    tree.insert(name.clone() + &name_, val.get_type());
+                    constr.extend(self.collect(val.clone()));
+                }
+
+                constr.push(Constraint(ty, Type::Class(box Type::create_obj(tree))));
+
+                constr
+            }
+            TypedNode::ClassInit {
+                ty,
+                class,
+                constructor_params,
+            } => {
+                let mut constr = vec![];
+                let mut params = vec![];
+
+                for param in constructor_params {
+                    constr.extend(self.collect(param.clone()));
+                    params.push(param.get_type());
+                }
+
+                constr.push(Constraint(Type::Class(box ty.clone()), class));
+                constr.push(Constraint(
+                    ty.clone(),
+                    Type::Object(BTreeMap::from([(
+                        "%constructor%".to_string(),
+                        Type::Fun(params, box ty),
+                    )])),
+                ));
+
+                constr
+            }
             _ => vec![],
         }
     }

@@ -241,15 +241,84 @@ impl TypeSystem {
                     .collect(),
             },
             Node::ClassDefNode {
-                methods,
-                properties,
+                methods: mthds,
+                properties: props,
                 constructor,
                 name,
-            } => todo!(),
+            } => {
+                let mut properties = BTreeMap::new();
+                let mut methods = BTreeMap::new();
+
+                for (name, node) in props {
+                    properties.insert(name.value.into_string(), self.annotate(node.clone(), tenv));
+                }
+
+                let obj_ty = Type::fresh_var();
+                let ty = Type::Class(box obj_ty.clone());
+                tenv.set("soul".to_string(), obj_ty.clone());
+
+                for (name, args, body) in mthds {
+                    methods.insert(
+                        name.value.into_string(),
+                        TypedNode::Fun {
+                            ty: obj_ty.clone(),
+                            name: name.value.into_string(),
+                            params: {
+                                args.iter()
+                                    .map(|x| {
+                                        let ty = Type::fresh_var();
+                                        tenv.set(x.value.into_string(), ty.clone());
+                                        Binder {
+                                            ty,
+                                            name: x.value.into_string(),
+                                        }
+                                    })
+                                    .collect()
+                            },
+                            body: box self.annotate(body.clone(), tenv),
+                        },
+                    );
+                }
+
+                tenv.set(name.value.into_string(), ty.clone());
+
+                TypedNode::Class {
+                    ty: ty.clone(),
+                    name: name.value.into_string(),
+                    properties,
+                    constructor: box TypedNode::Fun {
+                        ty: obj_ty,
+                        name: name.value.into_string() + &"%constructor%".to_string(),
+                        params: {
+                            constructor
+                                .0
+                                .iter()
+                                .map(|x| {
+                                    let ty = Type::fresh_var();
+                                    tenv.set(x.value.into_string(), ty.clone());
+                                    Binder {
+                                        ty,
+                                        name: x.value.into_string(),
+                                    }
+                                })
+                                .collect()
+                        },
+                        body: box self.annotate(*constructor.1, tenv),
+                    },
+                    methods,
+                }
+            }
             Node::ClassInitNode {
                 name,
                 constructor_params,
-            } => todo!(),
+            } => TypedNode::ClassInit {
+                ty: Type::fresh_var(),
+                class: tenv.get(name.value.into_string()).unwrap(),
+                constructor_params: constructor_params
+                    .iter()
+                    .map(|x| self.annotate(x.clone(), tenv))
+                    .collect(),
+            },
             Node::ExternNode {
                 name,
                 arg_tokens,

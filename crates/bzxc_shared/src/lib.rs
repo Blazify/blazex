@@ -588,6 +588,17 @@ pub enum LLVMNode<'ctx> {
         property: String,
         args: Vec<Self>,
     },
+    Class {
+        ty: BasicTypeEnum<'ctx>,
+        properties: Vec<(String, Self)>,
+        methods: Vec<(String, Self)>,
+        constructor: Box<Self>,
+    },
+    ClassInit {
+        ty: BasicTypeEnum<'ctx>,
+        class: BasicTypeEnum<'ctx>,
+        constructor_params: Vec<Self>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -706,6 +717,18 @@ pub enum TypedNode {
         property: String,
         args: Vec<Self>,
     },
+    Class {
+        name: String,
+        ty: Type,
+        properties: BTreeMap<String, Self>,
+        methods: BTreeMap<String, Self>,
+        constructor: Box<Self>,
+    },
+    ClassInit {
+        ty: Type,
+        class: Type,
+        constructor_params: Vec<Self>,
+    },
 }
 
 impl TypedNode {
@@ -741,7 +764,9 @@ impl TypedNode {
             | TypedNode::Object { ty, .. }
             | TypedNode::ObjectAccess { ty, .. }
             | TypedNode::ObjectEdit { ty, .. }
-            | TypedNode::ObjectMethodCall { ty, .. } => ty.clone(),
+            | TypedNode::ObjectMethodCall { ty, .. }
+            | TypedNode::Class { ty, .. }
+            | TypedNode::ClassInit { ty, .. } => ty.clone(),
         }
     }
 }
@@ -759,6 +784,7 @@ pub enum Type {
     Array(Box<Self>, usize),
     Fun(Vec<Self>, Box<Self>),
     Object(BTreeMap<String, Self>),
+    Class(Box<Self>),
     Null,
 
     Var(i32),
@@ -823,6 +849,23 @@ impl Type {
                 )
                 .ptr_type(AddressSpace::Generic)
                 .into(),
+            Type::Class(obj) => {
+                let mut fields = vec![];
+                let ty = obj.llvm(ctx, tvars.clone()).into_struct_type();
+
+                for field in ty.get_field_types() {
+                    if field.is_pointer_type() {
+                        let ptr = field.into_pointer_type().get_element_type();
+                        if ptr.is_function_type() {
+                            continue;
+                        }
+                    }
+
+                    fields.push(field);
+                }
+
+                ctx.struct_type(&fields[..], false).into()
+            }
         }
     }
 }

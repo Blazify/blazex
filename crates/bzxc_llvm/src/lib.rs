@@ -20,12 +20,13 @@ use bzxc_llvm_wrapper::{
     context::Context,
     module::Module,
     passes::PassManager,
-    types::{BasicType, StructType},
-    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    types::{BasicType, PointerType, StructType},
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue, StructValue},
     FloatPredicate, IntPredicate,
 };
 use bzxc_shared::{LLVMNode, Tokens};
 
+#[derive(Debug, Clone)]
 pub struct Compiler<'a, 'ctx> {
     pub context: &'ctx Context,
     pub builder: &'a Builder<'ctx>,
@@ -36,6 +37,14 @@ pub struct Compiler<'a, 'ctx> {
     fn_value_opt: Option<FunctionValue<'ctx>>,
     variables: HashMap<String, PointerValue<'ctx>>,
     objects: HashMap<(String, StructType<'ctx>), usize>,
+    classes: HashMap<
+        PointerType<'ctx>,
+        (
+            StructValue<'ctx>,
+            PointerValue<'ctx>,
+            HashMap<String, BasicValueEnum<'ctx>>,
+        ),
+    >,
     ret: bool,
 }
 
@@ -56,6 +65,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             fn_value_opt: None,
             variables: HashMap::new(),
             objects: HashMap::new(),
+            classes: HashMap::new(),
             ret: false,
         }
     }
@@ -603,13 +613,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 let ptr = struct_val.into_pointer_value();
 
-                let class_name: Option<String> = None; // self.classes.get(&ptr.get_type()).clone();
-                let is_class = class_name.is_some();
-                let method = if is_class {
-                    Some(class_name.unwrap().to_owned() + &property)
-                } else {
-                    None
-                };
+                let class = self.classes.get(&ptr.get_type()).clone();
+                let is_class = class.is_some();
 
                 let mut compiled_args = Vec::with_capacity(args.len());
 
@@ -617,7 +622,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     compiled_args.push(ptr.into());
                 }
                 for arg in args {
-                    compiled_args.push(self.compile(arg.clone()));
+                    let compiled = self.clone().compile(arg.clone());
+                    compiled_args.push(compiled);
                 }
 
                 if !is_class {
@@ -637,15 +643,79 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     return call.try_as_basic_value().left_or(self.null());
                 }
 
-                let fun = self.module.get_function(&method.unwrap());
+                let fun = class
+                    .clone()
+                    .unwrap()
+                    .2
+                    .get(&property)
+                    .unwrap()
+                    .clone()
+                    .into_pointer_value();
 
                 let call = self
                     .builder
-                    .build_call(fun.unwrap(), &compiled_args[..], "tmpcall")
+                    .build_call(fun, &compiled_args[..], "tmpcall")
                     .ok()
                     .unwrap();
 
                 call.try_as_basic_value().left_or(self.null())
+            }
+            LLVMNode::Class {
+                ty,
+                properties,
+                methods,
+                constructor,
+            } => {
+                let klass = self
+                    .builder
+                    .build_load(
+                        self.create_obj(ty, properties).into_pointer_value(),
+                        "klass",
+                    )
+                    .into_struct_value();
+                let constructor = self.class_method(ty.into_pointer_type(), *constructor);
+
+                let mut n_methods = HashMap::new();
+
+                for (name, method) in methods {
+                    n_methods.insert(name, self.class_method(ty.into_pointer_type(), method));
+                }
+                self.classes.insert(
+                    ty.into_pointer_type(),
+                    (klass, constructor.into_pointer_value(), n_methods),
+                );
+                self.null()
+            }
+            LLVMNode::ClassInit {
+                ty: _,
+                class,
+                constructor_params,
+            } => {
+                let (base, constructor, _) = self
+                    .classes
+                    .get(
+                        &class
+                            .into_pointer_type()
+                            .get_element_type()
+                            .into_pointer_type(),
+                    )
+                    .unwrap()
+                    .clone();
+                let ptr = self.create_entry_block_alloca("klass", base.get_type());
+                self.builder.build_store(ptr, base);
+                let mut params: Vec<BasicValueEnum<'ctx>> = vec![ptr.into()];
+                params.extend(
+                    constructor_params
+                        .iter()
+                        .map(|x| self.compile(x.clone()))
+                        .collect::<Vec<BasicValueEnum<'ctx>>>(),
+                );
+                self.builder
+                    .build_call(constructor, &params[..], "klass_init")
+                    .ok()
+                    .unwrap()
+                    .try_as_basic_value()
+                    .left_or(self.null())
             }
         }
     }

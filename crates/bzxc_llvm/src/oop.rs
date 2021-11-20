@@ -1,5 +1,5 @@
 use bzxc_llvm_wrapper::{
-    types::BasicTypeEnum,
+    types::{BasicTypeEnum, PointerType},
     values::{BasicValueEnum, PointerValue},
 };
 use bzxc_shared::LLVMNode;
@@ -62,5 +62,30 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .build_struct_gep(object, *i as u32, "struct_gep")
             .ok()
             .unwrap()
+    }
+
+    pub(super) fn class_method(
+        &mut self,
+        klass: PointerType<'ctx>,
+        method: LLVMNode<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
+        match method {
+            LLVMNode::Fun {
+                body,
+                name,
+                params,
+                ty,
+            } => self.compile(LLVMNode::Fun {
+                body,
+                name,
+                params: {
+                    let mut n_params = vec![("soul".to_string(), klass.into())];
+                    n_params.extend(params);
+                    n_params.clone()
+                },
+                ty,
+            }),
+            _ => unreachable!(),
+        }
     }
 }

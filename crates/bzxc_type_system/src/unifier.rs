@@ -45,6 +45,7 @@ impl TypeSystem {
 
                 self.unify(constraints)
             }
+            (Type::Class(ty1), Type::Class(ty2)) => self.unify_one(Constraint(*ty1, *ty2)),
             (Type::Array(ty1, _), Type::Array(ty2, _)) => self.unify_one(Constraint(*ty1, *ty2)),
             (Type::Object(tree1), Type::Object(tree2)) => {
                 let main_tree;
@@ -108,6 +109,7 @@ impl TypeSystem {
                     | self.occurs(tvar, *r.clone())
             }
             Type::Array(arr, _) => self.occurs(tvar, *arr),
+            Type::Class(klass) => self.occurs(tvar, *klass),
             Type::Object(obj) => obj
                 .iter()
                 .map(|(_, ty)| self.occurs(tvar, ty.clone()))

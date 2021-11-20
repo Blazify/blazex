@@ -1,14 +1,14 @@
-fun a() {
-    var obj = {
-        hi: "hello",
-        hello: fun(x) {
-            return x
-        }
+class A {
+    var a = 1;
+    fun() {
+        a = 2
+        return soul
     }
 
-    obj.hi = "hi"
-    return obj.hello(obj.hi)
+    fun b() {
+        return soul.a
+    }
 }
 
-
-a()
+var x = new A()
+x.b()
