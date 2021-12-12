@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Token, Tokens};
 
 impl Parser {
     /*
@@ -120,6 +120,16 @@ impl Parser {
                 return res;
             }
             return res.success(class_init.unwrap());
+        } else if token.value == Tokens::Keyword("soul") {
+            let token = Token::new(
+                Tokens::Identifier("soul"),
+                self.current_token.pos_start,
+                self.current_token.pos_end,
+            );
+            self.advance();
+            res.register_advancement();
+
+            return res.success(Node::VarAccessNode { token });
         }
 
         res.failure(Error::new(

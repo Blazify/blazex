@@ -187,6 +187,7 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                 name,
             } => LLVMNode::Class {
                 ty: llvm(ty),
+                name,
                 constructor: box self.gen(subs.clone(), *constructor),
                 properties: properties
                     .iter()

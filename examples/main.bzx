@@ -1,7 +1,8 @@
 class A {
     var a = 1;
+
     fun() {
-        a = 2
+        soul.a = 2;
         return soul
     }
 
@@ -10,5 +11,4 @@ class A {
     }
 }
 
-var x = new A()
-x.b()
+var x = new A().b()

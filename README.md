@@ -1,10 +1,10 @@
-# [BlazeX](https://blazex.blazify.rocks)
+# [BlazeX](https://blazify.tech)
 
 - [Discord](https://discord.gg/9bnpjqY)
 - [Gitter](https://gitter.im/BlazifyOrg-blazex/community)
-- [Blazify](https://blazify.rocks)
+- [Blazify](https://blazify.tech)
 
-A object orineted AOT compiled language which is kinda statically typed (plan: move to gradual typing)
+A object orineted AOT compiled language which is gradual typed
 
 ## Installing
 
@@ -23,10 +23,6 @@ USAGE:
 
 For more information try --help
 ```
-
-## Note
-
-This language is very much work in-progress. We are also working on a [VSCode Extension](https://github.com/BlazifyOrg/blazex-vscode) and I am also looking for collaborators
 
 ## Example
 
@@ -122,35 +118,15 @@ printf("%i\n", ins.sum_to_a(5));
 | [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |      Fork of Inkwell       |
 |       [bzxc_shared](crates/bzxc_shared)       | Things Shared among crates |
 
-## Need Help with
-
-- Gradual type system (Hybrid Dynamic & Static Typing)
-
 ## TODO
 
-- [ ] Type System
-  - [x] Statements
-  - [x] Int & Floats
-  - [x] Strings
-  - [x] Chars
-  - [x] Booleans
-  - [x] Binary Operations
-  - [x] Unary Operations
-  - [x] Variables
-  - [x] If else
-  - [x] Functions
-  - [x] For loop
-  - [x] While loop
-  - [x] Arrays
-  - [x] Objects
-  - [x] Classes
+- [x] Type System
 - [x] LLVM
-  - [x] Accept LLVMNode
-  - [x] Logic of all nodes
 - [x] Errors
   - [x] Lexer
   - [x] Parser
-  - [x] LLVM
+  - [ ] Type System
+  - [ ] LLVM
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
@@ -158,4 +134,4 @@ printf("%i\n", ins.sum_to_a(5));
 
 ## Author
 
-- [Ronit "RoMeAh" Rahaman](https://blazify.rocks/team/)
+- [Ronit "RoMeAh" Rahaman](https://blazify.tech/team/)

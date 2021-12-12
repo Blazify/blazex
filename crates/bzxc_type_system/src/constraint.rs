@@ -232,26 +232,25 @@ impl TypeSystem {
                 constructor,
                 methods,
                 properties,
-                name,
+                name: _,
             } => {
                 let mut constr = self.collect(*constructor.clone());
                 let mut tree = BTreeMap::new();
 
-                tree.insert(
-                    name.clone() + &"%constructor%".to_string(),
-                    constructor.get_type(),
-                );
-                for (name_, val) in properties {
-                    tree.insert(name.clone() + &name_, val.get_type());
+                tree.insert("constructor".to_string(), constructor.get_type());
+
+                for (name, val) in properties {
+                    tree.insert(name.clone(), val.get_type());
                     constr.extend(self.collect(val.clone()));
                 }
 
-                for (name_, val) in methods {
-                    tree.insert(name.clone() + &name_, val.get_type());
+                for (name, val) in methods {
+                    tree.insert(name.clone(), val.get_type());
                     constr.extend(self.collect(val.clone()));
                 }
 
-                constr.push(Constraint(ty, Type::Class(box Type::create_obj(tree))));
+                let obj = Type::create_obj(tree);
+                constr.push(Constraint(ty, Type::Class(box obj.clone())));
 
                 constr
             }
@@ -272,7 +271,7 @@ impl TypeSystem {
                 constr.push(Constraint(
                     ty.clone(),
                     Type::Object(BTreeMap::from([(
-                        "%constructor%".to_string(),
+                        "constructor".to_string(),
                         Type::Fun(params, box ty),
                     )])),
                 ));

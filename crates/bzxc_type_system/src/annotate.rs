@@ -261,7 +261,7 @@ impl TypeSystem {
                     methods.insert(
                         name.value.into_string(),
                         TypedNode::Fun {
-                            ty: obj_ty.clone(),
+                            ty: Type::fresh_var(),
                             name: name.value.into_string(),
                             params: {
                                 args.iter()
@@ -282,27 +282,26 @@ impl TypeSystem {
 
                 tenv.set(name.value.into_string(), ty.clone());
 
+                let mut params = vec![];
+                let mut params_ty = vec![];
+                for arg in constructor.0 {
+                    let ty = Type::fresh_var();
+                    params_ty.push(ty.clone());
+                    tenv.set(arg.value.into_string(), ty.clone());
+                    params.push(Binder {
+                        ty,
+                        name: arg.value.into_string(),
+                    });
+                }
+
                 TypedNode::Class {
-                    ty: ty.clone(),
+                    ty: Type::fresh_var(),
                     name: name.value.into_string(),
                     properties,
                     constructor: box TypedNode::Fun {
-                        ty: obj_ty,
+                        ty: Type::Fun(params_ty, box obj_ty),
                         name: name.value.into_string() + &"%constructor%".to_string(),
-                        params: {
-                            constructor
-                                .0
-                                .iter()
-                                .map(|x| {
-                                    let ty = Type::fresh_var();
-                                    tenv.set(x.value.into_string(), ty.clone());
-                                    Binder {
-                                        ty,
-                                        name: x.value.into_string(),
-                                    }
-                                })
-                                .collect()
-                        },
+                        params,
                         body: box self.annotate(*constructor.1, tenv),
                     },
                     methods,

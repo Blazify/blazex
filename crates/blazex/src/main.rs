@@ -92,7 +92,6 @@ fn main() {
             watch,
             out_file.clone(),
             spit_ll,
-            false,
         )
     };
 

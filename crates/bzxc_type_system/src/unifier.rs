@@ -59,6 +59,10 @@ impl TypeSystem {
                     other_tree = tree1;
                 };
 
+                if main_tree == other_tree {
+                    return Substitution::empty();
+                }
+
                 let mut constr = vec![];
                 for (name, ty1) in &other_tree {
                     assert!(main_tree.contains_key(name));

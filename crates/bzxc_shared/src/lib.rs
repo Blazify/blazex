@@ -590,6 +590,7 @@ pub enum LLVMNode<'ctx> {
     },
     Class {
         ty: BasicTypeEnum<'ctx>,
+        name: String,
         properties: Vec<(String, Self)>,
         methods: Vec<(String, Self)>,
         constructor: Box<Self>,

@@ -13,7 +13,7 @@
 
 use super::Parser;
 use crate::parse_result::ParseResult;
-use bzxc_shared::{Error, Node, Tokens};
+use bzxc_shared::{Error, Node, Token, Tokens};
 
 impl Parser {
     /*
@@ -34,8 +34,8 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        let name = self.current_token;
-        if let Tokens::Identifier(_) = self.current_token.value {
+        let name = self.current_token.clone();
+        if matches!(name.value, Tokens::Identifier(_)) {
             res.register_advancement();
             self.advance();
         } else {
@@ -49,7 +49,20 @@ impl Parser {
 
         let mut constructor_def = false;
         let mut methods = vec![];
-        let mut constructor = (vec![], Box::new(Node::Statements { statements: vec![] }));
+        let mut constructor = (
+            vec![],
+            Box::new(Node::Statements {
+                statements: vec![Node::ReturnNode {
+                    value: Box::new(Some(Node::VarAccessNode {
+                        token: Token::new(
+                            Tokens::Identifier("soul"),
+                            self.current_token.pos_start,
+                            self.current_token.pos_end,
+                        ),
+                    })),
+                }],
+            }),
+        );
         let mut properties = vec![];
 
         if self.current_token.value != Tokens::LeftCurlyBraces {

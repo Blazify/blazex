@@ -23,7 +23,6 @@ pub fn compile(
     watch: bool,
     out_file: String,
     llvm: bool,
-    jit_: bool,
 ) -> i32 {
     if !is_quiet {
         println!("----BlazeX compiler----");
@@ -78,13 +77,6 @@ pub fn compile(
         println!("LLVM IR:\n{}", module.print_to_string().to_string());
     }
 
-    if jit_ {
-        jit(module.clone());
-        if !watch {
-            return 1;
-        }
-    };
-
     let path = Path::new(&out_file);
 
     Target::initialize_all(&InitializationConfig::default());
@@ -113,16 +105,4 @@ pub fn compile(
     }
 
     return 0;
-}
-
-fn jit<'ctx>(module: Module<'ctx>) {
-    let jit_engine = module
-        .create_jit_execution_engine(OptimizationLevel::Aggressive)
-        .unwrap();
-
-    unsafe {
-        let main: JitFunction<unsafe extern "C" fn() -> i128> =
-            jit_engine.get_function("main").unwrap();
-        main.call();
-    }
 }

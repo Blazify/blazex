@@ -66,6 +66,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     pub(super) fn class_method(
         &mut self,
+        class: String,
         klass: PointerType<'ctx>,
         method: LLVMNode<'ctx>,
     ) -> BasicValueEnum<'ctx> {
@@ -77,7 +78,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 ty,
             } => self.compile(LLVMNode::Fun {
                 body,
-                name,
+                name: format!("{}%{}", class, name),
                 params: {
                     let mut n_params = vec![("soul".to_string(), klass.into())];
                     n_params.extend(params);

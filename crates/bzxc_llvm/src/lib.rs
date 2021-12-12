@@ -665,6 +665,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 properties,
                 methods,
                 constructor,
+                name: class,
             } => {
                 let klass = self
                     .builder
@@ -673,12 +674,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         "klass",
                     )
                     .into_struct_value();
-                let constructor = self.class_method(ty.into_pointer_type(), *constructor);
+                let constructor =
+                    self.class_method(class.clone(), ty.into_pointer_type(), *constructor);
 
                 let mut n_methods = HashMap::new();
 
                 for (name, method) in methods {
-                    n_methods.insert(name, self.class_method(ty.into_pointer_type(), method));
+                    n_methods.insert(
+                        name,
+                        self.class_method(class.clone(), ty.into_pointer_type(), method),
+                    );
                 }
                 self.classes.insert(
                     ty.into_pointer_type(),
