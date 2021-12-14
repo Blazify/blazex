@@ -26,7 +26,7 @@ pub fn compile(
 ) -> i32 {
     if !is_quiet {
         println!("----BlazeX compiler----");
-        println!("Version: 0.0.1");
+        println!("Version: {}", env!("CARGO_PKG_VERSION"));
         println!("File: {}", file_name);
     }
 

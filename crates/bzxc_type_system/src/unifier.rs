@@ -59,6 +59,8 @@ impl TypeSystem {
                     other_tree = tree1;
                 };
 
+                println!("{:#?}\n{:#?}\n\n", main_tree, other_tree);
+
                 if main_tree == other_tree {
                     return Substitution::empty();
                 }

@@ -13,6 +13,7 @@ cmake --build . && \
 cmake --build . --target install && \
 cmake -DCMAKE_INSTALL_PREFIX=/home/romeah/.blazex/llvm-11.1.0 -P cmake_install.cmake && \
 rm -rf llvm-11.1.0.src
+ 
 cargo build --locked --target x86_64-unknown-linux-gnu --release
 mkdir -p "/home/romeah/.blazex/bin"
 cp "./target/x86_64-unknown-linux-gnu/release/blazex" "/home/romeah/.blazex/bin/blazex"

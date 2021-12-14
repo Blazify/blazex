@@ -295,7 +295,7 @@ impl TypeSystem {
                 }
 
                 TypedNode::Class {
-                    ty: Type::fresh_var(),
+                    ty,
                     name: name.value.into_string(),
                     properties,
                     constructor: box TypedNode::Fun {

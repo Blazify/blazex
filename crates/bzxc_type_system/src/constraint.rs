@@ -250,7 +250,7 @@ impl TypeSystem {
                 }
 
                 let obj = Type::create_obj(tree);
-                constr.push(Constraint(ty, Type::Class(box obj.clone())));
+                constr.insert(0, Constraint(ty, Type::Class(box obj.clone())));
 
                 constr
             }

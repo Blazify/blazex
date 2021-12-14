@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Dec 11 11:11:50 2021
+# Make data base, printed on Tue Dec 14 10:49:05 2021
 
 # Variables
 
@@ -17,7 +17,7 @@ GDK_BACKEND = x11
 # environment
 LC_ALL = C
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-502ca172-3c55-4af1-853c-c880d2110326.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-d4fbb619-ad33-478e-ac64-9148af743628.sock
 # environment
 MANDATORY_PATH = /usr/share/gconf/cutefish-xsession.mandatory.path
 # environment
@@ -83,7 +83,7 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 MFLAGS = -pqrR
 # environment
-SSH_AUTH_SOCK = /tmp/ssh-PdPalDRUWfyz/agent.772
+SSH_AUTH_SOCK = /tmp/ssh-nXDmBHvK7iHn/agent.774
 # default
 .SHELLFLAGS := -c
 # environment
@@ -107,7 +107,7 @@ VSCODE_VERBOSE_LOGGING = true
 # makefile (from 'Makefile', line 1)
 LLVM_SYS_110_PREFIX := /home/romeah/.blazex/llvm-11.1.0
 # environment
-VSCODE_PID = 219997
+VSCODE_PID = 1160
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -165,7 +165,6 @@ VSCODE_LOG_NATIVE = false
 # environment
 LC_TELEPHONE = en_IN
 # environment
- 
 LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
 GDK_SCALE = 1
@@ -212,7 +211,7 @@ XDG_DESKTOP_DIR = /Desktop
 # environment
 LC_MEASUREMENT = en_US.UTF-8
 # environment
-SSH_AGENT_PID = 830
+SSH_AGENT_PID = 859
 # environment
 _ = /usr/share/code/code
 # environment
@@ -223,6 +222,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 LC_CTYPE = en_US.UTF-8
+ 
 # environment
 QT_PLATFORM_PLUGIN = cutefish
 # environment
@@ -264,9 +264,9 @@ LC_IDENTIFICATION = en_IN
 
 # Directories
 
-# . (device 2050, inode 28330961): 17 files, no impossibilities.
+# . (device 2050, inode 28330961): 16 files, no impossibilities.
 
-# 17 files, no impossibilities in 1 directories.
+# 16 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -330,12 +330,12 @@ build:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 24 / storage = 206 B / avg = 8 B
-# current buf: size = 8162 B / used = 206 B / count = 24 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 23 / storage = 198 B / avg = 8 B
+# current buf: size = 8162 B / used = 198 B / count = 23 / avg = 8 B
 
-# strcache performance: lookups = 31 / hit rate = 22%
+# strcache performance: lookups = 30 / hit rate = 23%
 # hash-table stats:
-# Load=24/8192=0%, Rehash=0, Collisions=0/31=0%
-# Finished Make data base on Sat Dec 11 11:11:50 2021
+# Load=23/8192=0%, Rehash=0, Collisions=0/30=0%
+# Finished Make data base on Tue Dec 14 10:49:05 2021
 
  

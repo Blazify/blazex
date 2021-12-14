@@ -202,7 +202,14 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                 ty,
                 class,
                 constructor_params,
-            } => todo!(),
+            } => LLVMNode::ClassInit {
+                ty: llvm(ty),
+                class: llvm(class),
+                constructor_params: constructor_params
+                    .iter()
+                    .map(|x| self.gen(subs.clone(), x.clone()))
+                    .collect(),
+            },
         }
     }
 }
