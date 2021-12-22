@@ -811,6 +811,12 @@ impl Type {
         }
     }
 
+    pub fn last_aligner() -> usize {
+        unsafe {
+            return OBJECT_ALIGNER;
+        }
+    }
+
     pub fn llvm<'ctx>(
         &self,
         ctx: &'ctx Context,
@@ -850,23 +856,7 @@ impl Type {
                 )
                 .ptr_type(AddressSpace::Generic)
                 .into(),
-            Type::Class(obj) => {
-                let mut fields = vec![];
-                let ty = obj.llvm(ctx, tvars.clone()).into_struct_type();
-
-                for field in ty.get_field_types() {
-                    if field.is_pointer_type() {
-                        let ptr = field.into_pointer_type().get_element_type();
-                        if ptr.is_function_type() {
-                            continue;
-                        }
-                    }
-
-                    fields.push(field);
-                }
-
-                ctx.struct_type(&fields[..], false).into()
-            }
+            Type::Class(obj) => obj.llvm(ctx, tvars),
         }
     }
 }

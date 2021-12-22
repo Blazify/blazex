@@ -60,7 +60,7 @@ var obj = {
     prop: 5 @ properties should be Identifier or there will be Invalid Syntax Error
 }
 
-println("%i\n", obj.prop); @ accessing object property
+printf("%i\n", obj.prop); @ accessing object property
 
 obj.prop = 10; @ editing object property value
 printf("%i\n", obj.prop) @ 10

@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Dec 14 10:49:05 2021
+# Make data base, printed on Wed Dec 22 14:34:56 2021
 
 # Variables
 
@@ -17,7 +17,7 @@ GDK_BACKEND = x11
 # environment
 LC_ALL = C
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-d4fbb619-ad33-478e-ac64-9148af743628.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-28ba6725-f53a-4977-beba-5f4794cdfee2.sock
 # environment
 MANDATORY_PATH = /usr/share/gconf/cutefish-xsession.mandatory.path
 # environment
@@ -83,7 +83,7 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 MFLAGS = -pqrR
 # environment
-SSH_AUTH_SOCK = /tmp/ssh-nXDmBHvK7iHn/agent.774
+SSH_AUTH_SOCK = /tmp/ssh-oJdJhgNvP7Y7/agent.774
 # default
 .SHELLFLAGS := -c
 # environment
@@ -107,7 +107,7 @@ VSCODE_VERBOSE_LOGGING = true
 # makefile (from 'Makefile', line 1)
 LLVM_SYS_110_PREFIX := /home/romeah/.blazex/llvm-11.1.0
 # environment
-VSCODE_PID = 1160
+VSCODE_PID = 1293
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -211,7 +211,7 @@ XDG_DESKTOP_DIR = /Desktop
 # environment
 LC_MEASUREMENT = en_US.UTF-8
 # environment
-SSH_AGENT_PID = 859
+SSH_AGENT_PID = 854
 # environment
 _ = /usr/share/code/code
 # environment
@@ -222,7 +222,6 @@ XDG_RUNTIME_DIR = /run/user/1000
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 LC_CTYPE = en_US.UTF-8
- 
 # environment
 QT_PLATFORM_PLUGIN = cutefish
 # environment
@@ -284,6 +283,7 @@ Makefile:
 # Not a target:
 .DEFAULT:
 #  Implicit rule search has not been done.
+ 
 #  Modification time never checked.
 #  File has not been updated.
 
@@ -336,6 +336,6 @@ build:
 # strcache performance: lookups = 30 / hit rate = 23%
 # hash-table stats:
 # Load=23/8192=0%, Rehash=0, Collisions=0/30=0%
-# Finished Make data base on Tue Dec 14 10:49:05 2021
+# Finished Make data base on Wed Dec 22 14:34:56 2021
 
  

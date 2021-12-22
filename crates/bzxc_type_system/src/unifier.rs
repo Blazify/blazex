@@ -59,17 +59,21 @@ impl TypeSystem {
                     other_tree = tree1;
                 };
 
-                println!("{:#?}\n{:#?}\n\n", main_tree, other_tree);
-
-                if main_tree == other_tree {
-                    return Substitution::empty();
-                }
+                let a = main_tree.get("%alignment%");
+                let b = other_tree.get("%alignment%");
 
                 let mut constr = vec![];
                 for (name, ty1) in &other_tree {
-                    assert!(main_tree.contains_key(name));
-                    let ty2 = main_tree.get(name).unwrap().clone();
-                    constr.push(Constraint(ty1.clone(), ty2));
+                    let mut ty2 = main_tree.get(name);
+                    if ty2.is_none() {
+                        ty2 = self
+                            .methods
+                            .get(a.unwrap_or_else(|| b.unwrap()))
+                            .unwrap_or_else(|| self.methods.get(b.unwrap()).unwrap())
+                            .get(name);
+                    }
+
+                    constr.push(Constraint(ty1.clone(), ty2.unwrap().clone()));
                 }
 
                 self.unify(constr)

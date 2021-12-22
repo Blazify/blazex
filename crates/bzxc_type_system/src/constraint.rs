@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 /*
  * Copyright 2020 to 2021 BlazifyOrg
@@ -20,7 +20,7 @@ use crate::TypeSystem;
 pub struct Constraint(pub Type, pub Type);
 
 impl TypeSystem {
-    pub fn collect(&self, node: TypedNode) -> Vec<Constraint> {
+    pub fn collect(&mut self, node: TypedNode) -> Vec<Constraint> {
         match node {
             TypedNode::Statements(stmts) => stmts
                 .iter()
@@ -234,23 +234,30 @@ impl TypeSystem {
                 properties,
                 name: _,
             } => {
-                let mut constr = self.collect(*constructor.clone());
+                let mut constr = vec![];
                 let mut tree = BTreeMap::new();
 
-                tree.insert("constructor".to_string(), constructor.get_type());
+                let mut methods_tree = HashMap::new();
+                methods_tree.insert("constructor".to_string(), constructor.get_type());
 
                 for (name, val) in properties {
                     tree.insert(name.clone(), val.get_type());
                     constr.extend(self.collect(val.clone()));
                 }
 
+                let obj = Type::create_obj(tree);
+
+                constr.push(Constraint(ty, Type::Class(box obj)));
+
+                constr.extend(self.collect(*constructor.clone()));
                 for (name, val) in methods {
-                    tree.insert(name.clone(), val.get_type());
+                    methods_tree.insert(name.clone(), val.get_type());
                     constr.extend(self.collect(val.clone()));
                 }
-
-                let obj = Type::create_obj(tree);
-                constr.insert(0, Constraint(ty, Type::Class(box obj.clone())));
+                self.methods.insert(
+                    Type::Array(box Type::Int, Type::last_aligner()),
+                    methods_tree,
+                );
 
                 constr
             }

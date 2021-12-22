@@ -13,7 +13,9 @@
 #![feature(box_syntax, box_patterns)]
 #![allow(unused_variables)]
 
-use bzxc_shared::{Node, TypedNode};
+use std::collections::HashMap;
+
+use bzxc_shared::{Node, Type, TypedNode};
 use substitution::Substitution;
 use type_env::TypeEnv;
 
@@ -26,14 +28,18 @@ mod unifier;
 
 pub struct TypeSystem {
     pub node: Node,
+    methods: HashMap<Type, HashMap<String, Type>>,
 }
 
 impl TypeSystem {
     pub fn new(node: Node) -> Self {
-        TypeSystem { node }
+        TypeSystem {
+            node,
+            methods: HashMap::new(),
+        }
     }
 
-    pub fn typed_node(&self) -> (Substitution, TypedNode) {
+    pub fn typed_node(&mut self) -> (Substitution, TypedNode) {
         let annotation = self.annotate(self.node.clone(), &mut TypeEnv::new());
         let constraints = self.collect(annotation.clone());
         let substitution = self.unify(constraints.clone());
