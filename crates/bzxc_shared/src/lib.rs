@@ -73,9 +73,9 @@ impl Tokens {
     /*
      * Convert a Token value to int if possible
      */
-    pub fn into_int(&self) -> i128 {
+    pub fn into_int(self) -> i128 {
         if let Tokens::Int(i) = self {
-            *i
+            i
         } else {
             panic!()
         }
@@ -84,11 +84,11 @@ impl Tokens {
     /*
      * Convert a Token value to float if possible
      */
-    pub fn into_float(&self) -> f64 {
+    pub fn into_float(self) -> f64 {
         return if let Tokens::Float(i) = self {
-            *i
+            i
         } else if let Tokens::Int(i) = self {
-            *i as f64
+            i as f64
         } else {
             panic!()
         };
@@ -97,7 +97,7 @@ impl Tokens {
     /*
      * Convert a Token value to string if possible
      */
-    pub fn into_string(&self) -> String {
+    pub fn into_string(self) -> String {
         if let Tokens::String(i) | Tokens::Identifier(i) | Tokens::Keyword(i) = self {
             i.to_string()
         } else {
@@ -108,9 +108,9 @@ impl Tokens {
     /*
      * Convert a Token value to charecter if possible
      */
-    pub fn into_char(&self) -> char {
+    pub fn into_char(self) -> char {
         if let Tokens::Char(i) = self {
-            *i
+            i
         } else {
             panic!()
         }
@@ -119,9 +119,9 @@ impl Tokens {
     /*
      * Convert a Token value to boolean if possible
      */
-    pub fn into_boolean(&self) -> bool {
+    pub fn into_boolean(self) -> bool {
         if let Tokens::Boolean(i) = self {
-            *i
+            i
         } else {
             panic!()
         }
@@ -841,11 +841,13 @@ impl Type {
                 .ptr_type(AddressSpace::Generic)
                 .into(),
             Type::Null => ctx.struct_type(&[], true).into(),
-            Type::Var(tvar) => tvars
-                .clone()
-                .get(&Type::Var(*tvar))
-                .unwrap()
-                .llvm(ctx, tvars),
+            Type::Var(tvar) => {
+                tvars
+                    .clone()
+                    .get(&Type::Var(*tvar))
+                    .unwrap()
+                    .llvm(ctx, tvars)
+            },
             Type::Object(tree) => ctx
                 .struct_type(
                     &tree

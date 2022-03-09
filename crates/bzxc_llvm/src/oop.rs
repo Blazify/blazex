@@ -1,7 +1,4 @@
-use bzxc_llvm_wrapper::{
-    types::{BasicTypeEnum, PointerType},
-    values::{BasicValueEnum, PointerValue},
-};
+use bzxc_llvm_wrapper::{AddressSpace, types::{BasicTypeEnum, PointerType}, values::{BasicValueEnum, PointerValue}};
 use bzxc_shared::LLVMNode;
 
 use crate::Compiler;
@@ -76,16 +73,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 name,
                 params,
                 ty,
-            } => self.compile(LLVMNode::Fun {
-                body,
-                name: format!("{}%{}", class, name),
-                params: {
-                    let mut n_params = vec![("soul".to_string(), klass.into())];
-                    n_params.extend(params);
-                    n_params.clone()
-                },
-                ty,
-            }),
+            } => {
+                let mut n_params: Vec<(String, BasicTypeEnum<'ctx>)> = vec![("soul".to_string(), klass.into())];
+                n_params.extend(params);
+
+                let pty = n_params.iter().map(|(_, ty)| ty.clone()).collect::<Vec<BasicTypeEnum<'ctx>>>();
+                self.compile(LLVMNode::Fun {
+                    body,
+                    name: format!("{}%{}", class, name),
+                    params: {
+                        n_params.clone()
+                    },
+                    ty: ty.into_pointer_type().get_element_type().into_function_type().get_return_type().unwrap().fn_type(&pty[..], false).ptr_type(AddressSpace::Generic).into(),
+                })
+            },
             _ => unreachable!(),
         }
     }

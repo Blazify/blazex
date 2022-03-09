@@ -15,15 +15,7 @@ mod oop;
 
 use std::collections::HashMap;
 
-use bzxc_llvm_wrapper::{
-    builder::Builder,
-    context::Context,
-    module::Module,
-    passes::PassManager,
-    types::{BasicType, PointerType, StructType},
-    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue, StructValue},
-    FloatPredicate, IntPredicate,
-};
+use bzxc_llvm_wrapper::{builder::Builder, context::Context, module::Module, passes::PassManager, types::{BasicType, PointerType, StructType}, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue, StructValue}, FloatPredicate, IntPredicate, AddressSpace};
 use bzxc_shared::{LLVMNode, Tokens};
 
 #[derive(Debug, Clone)]
@@ -380,9 +372,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.variables.insert(name, alloca);
                 alloca.into()
             }
-            LLVMNode::Var { ty: _, name } => self
-                .builder
-                .build_load(*self.variables.get(&name).unwrap(), name.as_str()),
+            LLVMNode::Var { ty: _, name } => {
+                self
+                    .builder
+                    .build_load(*self.variables.get(&name).unwrap(), name.as_str())
+            },
             LLVMNode::Call { ty: _, fun, args } => self
                 .builder
                 .build_call(
@@ -616,7 +610,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let class = self.classes.get(&ptr.get_type()).clone();
                 let is_class = class.is_some();
 
-                let mut compiled_args = Vec::with_capacity(args.len());
+                let mut compiled_args: Vec<BasicValueEnum> = Vec::with_capacity(args.len());
 
                 if is_class {
                     compiled_args.push(ptr.into());
@@ -702,7 +696,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         &class
                             .into_pointer_type()
                             .get_element_type()
-                            .into_pointer_type(),
+                            .into_struct_type().ptr_type(AddressSpace::Generic),
                     )
                     .unwrap()
                     .clone();

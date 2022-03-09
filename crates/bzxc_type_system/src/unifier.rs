@@ -64,7 +64,9 @@ impl TypeSystem {
 
                 let mut constr = vec![];
                 for (name, ty1) in &other_tree {
+                    if name.as_str() == "%alignment%" { continue; }
                     let mut ty2 = main_tree.get(name);
+
                     if ty2.is_none() {
                         ty2 = self
                             .methods

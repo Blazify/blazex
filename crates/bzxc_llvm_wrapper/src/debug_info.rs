@@ -179,8 +179,6 @@ impl<'ctx> DebugInfoBuilder<'ctx> {
         dwo_id: libc::c_uint,
         split_debug_inlining: bool,
         debug_info_for_profiling: bool,
-        sysroot: &str,
-        sdk: &str,
     ) -> (Self, DICompileUnit<'ctx>) {
         let builder = unsafe {
             if allow_unresolved {
@@ -209,8 +207,6 @@ impl<'ctx> DebugInfoBuilder<'ctx> {
             dwo_id,
             split_debug_inlining,
             debug_info_for_profiling,
-            sysroot,
-            sdk,
         );
 
         (builder, cu)
@@ -242,8 +238,6 @@ impl<'ctx> DebugInfoBuilder<'ctx> {
         dwo_id: libc::c_uint,
         split_debug_inlining: bool,
         debug_info_for_profiling: bool,
-        sysroot: &str,
-        sdk: &str,
     ) -> DICompileUnit<'ctx> {
         let metadata_ref = unsafe {
             LLVMDIBuilderCreateCompileUnit(
@@ -262,10 +256,6 @@ impl<'ctx> DebugInfoBuilder<'ctx> {
                 dwo_id,
                 split_debug_inlining as _,
                 debug_info_for_profiling as _,
-                sysroot.as_ptr() as _,
-                sysroot.len(),
-                sdk.as_ptr() as _,
-                sdk.len(),
             )
         };
 

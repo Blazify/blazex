@@ -1396,8 +1396,6 @@ impl<'ctx> Module<'ctx> {
         dwo_id: libc::c_uint,
         split_debug_inlining: bool,
         debug_info_for_profiling: bool,
-        sysroot: &str,
-        sdk: &str,
     ) -> (DebugInfoBuilder<'ctx>, DICompileUnit<'ctx>) {
         DebugInfoBuilder::new(
             self,
@@ -1414,8 +1412,6 @@ impl<'ctx> Module<'ctx> {
             dwo_id,
             split_debug_inlining,
             debug_info_for_profiling,
-            sysroot,
-            sdk,
         )
     }
 }

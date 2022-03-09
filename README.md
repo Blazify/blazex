@@ -4,7 +4,7 @@
 - [Gitter](https://gitter.im/BlazifyOrg-blazex/community)
 - [Blazify](https://blazify.tech)
 
-A object orineted AOT compiled language which is gradual typed
+An object orineted AOT compiled language which is gradual typed
 
 ## Installing
 
@@ -104,16 +104,16 @@ printf("%i\n", ins.sum_to_a(5));
 - Create a branch with the patch/feature you want
 - Make Changes to the code
 - Commit the code (Use the [Emoji Commit Style](https://github.com/BlazifyOrg/pretty-commits)) and the message should **NOT** contain the word "release"
-- Finally push the code and make a pull request
+- Finally, push the code and make a pull request
 
 ## Project Structure
 
 |                     Crate                     |        Description         |
-| :-------------------------------------------: | :------------------------: |
+|:---------------------------------------------:|:--------------------------:|
 |            [blazex](crates/blazex)            |         The binary         |
 |        [bzxc_lexer](crates/bzxc_lexer)        |    Lexer for Tokenizing    |
 |       [bzxc_parser](crates/bzxc_parser)       |    Parser for AST Tree     |
-| [bzxc_type_system](crates/bzxc_type_checker)  |        Type System         |
+|  [bzxc_type_system](crates/bzxc_type_system)  |        Type System         |
 |         [bzxc_llvm](crates/bzxc_llvm)         |  LLVM IR Code Generation   |
 | [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |      Fork of Inkwell       |
 |       [bzxc_shared](crates/bzxc_shared)       | Things Shared among crates |

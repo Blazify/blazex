@@ -1,4 +1,4 @@
-export LLVM_SYS_110_PREFIX := $(HOME)/.blazex/llvm-11.1.0
+export LLVM_SYS_100_PREFIX := $(HOME)/.blazex/llvm-10.0.1
 
 .PHONY: build
 
@@ -19,19 +19,19 @@ endif
 
 
 build:
-ifneq ($(shell test -d "$(LLVM_SYS_110_PREFIX)" ; echo $$?), 0)
+ifneq ($(shell test -d "$(LLVM_SYS_100_PREFIX)" ; echo $$?), 0)
 	mkdir -p $(BLAZEX_DIR)
 	cd $(BLAZEX_DIR) && \
-	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz && \
-	tar xJf llvm-11.1.0.src.tar.xz && \
-	rm -rf llvm-11.1.0.src.tar.xz && \
-	mkdir -p llvm-11.1.0.src/build && \
-	cd llvm-11.1.0.src/build && \
+	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz && \
+	tar xJf llvm-10.0.1.src.tar.xz && \
+	rm -rf llvm-10.0.1.src.tar.xz && \
+	mkdir -p llvm-10.0.1.src/build && \
+	cd llvm-10.0.1.src/build && \
 	cmake ..  && \
-	cmake --build . && \
+	cmake --build . -j1 && \
 	cmake --build . --target install && \
-	cmake -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_110_PREFIX) -P cmake_install.cmake && \
-	rm -rf llvm-11.1.0.src
+	cmake -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_100_PREFIX) -P cmake_install.cmake && \
+	rm -rf llvm-10.0.1.src
 endif
 	cargo build --locked --target $(TARGET) --release
 

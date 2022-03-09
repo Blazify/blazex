@@ -795,6 +795,7 @@ impl Context {
     /// # Example
     ///
     /// ```no_run
+    /// use bzxc_llvm_wrapper::values::FIRST_CUSTOM_METADATA_KIND_ID;
     /// use inkwell::context::Context;
     /// use inkwell::values::FIRST_CUSTOM_METADATA_KIND_ID;
     ///
