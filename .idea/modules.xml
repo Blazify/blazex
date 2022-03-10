@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/blazex.iml" filepath="$PROJECT_DIR$/.idea/blazex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/blazex2.iml" filepath="$PROJECT_DIR$/.idea/blazex2.iml" />
     </modules>
   </component>
 </project>

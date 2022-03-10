@@ -535,42 +535,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.null()
             }
             LLVMNode::Array { ty, elements } => {
-                let array_alloca = self.builder.build_alloca(ty, "array_alloca");
-                let mut array = self
-                    .builder
-                    .build_load(array_alloca, "array_load")
-                    .into_array_value();
+                let vec_ty = ty.into_vector_type().get_undef();
 
-                for (i, k) in elements.iter().enumerate() {
-                    let elem = self.compile(k.clone());
-
-                    array = self
-                        .builder
-                        .build_insert_value(array, elem, i as u32, "load_array")
-                        .unwrap()
-                        .into_array_value();
+                for (i, element) in elements.iter().enumerate() {
+                    self.builder.build_insert_element(vec_ty, self.compile(element.clone()), self.context.i128_type().const_int(i as i128, true), "vec_push");
                 }
 
-                array.into()
+                vec_ty.into()
             }
             LLVMNode::Index { ty: _, array, idx } => {
-                let arr = self.compile(*array);
-                let array_alloca = self.builder.build_alloca(arr.get_type(), "arr_alloc");
-                self.builder.build_store(array_alloca, arr);
+                let arr = self.compile(*array).into_vector_value();
 
-                let array_elem_ptr = unsafe {
-                    self.builder.build_gep(
-                        array_alloca,
-                        &[
-                            self.context.i32_type().const_int(0, false),
-                            self.compile(*idx).into_int_value(),
-                        ],
-                        "get_array_elem_ptr",
-                    )
-                };
-                let array_elem = self.builder.build_load(array_elem_ptr, "array_elem");
-
-                array_elem
+                self.builder.build_extract_element(arr, self.compile(*idx).into_int_value(), "vec_extract")
             }
             LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
             LLVMNode::ObjectAccess {

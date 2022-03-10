@@ -17,7 +17,7 @@ use bzxc_shared::Type;
 use crate::{constraint::Constraint, substitution::Substitution, TypeSystem};
 
 impl TypeSystem {
-    pub fn unify(&self, constraints: Vec<Constraint>) -> Substitution {
+    pub fn unify(&mut self, constraints: Vec<Constraint>) -> Substitution {
         if constraints.is_empty() {
             Substitution::empty()
         } else {
@@ -29,7 +29,7 @@ impl TypeSystem {
         }
     }
 
-    pub fn unify_one(&self, constraint: Constraint) -> Substitution {
+    pub fn unify_one(&mut self, constraint: Constraint) -> Substitution {
         match (constraint.0, constraint.1) {
             (Type::Fun(params, ret1), Type::Fun(args, ret2)) => {
                 let mut constraints = vec![];
@@ -92,7 +92,7 @@ impl TypeSystem {
         }
     }
 
-    pub fn unify_var(&self, tvar: i32, ty: Type) -> Substitution {
+    pub fn unify_var(&mut self, tvar: i32, ty: Type) -> Substitution {
         match ty.clone() {
             Type::Var(tvar2) => {
                 if tvar == tvar2 {
@@ -105,6 +105,14 @@ impl TypeSystem {
                 if self.occurs(tvar, ty.clone()) {
                     panic!("circular type")
                 } else {
+                    let methods = self.methods.clone();
+                    for (x, class) in methods {
+                        for (y, method) in class {
+                            if method == Type::Var(tvar) {
+                                self.methods.get_mut(&x.clone()).unwrap().insert(y.clone(), ty.clone());
+                            }
+                        }
+                    }
                     Substitution(BTreeMap::from([(Type::Var(tvar), ty)]))
                 }
             }

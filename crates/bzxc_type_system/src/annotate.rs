@@ -260,23 +260,7 @@ impl TypeSystem {
                 for (name, args, body) in mthds {
                     methods.insert(
                         name.value.into_string(),
-                        TypedNode::Fun {
-                            ty: Type::fresh_var(),
-                            name: name.value.into_string(),
-                            params: {
-                                args.iter()
-                                    .map(|x| {
-                                        let ty = Type::fresh_var();
-                                        tenv.set(x.value.into_string(), ty.clone());
-                                        Binder {
-                                            ty,
-                                            name: x.value.into_string(),
-                                        }
-                                    })
-                                    .collect()
-                            },
-                            body: box self.annotate(body.clone(), tenv),
-                        },
+                        self.annotate(Node::FunDef { name: Some(name), body_node: box body, arg_tokens: args }, tenv)
                     );
                 }
 

@@ -1,15 +1,15 @@
-use llvm_sys::core::LLVMGetTypeKind;
-use llvm_sys::prelude::LLVMTypeRef;
-use llvm_sys::LLVMTypeKind;
+use std::convert::TryFrom;
 
-use crate::types::traits::AsTypeRef;
+use llvm_sys::core::LLVMGetTypeKind;
+use llvm_sys::LLVMTypeKind;
+use llvm_sys::prelude::LLVMTypeRef;
+
+use crate::AddressSpace;
 use crate::types::{
     ArrayType, FloatType, FunctionType, IntType, PointerType, StructType, VectorType, VoidType,
 };
+use crate::types::traits::AsTypeRef;
 use crate::values::{BasicValue, BasicValueEnum, IntValue};
-use crate::AddressSpace;
-
-use std::convert::TryFrom;
 
 macro_rules! enum_type_set {
     ($(#[$enum_attrs:meta])* $enum_name:ident: { $($(#[$variant_attrs:meta])* $args:ident,)+ }) => (
@@ -392,6 +392,16 @@ impl<'ctx> BasicTypeEnum<'ctx> {
             BasicTypeEnum::PointerType(x) => x.array_type(size),
             BasicTypeEnum::StructType(x) => x.array_type(size),
             BasicTypeEnum::VectorType(x) => x.array_type(size),
+        }
+    }
+
+    pub fn vec_type(self, size_raw: Option<u32>) -> VectorType<'ctx> {
+        let size = size_raw.unwrap_or(1000);
+        match self {
+            BasicTypeEnum::FloatType(x) => x.vec_type(size),
+            BasicTypeEnum::IntType(x) => x.vec_type(size),
+            BasicTypeEnum::PointerType(x) => x.vec_type(size),
+            _ => unreachable!()
         }
     }
 

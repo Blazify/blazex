@@ -782,7 +782,7 @@ pub enum Type {
     Boolean,
     Char,
     String,
-    Array(Box<Self>, usize),
+    Array(Box<Self>, Option<u32>),
     Fun(Vec<Self>, Box<Self>),
     Object(BTreeMap<String, Self>),
     Class(Box<Self>),
@@ -804,7 +804,7 @@ impl Type {
             let mut tree = BTreeMap::new();
             tree.insert(
                 "%alignment%".to_string(),
-                Type::Array(Box::new(Type::Int), OBJECT_ALIGNER),
+                Type::Array(Box::new(Type::Int), Some(OBJECT_ALIGNER as u32)),
             );
             tree.extend(props);
             Self::Object(tree)
@@ -828,7 +828,7 @@ impl Type {
             Type::Boolean => ctx.bool_type().into(),
             Type::Char => ctx.i8_type().into(),
             Type::String => ctx.i8_type().ptr_type(AddressSpace::Generic).into(),
-            Type::Array(ty, i) => ty.llvm(ctx, tvars).array_type(*i as u32).into(),
+            Type::Array(ty, i) => ty.llvm(ctx, tvars).vec_type(i.clone()).into(),
             Type::Fun(params, ret) => ret
                 .llvm(ctx, tvars.clone())
                 .fn_type(

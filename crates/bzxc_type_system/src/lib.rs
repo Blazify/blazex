@@ -27,7 +27,7 @@ mod type_env;
 mod unifier;
 
 pub struct TypeSystem {
-    pub node: Node,
+    node: Node,
     methods: HashMap<Type, HashMap<String, Type>>,
 }
 

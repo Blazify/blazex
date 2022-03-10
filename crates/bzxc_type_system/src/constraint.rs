@@ -1,5 +1,9 @@
 use std::collections::{BTreeMap, HashMap};
 
+use bzxc_shared::{Tokens, Type, TypedNode};
+
+use crate::TypeSystem;
+
 /*
  * Copyright 2020 to 2021 BlazifyOrg
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +16,6 @@ use std::collections::{BTreeMap, HashMap};
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-use bzxc_shared::{Tokens, Type, TypedNode};
-
-use crate::TypeSystem;
-
 #[derive(Debug, Clone)]
 pub struct Constraint(pub Type, pub Type);
 
@@ -161,7 +161,7 @@ impl TypeSystem {
 
                 constr.push(Constraint(
                     ty.clone(),
-                    Type::Array(box elem_ty.clone(), elements.len()),
+                    Type::Array(box elem_ty.clone(), None),
                 ));
                 constr
             }
@@ -169,7 +169,7 @@ impl TypeSystem {
                 let mut constr = self.collect(*array.clone());
                 constr.extend(self.collect(*idx.clone()));
                 constr.push(Constraint(idx.get_type(), Type::Int));
-                constr.push(Constraint(array.get_type(), Type::Array(box ty, 0)));
+                constr.push(Constraint(array.get_type(), Type::Array(box ty, None)));
                 constr
             }
             TypedNode::Object { ty, properties } => {
@@ -255,7 +255,7 @@ impl TypeSystem {
                     constr.extend(self.collect(val.clone()));
                 }
                 self.methods.insert(
-                    Type::Array(box Type::Int, Type::last_aligner()),
+                    Type::Array(box Type::Int, Some(Type::last_aligner() as u32)),
                     methods_tree,
                 );
 

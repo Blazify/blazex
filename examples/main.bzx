@@ -1,15 +1,16 @@
 class A {
-    var x = 1
+    var x = 0
+    var y = [1, 2]
 
     fun() {
-        soul.x = 5
+        soul.x = 1
         return soul
     }
 
-    fun y() {
-        return 5
+    fun z() {
+        return soul.y[soul.x]
     }
 }
 
 var a = new A()
-a.y()
+a.z()

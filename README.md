@@ -8,6 +8,14 @@ An object orineted AOT compiled language which is gradual typed
 
 ## Installing
 
+```shell
+$ git clone https://github.com/BlazifyOrg/blazex.git
+$ cd blazex
+$ make
+$ cd ..
+# Set $HOME/.blazex to PATH
+```
+
 Confirm Installation
 
 ```shell
