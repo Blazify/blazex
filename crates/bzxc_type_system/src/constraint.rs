@@ -233,8 +233,9 @@ impl TypeSystem {
                 methods,
                 properties,
                 name: _,
+                static_obj
             } => {
-                let mut constr = vec![];
+                let mut constr = self.collect(*static_obj.clone());
                 let mut tree = BTreeMap::new();
 
                 let mut methods_tree = HashMap::new();

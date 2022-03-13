@@ -185,6 +185,7 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                 methods,
                 constructor,
                 name,
+                static_obj
             } => LLVMNode::Class {
                 ty: llvm(ty),
                 name,
@@ -197,6 +198,7 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                     .iter()
                     .map(|(name, node)| (name.clone(), self.gen(subs.clone(), node.clone())))
                     .collect(),
+                static_obj: box self.gen(subs.clone(), *static_obj),
             },
             TypedNode::ClassInit {
                 ty,

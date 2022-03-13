@@ -10,6 +10,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         properties: Vec<(String, LLVMNode<'ctx>)>,
     ) -> BasicValueEnum<'ctx> {
         let ty = ty.into_pointer_type().get_element_type().into_struct_type();
+
         let mut struct_val = self
             .builder
             .build_insert_value(
@@ -35,11 +36,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_struct_value();
         }
 
-        let struct_ptr = self
-            .builder
-            .build_alloca(struct_val.get_type(), "struct_alloca");
-        self.builder.build_store(struct_ptr, struct_val);
-        struct_ptr.into()
+        let gb = self.module.add_global(struct_val.get_type(), Some(AddressSpace::Global), "obj");
+
+        gb.set_initializer(&struct_val);
+        gb.set_constant(false);
+
+        gb.as_pointer_value().into()
     }
 
     pub(super) fn obj_property(

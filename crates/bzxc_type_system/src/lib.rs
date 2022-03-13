@@ -29,6 +29,8 @@ mod unifier;
 pub struct TypeSystem {
     node: Node,
     methods: HashMap<Type, HashMap<String, Type>>,
+    type_env: TypeEnv,
+    class_env: HashMap<String, Type>,
 }
 
 impl TypeSystem {
@@ -36,11 +38,13 @@ impl TypeSystem {
         TypeSystem {
             node,
             methods: HashMap::new(),
+            type_env: TypeEnv::new(),
+            class_env: HashMap::new(),
         }
     }
 
     pub fn typed_node(&mut self) -> (Substitution, TypedNode) {
-        let annotation = self.annotate(self.node.clone(), &mut TypeEnv::new());
+        let annotation = self.annotate(self.node.clone());
         let constraints = self.collect(annotation.clone());
         let substitution = self.unify(constraints.clone());
         (substitution, annotation)

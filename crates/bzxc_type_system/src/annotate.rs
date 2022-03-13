@@ -14,15 +14,15 @@ use std::collections::BTreeMap;
 */
 use bzxc_shared::{Binder, Node, Tokens, Type, TypedNode};
 
-use crate::{type_env::TypeEnv, TypeSystem};
+use crate::TypeSystem;
 
 impl TypeSystem {
-    pub fn annotate(&self, node: Node, tenv: &mut TypeEnv) -> TypedNode {
+    pub fn annotate(&mut self, node: Node) -> TypedNode {
         match node.clone() {
             Node::Statements { statements } => TypedNode::Statements(
                 statements
                     .iter()
-                    .map(|statement| self.annotate(statement.clone(), tenv))
+                    .map(|statement| self.annotate(statement.clone()))
                     .collect(),
             ),
             Node::NumberNode { token } => match token.value {
@@ -50,7 +50,7 @@ impl TypeSystem {
             },
             Node::UnaryNode { node, op_token } => TypedNode::Unary {
                 ty: Type::fresh_var(),
-                val: box self.annotate(*node, tenv),
+                val: box self.annotate(*node),
                 op_token,
             },
             Node::BinaryNode {
@@ -59,11 +59,11 @@ impl TypeSystem {
                 right,
             } => TypedNode::Binary {
                 ty: Type::fresh_var(),
-                left: box self.annotate(*left.clone(), tenv),
-                right: box self.annotate(*right.clone(), tenv),
+                left: box self.annotate(*left.clone()),
+                right: box self.annotate(*right.clone()),
                 op_token,
             },
-            Node::VarAccessNode { token } => match tenv.get(token.value.into_string()) {
+            Node::VarAccessNode { token } => match self.type_env.get(token.value.into_string()) {
                 Some(ty) => TypedNode::Var {
                     ty,
                     name: token.value.into_string(),
@@ -71,9 +71,9 @@ impl TypeSystem {
                 None => panic!("No var found"),
             },
             Node::VarAssignNode { name, value, .. } => {
-                let val = self.annotate(*value, tenv);
+                let val = self.annotate(*value);
                 let ty = val.get_type();
-                tenv.set(name.value.into_string(), ty.clone());
+                self.type_env.set(name.value.into_string(), ty.clone());
                 TypedNode::Let {
                     ty,
                     name: name.value.into_string(),
@@ -89,7 +89,7 @@ impl TypeSystem {
                 for arg in arg_tokens {
                     let ty = Type::fresh_var();
 
-                    tenv.set(arg.value.into_string(), ty.clone());
+                    self.type_env.set(arg.value.into_string(), ty.clone());
                     let binder = Binder {
                         ty,
                         name: arg.value.into_string(),
@@ -100,7 +100,7 @@ impl TypeSystem {
                 let ty = Type::fresh_var();
 
                 let name = if let Some(tok) = name {
-                    tenv.set(tok.value.into_string(), ty.clone());
+                    self.type_env.set(tok.value.into_string(), ty.clone());
                     tok.value.into_string()
                 } else {
                     "%anonymous%".to_string()
@@ -110,22 +110,22 @@ impl TypeSystem {
                     ty,
                     name,
                     params: binders,
-                    body: box self.annotate(*body_node, tenv),
+                    body: box self.annotate(*body_node),
                 };
 
                 fun
             }
             Node::CallNode { args, node_to_call } => TypedNode::Call {
                 ty: Type::fresh_var(),
-                fun: box self.annotate(*node_to_call, tenv),
+                fun: box self.annotate(*node_to_call),
                 args: args
                     .iter()
-                    .map(|x| self.annotate(x.clone(), tenv))
+                    .map(|x| self.annotate(x.clone()))
                     .collect(),
             },
             Node::ReturnNode { value } => {
                 let val = box if let Some(val) = *value.clone() {
-                    self.annotate(val, tenv)
+                    self.annotate(val)
                 } else {
                     TypedNode::Null { ty: Type::Null }
                 };
@@ -140,13 +140,13 @@ impl TypeSystem {
                     .iter()
                     .map(|x| {
                         (
-                            self.annotate(x.0.clone(), tenv),
-                            self.annotate(x.1.clone(), tenv),
+                            self.annotate(x.0.clone()),
+                            self.annotate(x.1.clone()),
                         )
                     })
                     .collect(),
                 else_case: if let Some(n) = *else_case.clone() {
-                    Some(box self.annotate(n, tenv))
+                    Some(box self.annotate(n))
                 } else {
                     None
                 },
@@ -156,8 +156,8 @@ impl TypeSystem {
                 body_node,
             } => TypedNode::While {
                 ty: Type::fresh_var(),
-                cond: box self.annotate(*condition_node, tenv),
-                body: box self.annotate(*body_node, tenv),
+                cond: box self.annotate(*condition_node),
+                body: box self.annotate(*body_node),
             },
             Node::ForNode {
                 var_name_token,
@@ -169,30 +169,30 @@ impl TypeSystem {
                 ty: Type::fresh_var(),
                 var: var_name_token.value.into_string(),
                 start: {
-                    let start = box self.annotate(*start_value, tenv);
-                    tenv.set(var_name_token.value.into_string(), start.get_type());
+                    let start = box self.annotate(*start_value);
+                    self.type_env.set(var_name_token.value.into_string(), start.get_type());
                     start
                 },
-                end: box self.annotate(*end_value, tenv),
-                step: box self.annotate(*step_value_node, tenv),
-                body: box self.annotate(*body_node, tenv),
+                end: box self.annotate(*end_value),
+                step: box self.annotate(*step_value_node),
+                body: box self.annotate(*body_node),
             },
             Node::ArrayNode { element_nodes } => TypedNode::Array {
                 ty: Type::fresh_var(),
                 elements: element_nodes
                     .iter()
-                    .map(|x| self.annotate(x.clone(), tenv))
+                    .map(|x| self.annotate(x.clone()))
                     .collect(),
             },
             Node::ArrayAcess { array, index } => TypedNode::Index {
                 ty: Type::fresh_var(),
-                array: box self.annotate(*array, tenv),
-                idx: box self.annotate(*index, tenv),
+                array: box self.annotate(*array),
+                idx: box self.annotate(*index),
             },
             Node::VarReassignNode { name, typee, value } => {
                 let name = name.value.into_string();
-                let val = box self.annotate(*value, tenv);
-                let prev = tenv.get(name.clone()).unwrap().clone();
+                let val = box self.annotate(*value);
+                let prev = self.type_env.get(name.clone()).unwrap().clone();
 
                 TypedNode::ReLet {
                     ty: val.get_type(),
@@ -207,14 +207,14 @@ impl TypeSystem {
                     let mut tree = BTreeMap::new();
 
                     for (name, node) in properties {
-                        tree.insert(name.value.into_string(), self.annotate(node.clone(), tenv));
+                        tree.insert(name.value.into_string(), self.annotate(node.clone()));
                     }
                     tree.clone()
                 },
             },
             Node::ObjectPropAccess { object, property } => TypedNode::ObjectAccess {
                 ty: Type::fresh_var(),
-                object: box self.annotate(*object, tenv),
+                object: box self.annotate(*object),
                 property: property.value.into_string(),
             },
             Node::ObjectPropEdit {
@@ -223,9 +223,9 @@ impl TypeSystem {
                 new_val,
             } => TypedNode::ObjectEdit {
                 ty: Type::fresh_var(),
-                object: box self.annotate(*object, tenv),
+                object: box self.annotate(*object),
                 property: property.value.into_string(),
-                new_val: box self.annotate(*new_val, tenv),
+                new_val: box self.annotate(*new_val),
             },
             Node::ObjectMethodCall {
                 object,
@@ -233,11 +233,11 @@ impl TypeSystem {
                 args,
             } => TypedNode::ObjectMethodCall {
                 ty: Type::fresh_var(),
-                object: box self.annotate(*object, tenv),
+                object: box self.annotate(*object),
                 property: property.value.into_string(),
                 args: args
                     .iter()
-                    .map(|x| self.annotate(x.clone(), tenv))
+                    .map(|x| self.annotate(x.clone()))
                     .collect(),
             },
             Node::ClassDefNode {
@@ -245,33 +245,45 @@ impl TypeSystem {
                 properties: props,
                 constructor,
                 name,
+                static_members: st_mthds,
             } => {
                 let mut properties = BTreeMap::new();
                 let mut methods = BTreeMap::new();
+                let mut static_members = BTreeMap::new();
+
+                for (name, value) in st_mthds {
+                    static_members.insert(name.value.into_string(), self.annotate(value.clone()));
+                }
 
                 for (name, node) in props {
-                    properties.insert(name.value.into_string(), self.annotate(node.clone(), tenv));
+                    properties.insert(name.value.into_string(), self.annotate(node.clone()));
                 }
 
                 let obj_ty = Type::fresh_var();
                 let ty = Type::Class(box obj_ty.clone());
-                tenv.set("soul".to_string(), obj_ty.clone());
+                self.type_env.set("soul".to_string(), obj_ty.clone());
 
                 for (name, args, body) in mthds {
                     methods.insert(
                         name.value.into_string(),
-                        self.annotate(Node::FunDef { name: Some(name), body_node: box body, arg_tokens: args }, tenv)
+                        self.annotate(Node::FunDef { name: Some(name), body_node: box body, arg_tokens: args })
                     );
                 }
 
-                tenv.set(name.value.into_string(), ty.clone());
+                let static_obj = TypedNode::Object {
+                    ty: Type::fresh_var(),
+                    properties: static_members,
+                };
+
+                self.class_env.insert(name.value.into_string(), ty.clone());
+                self.type_env.set(name.value.into_string(), static_obj.get_type());
 
                 let mut params = vec![];
                 let mut params_ty = vec![];
                 for arg in constructor.0 {
                     let ty = Type::fresh_var();
                     params_ty.push(ty.clone());
-                    tenv.set(arg.value.into_string(), ty.clone());
+                    self.type_env.set(arg.value.into_string(), ty.clone());
                     params.push(Binder {
                         ty,
                         name: arg.value.into_string(),
@@ -284,11 +296,12 @@ impl TypeSystem {
                     properties,
                     constructor: box TypedNode::Fun {
                         ty: Type::Fun(params_ty, box obj_ty),
-                        name: name.value.into_string() + &"%constructor%".to_string(),
+                        name: "%constructor%".to_string(),
                         params,
-                        body: box self.annotate(*constructor.1, tenv),
+                        body: box self.annotate(*constructor.1),
                     },
                     methods,
+                    static_obj: box static_obj
                 }
             }
             Node::ClassInitNode {
@@ -296,10 +309,10 @@ impl TypeSystem {
                 constructor_params,
             } => TypedNode::ClassInit {
                 ty: Type::fresh_var(),
-                class: tenv.get(name.value.into_string()).unwrap(),
+                class: self.class_env.get(&*name.value.into_string()).unwrap().clone(),
                 constructor_params: constructor_params
                     .iter()
-                    .map(|x| self.annotate(x.clone(), tenv))
+                    .map(|x| self.annotate(x.clone()))
                     .collect(),
             },
             Node::ExternNode {

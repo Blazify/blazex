@@ -15,7 +15,7 @@ mod oop;
 
 use std::collections::HashMap;
 
-use bzxc_llvm_wrapper::{builder::Builder, context::Context, module::Module, passes::PassManager, types::{BasicType, PointerType, StructType}, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue, StructValue}, FloatPredicate, IntPredicate, AddressSpace};
+use bzxc_llvm_wrapper::{builder::Builder, context::Context, module::Module, passes::PassManager, types::{BasicType, PointerType, StructType}, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue}, FloatPredicate, IntPredicate};
 use bzxc_shared::{LLVMNode, Tokens};
 
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ pub struct Compiler<'a, 'ctx> {
     classes: HashMap<
         PointerType<'ctx>,
         (
-            StructValue<'ctx>,
+            PointerValue<'ctx>,
             PointerValue<'ctx>,
             HashMap<String, BasicValueEnum<'ctx>>,
         ),
@@ -62,7 +62,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    #[inline]
     fn fn_value(&self) -> FunctionValue<'ctx> {
         self.fn_value_opt.unwrap()
     }
@@ -366,17 +365,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.variables.insert(name, alloca);
                 ptr.into()
             }
-            LLVMNode::Let { ty, name, val } => {
-                let alloca = self.create_entry_block_alloca(name.as_str(), ty);
-                self.builder.build_store(alloca, self.compile(*val));
+            LLVMNode::Let { ty: _, name, val } => {
+                let val = self.compile(*val);
+                let alloca = self.create_entry_block_alloca(name.as_str(), val.get_type());
+                self.builder.build_store(alloca, val);
                 self.variables.insert(name, alloca);
-                alloca.into()
+                val.into()
             }
-            LLVMNode::Var { ty: _, name } => {
-                self
-                    .builder
-                    .build_load(*self.variables.get(&name).unwrap(), name.as_str())
-            },
+            LLVMNode::Var { ty: _, name } => self.builder.build_load(self.variables.get(name.as_str()).unwrap().clone(), name.as_str()),
             LLVMNode::Call { ty: _, fun, args } => self
                 .builder
                 .build_call(
@@ -636,14 +632,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 methods,
                 constructor,
                 name: class,
+                static_obj
             } => {
-                let klass = self
-                    .builder
-                    .build_load(
-                        self.create_obj(ty, properties).into_pointer_value(),
-                        "klass",
-                    )
-                    .into_struct_value();
+                let static_obj = self.compile(*static_obj);
+
+                let ptr = self.create_entry_block_alloca("class_static_obj", static_obj.get_type());
+                self.builder.build_store(ptr, static_obj);
+                self.variables.insert(class.clone(), ptr);
+
+                let klass = self.create_obj(ty, properties).into_pointer_value();
                 let constructor =
                     self.class_method(class.clone(), ty.into_pointer_type(), *constructor);
 
@@ -671,8 +668,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .get(
                         &class
                             .into_pointer_type()
-                            .get_element_type()
-                            .into_struct_type().ptr_type(AddressSpace::Generic),
                     )
                     .unwrap()
                     .clone();

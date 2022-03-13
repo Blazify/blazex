@@ -49,6 +49,8 @@ impl Parser {
 
         let mut constructor_def = false;
         let mut methods = vec![];
+        let mut static_members = vec![];
+
         let mut constructor = (
             vec![],
             Box::new(Node::Statements {
@@ -77,50 +79,80 @@ impl Parser {
         self.advance();
         res.register_advancement();
 
-        let statements_node = res.register(self.statements());
-        if res.error.is_some() {
-            return res;
-        }
+        while self.current_token.value != Tokens::RightCurlyBraces {
+            if self.current_token.value == Tokens::Newline {
+                self.advance();
+                res.register_advancement();
+                continue;
+            }
 
-        if let Node::Statements { statements } = statements_node.unwrap() {
-            for statement in statements {
-                match statement {
-                    Node::VarAssignNode {
-                        name,
-                        value,
-                        reassignable: _,
-                    } => {
+
+            let mut is_static = false;
+            if self.current_token.value == Tokens::Keyword("static") {
+                is_static = true;
+                self.advance();
+                res.register_advancement();
+            }
+
+            let statement = res.try_register(self.statement());
+            if res.error.is_some() {
+                return res;
+            }
+            if statement.is_none() {
+                self.reverse(res.to_reverse_count as usize);
+                continue;
+            }
+
+
+            match statement.clone().unwrap() {
+                Node::VarAssignNode {
+                    name,
+                    value,
+                    reassignable: _,
+                } => {
+                    if is_static {
+                        static_members.push((name, *value));
+                    } else {
                         properties.push((name, *value));
                     }
-                    Node::FunDef {
-                        name,
-                        arg_tokens,
-                        body_node,
-                    } => {
-                        if name.is_none() {
-                            if constructor_def {
-                                return res.failure(Error::new(
-                                    "Syntax Error",
-                                    self.current_token.pos_start,
-                                    self.current_token.pos_end,
-                                    "Constructor already defined",
-                                ));
-                            }
-
+                }
+                Node::FunDef {
+                    name,
+                    arg_tokens,
+                    body_node,
+                } => {
+                    // if name is none and there is no constructor, then it is a constructor orelse it is a function and if static keyword is present it is static member
+                    if name.is_none() {
+                        if !constructor_def {
                             constructor_def = true;
                             constructor = (arg_tokens, body_node);
                         } else {
-                            methods.push((name.unwrap(), arg_tokens, *body_node))
+                            return res.failure(Error::new(
+                                "Syntax Error",
+                                self.current_token.pos_start,
+                                self.current_token.pos_end,
+                                "Expected '}'",
+                            ));
+                        }
+                    } else {
+                        if is_static {
+                            static_members.push((name.unwrap(), Node::FunDef {
+                                name,
+                                arg_tokens,
+                                body_node,
+                            }));
+                        } else {
+                            methods.push((name.unwrap(), arg_tokens, *body_node));
                         }
                     }
-                    _ => {
-                        return res.failure(Error::new(
-                            "Syntax Error",
-                            self.current_token.pos_start,
-                            self.current_token.pos_end,
-                            "Expected properties or methods",
-                        ))
-                    }
+                }
+                _ => {
+                    return res.failure(Error::new(
+                        "Syntax Error",
+                        self.current_token.pos_start,
+                        self.current_token.pos_end,
+                        "Expected properties or methods",
+                    ))
                 }
             }
         }
@@ -142,6 +174,7 @@ impl Parser {
             methods,
             name,
             properties,
+            static_members,
         })
     }
 }

@@ -339,6 +339,7 @@ pub enum Node {
         methods: Vec<(Token, Vec<Token>, Node)>,
         properties: Vec<(Token, Node)>,
         constructor: (Vec<Token>, Box<Node>),
+        static_members: Vec<(Token, Node)>,
         name: Token,
     },
     ClassInitNode {
@@ -594,6 +595,7 @@ pub enum LLVMNode<'ctx> {
         properties: Vec<(String, Self)>,
         methods: Vec<(String, Self)>,
         constructor: Box<Self>,
+        static_obj: Box<Self>,
     },
     ClassInit {
         ty: BasicTypeEnum<'ctx>,
@@ -724,6 +726,7 @@ pub enum TypedNode {
         properties: BTreeMap<String, Self>,
         methods: BTreeMap<String, Self>,
         constructor: Box<Self>,
+        static_obj: Box<Self>
     },
     ClassInit {
         ty: Type,

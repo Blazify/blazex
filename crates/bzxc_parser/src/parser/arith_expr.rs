@@ -19,7 +19,6 @@ impl Parser {
     /*
      * Parse a arithmetic expression
      */
-    //noinspection ALL
     pub(crate) fn arith_expr(&mut self) -> ParseResult {
         let mut res = ParseResult::new();
 
