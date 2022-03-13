@@ -13,9 +13,12 @@ class A {
     static var z = 2
 }
 
-fun B() {
+@ keep all the code in this function for now until extern functions are a thing
+fun MAIN() {
     var a = new A()
-    return a.y(A.z)
-}
 
-B()
+    var b = new A()
+
+    b.x = 3
+    return a.y(A.z + b.x)
+}

@@ -11,12 +11,12 @@
 * limitations under the License.
 */
 
-mod oop;
-
 use std::collections::HashMap;
 
-use bzxc_llvm_wrapper::{builder::Builder, context::Context, module::Module, passes::PassManager, types::{BasicType, PointerType, StructType}, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue}, FloatPredicate, IntPredicate};
+use bzxc_llvm_wrapper::{builder::Builder, context::Context, FloatPredicate, IntPredicate, module::Module, passes::PassManager, types::{BasicType, PointerType, StructType}, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue}};
 use bzxc_shared::{LLVMNode, Tokens};
+
+mod oop;
 
 #[derive(Debug, Clone)]
 pub struct Compiler<'a, 'ctx> {
@@ -94,7 +94,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn compile_main(&mut self) {
         let func =
             self.module
-                .add_function("main", self.context.i32_type().fn_type(&[], false), None);
+                .add_function("_main", self.context.i32_type().fn_type(&[], false), None);
 
         let entry = self.context.append_basic_block(func, "entry");
         self.builder.position_at_end(entry);
@@ -119,7 +119,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    pub(crate) fn compile(&mut self, node: LLVMNode<'ctx>) -> BasicValueEnum<'ctx> {
+    fn compile(&mut self, node: LLVMNode<'ctx>) -> BasicValueEnum<'ctx> {
         match node {
             LLVMNode::Statements(stmts) => {
                 let mut ret = None;
@@ -217,7 +217,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             }
                         }
                     }
-                    .into()
+                        .into()
                 } else {
                     let lhs = self.compile(*left).into_float_value();
                     let rhs = self.compile(*right).into_float_value();
@@ -313,7 +313,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         _ => unreachable!(),
                     }
-                    .into()
+                        .into()
                 }
             }
             LLVMNode::Fun {
@@ -671,6 +671,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     )
                     .unwrap()
                     .clone();
+
+                let base = self.builder.build_load(base, "class_base");
+
                 let ptr = self.create_entry_block_alloca("klass", base.get_type());
                 self.builder.build_store(ptr, base);
                 let mut params: Vec<BasicValueEnum<'ctx>> = vec![ptr.into()];

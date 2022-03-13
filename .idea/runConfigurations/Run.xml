@@ -1,16 +1,19 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command" nameIsGenerated="true">
-    <option name="command" value="run --release -- examples/main.bzx -l" />
-    <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-    <option name="channel" value="NIGHTLY" />
-    <option name="requiredFeatures" value="true" />
-    <option name="allFeatures" value="false" />
-    <option name="emulateTerminal" value="false" />
-    <option name="withSudo" value="false" />
-    <option name="backtrace" value="FULL" />
+  <configuration default="false" name="Run" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="clang-10 examples/main.o test.c -oa.out &amp;&amp; ./a.out" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+    <option name="INTERPRETER_PATH" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="false" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
     <envs />
-    <option name="isRedirectInput" value="false" />
-    <option name="redirectInputPath" value="" />
-    <method v="2" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Run" run_configuration_type="CargoCommandRunConfiguration" />
+    </method>
   </configuration>
 </component>
