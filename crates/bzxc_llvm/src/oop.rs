@@ -10,6 +10,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         properties: Vec<(String, LLVMNode<'ctx>)>,
     ) -> BasicValueEnum<'ctx> {
         let ty = ty.into_pointer_type().get_element_type().into_struct_type();
+        let aligner = ty.get_field_type_at_index(0).unwrap().into_vector_type().get_size();
 
         let mut struct_val = self
             .builder
@@ -23,7 +24,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .into_struct_value();
         for (i, (name, val)) in properties.iter().enumerate() {
             let idx = i + 1;
-            self.objects.insert((name.clone(), ty), idx);
+            self.objects.insert((name.clone(), aligner), idx);
             struct_val = self
                 .builder
                 .build_insert_value(
@@ -53,7 +54,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .objects
             .get(&(
                 property,
-                object.get_type().get_element_type().into_struct_type(),
+                object.get_type().get_element_type().into_struct_type().get_field_type_at_index(0).unwrap().into_vector_type().get_size(),
             ))
             .unwrap();
 

@@ -859,7 +859,7 @@ impl Type {
                         .collect::<Vec<BasicTypeEnum>>()[..],
                     false,
                 )
-                .ptr_type(AddressSpace::Generic)
+                .ptr_type(AddressSpace::Global)
                 .into(),
             Type::Class(obj) => obj.llvm(ctx, tvars),
         }

@@ -16,9 +16,8 @@ class A {
 @ keep all the code in this function for now until extern functions are a thing
 fun MAIN() {
     var a = new A()
-
     var b = new A()
 
     b.x = 3
-    return a.y(A.z + b.x)
+    return (fun() { return b.y(A.z + a.x)})()
 }
