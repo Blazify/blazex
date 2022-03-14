@@ -1,1 +1,0 @@
-/usr/bin/cc -O3 -DNDEBUG   CMakeFiles/Test.dir/test.c.o  -o Test  ../examples/main.o -fPIE 

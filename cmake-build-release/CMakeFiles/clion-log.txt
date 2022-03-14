@@ -1,4 +1,1 @@
-C:\Windows\system32\wsl.exe --distribution Ubuntu --exec /bin/bash -c "export CLION_IDE=TRUE && export JETBRAINS_IDE=TRUE && cd /home/romeah/blazex/cmake-build-release && /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -G 'CodeBlocks - Unix Makefiles' /home/romeah/blazex"
--- Configuring done
--- Generating done
--- Build files have been written to: /home/romeah/blazex/cmake-build-release
+CMakeLists.txt not found in \\wsl$\Ubuntu\home\romeah\blazex Select CMakeLists.txt

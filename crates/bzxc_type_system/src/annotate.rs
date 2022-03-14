@@ -85,6 +85,7 @@ impl TypeSystem {
                 body_node,
                 name,
             } => {
+                self.type_env.push_scope();
                 let mut binders = vec![];
                 for arg in arg_tokens {
                     let ty = Type::fresh_var();
@@ -113,6 +114,8 @@ impl TypeSystem {
                     body: box self.annotate(*body_node),
                 };
 
+                self.type_env.pop_scope();
+
                 fun
             }
             Node::CallNode { args, node_to_call } => TypedNode::Call {
@@ -139,14 +142,20 @@ impl TypeSystem {
                 cases: cases
                     .iter()
                     .map(|x| {
-                        (
+                        self.type_env.push_scope();
+                        let val = (
                             self.annotate(x.0.clone()),
                             self.annotate(x.1.clone()),
-                        )
+                        );
+                        self.type_env.pop_scope();
+                        val
                     })
                     .collect(),
                 else_case: if let Some(n) = *else_case.clone() {
-                    Some(box self.annotate(n))
+                    self.type_env.push_scope();
+                    let val = box self.annotate(n);
+                    self.type_env.pop_scope();
+                    Some(val)
                 } else {
                     None
                 },
@@ -154,10 +163,15 @@ impl TypeSystem {
             Node::WhileNode {
                 condition_node,
                 body_node,
-            } => TypedNode::While {
-                ty: Type::fresh_var(),
-                cond: box self.annotate(*condition_node),
-                body: box self.annotate(*body_node),
+            } => {
+                self.type_env.push_scope();
+                let val = TypedNode::While {
+                    ty: Type::fresh_var(),
+                    cond: box self.annotate(*condition_node),
+                    body: box self.annotate(*body_node),
+                };
+                self.type_env.pop_scope();
+                val
             },
             Node::ForNode {
                 var_name_token,
@@ -165,17 +179,22 @@ impl TypeSystem {
                 end_value,
                 step_value_node,
                 body_node,
-            } => TypedNode::For {
-                ty: Type::fresh_var(),
-                var: var_name_token.value.into_string(),
-                start: {
-                    let start = box self.annotate(*start_value);
-                    self.type_env.set(var_name_token.value.into_string(), start.get_type());
-                    start
-                },
-                end: box self.annotate(*end_value),
-                step: box self.annotate(*step_value_node),
-                body: box self.annotate(*body_node),
+            } => {
+                self.type_env.push_scope();
+                let val = TypedNode::For {
+                    ty: Type::fresh_var(),
+                    var: var_name_token.value.into_string(),
+                    start: {
+                        let start = box self.annotate(*start_value);
+                        self.type_env.set(var_name_token.value.into_string(), start.get_type());
+                        start
+                    },
+                    end: box self.annotate(*end_value),
+                    step: box self.annotate(*step_value_node),
+                    body: box self.annotate(*body_node),
+                };
+                self.type_env.pop_scope();
+                val
             },
             Node::ArrayNode { element_nodes } => TypedNode::Array {
                 ty: Type::fresh_var(),
@@ -278,6 +297,7 @@ impl TypeSystem {
                 self.class_env.insert(name.value.into_string(), ty.clone());
                 self.type_env.set(name.value.into_string(), static_obj.get_type());
 
+                self.type_env.push_scope();
                 let mut params = vec![];
                 let mut params_ty = vec![];
                 for arg in constructor.0 {
@@ -290,7 +310,7 @@ impl TypeSystem {
                     });
                 }
 
-                TypedNode::Class {
+                let val = TypedNode::Class {
                     ty,
                     name: name.value.into_string(),
                     properties,
@@ -302,7 +322,11 @@ impl TypeSystem {
                     },
                     methods,
                     static_obj: box static_obj
-                }
+                };
+
+                self.type_env.pop_scope();
+
+                val
             }
             Node::ClassInitNode {
                 name,

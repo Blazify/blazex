@@ -15,22 +15,32 @@ use std::collections::HashMap;
 use bzxc_shared::Type;
 
 #[derive(Debug, Clone)]
-pub struct TypeEnv(HashMap<String, Type>);
+pub struct TypeEnv(Vec<HashMap<String, Type>>);
 
 impl TypeEnv {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(vec![HashMap::new()])
     }
 
     pub fn set(&mut self, k: String, v: Type) {
-        self.0.insert(k, v);
+        self.0.last_mut().unwrap().insert(k, v);
     }
 
     pub fn get(&self, k: String) -> Option<Type> {
-        if let Some(ty) = self.0.get(&k) {
-            Some(ty.clone())
-        } else {
-            None
+        for map in self.0.iter().rev() {
+            if let Some(v) = map.get(&k) {
+                return Some(v.clone());
+            }
         }
+
+        None
+    }
+
+    pub fn push_scope(&mut self) {
+        self.0.push(HashMap::new());
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.0.pop();
     }
 }
