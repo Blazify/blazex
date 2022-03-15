@@ -47,6 +47,7 @@ dependencies = [
  "bzxc_parser",
  "bzxc_shared",
  "bzxc_type_system",
+ "cc",
  "mimalloc",
  "notify",
  "structopt",

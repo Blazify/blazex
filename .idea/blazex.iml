@@ -10,6 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/bzxc_parser/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/bzxc_shared/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/bzxc_type_system/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/blazex_stdlib/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/temp" />
       <excludeFolder url="file://$MODULE_DIR$/.tmp" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />

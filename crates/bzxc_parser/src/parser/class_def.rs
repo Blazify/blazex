@@ -86,7 +86,6 @@ impl Parser {
                 continue;
             }
 
-
             let mut is_static = false;
             if self.current_token.value == Tokens::Keyword("static") {
                 is_static = true;
@@ -102,7 +101,6 @@ impl Parser {
                 self.reverse(res.to_reverse_count as usize);
                 continue;
             }
-
 
             match statement.clone().unwrap() {
                 Node::VarAssignNode {
@@ -136,11 +134,14 @@ impl Parser {
                         }
                     } else {
                         if is_static {
-                            static_members.push((name.unwrap(), Node::FunDef {
-                                name,
-                                arg_tokens,
-                                body_node,
-                            }));
+                            static_members.push((
+                                name.unwrap(),
+                                Node::FunDef {
+                                    name,
+                                    arg_tokens,
+                                    body_node,
+                                },
+                            ));
                         } else {
                             methods.push((name.unwrap(), arg_tokens, *body_node));
                         }

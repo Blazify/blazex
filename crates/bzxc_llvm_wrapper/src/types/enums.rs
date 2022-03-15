@@ -1,15 +1,15 @@
 use std::convert::TryFrom;
 
 use llvm_sys::core::LLVMGetTypeKind;
-use llvm_sys::LLVMTypeKind;
 use llvm_sys::prelude::LLVMTypeRef;
+use llvm_sys::LLVMTypeKind;
 
-use crate::AddressSpace;
+use crate::types::traits::AsTypeRef;
 use crate::types::{
     ArrayType, FloatType, FunctionType, IntType, PointerType, StructType, VectorType, VoidType,
 };
-use crate::types::traits::AsTypeRef;
 use crate::values::{BasicValue, BasicValueEnum, IntValue};
+use crate::AddressSpace;
 
 macro_rules! enum_type_set {
     ($(#[$enum_attrs:meta])* $enum_name:ident: { $($(#[$variant_attrs:meta])* $args:ident,)+ }) => (
@@ -401,7 +401,7 @@ impl<'ctx> BasicTypeEnum<'ctx> {
             BasicTypeEnum::FloatType(x) => x.vec_type(size),
             BasicTypeEnum::IntType(x) => x.vec_type(size),
             BasicTypeEnum::PointerType(x) => x.vec_type(size),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 

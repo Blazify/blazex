@@ -1,4 +1,8 @@
-use bzxc_llvm_wrapper::{AddressSpace, types::{BasicTypeEnum, PointerType}, values::{BasicValueEnum, PointerValue}};
+use bzxc_llvm_wrapper::{
+    types::{BasicTypeEnum, PointerType},
+    values::{BasicValueEnum, PointerValue},
+    AddressSpace,
+};
 use bzxc_shared::LLVMNode;
 
 use crate::Compiler;
@@ -10,7 +14,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         properties: Vec<(String, LLVMNode<'ctx>)>,
     ) -> BasicValueEnum<'ctx> {
         let ty = ty.into_pointer_type().get_element_type().into_struct_type();
-        let aligner = ty.get_field_type_at_index(0).unwrap().into_vector_type().get_size();
+        let aligner = ty
+            .get_field_type_at_index(0)
+            .unwrap()
+            .into_vector_type()
+            .get_size();
 
         let mut struct_val = self
             .builder
@@ -37,7 +45,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_struct_value();
         }
 
-        let gb = self.module.add_global(struct_val.get_type(), Some(AddressSpace::Global), "obj");
+        let gb = self
+            .module
+            .add_global(struct_val.get_type(), Some(AddressSpace::Global), "obj");
 
         gb.set_initializer(&struct_val);
         gb.set_constant(false);
@@ -54,7 +64,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .objects
             .get(&(
                 property,
-                object.get_type().get_element_type().into_struct_type().get_field_type_at_index(0).unwrap().into_vector_type().get_size(),
+                object
+                    .get_type()
+                    .get_element_type()
+                    .into_struct_type()
+                    .get_field_type_at_index(0)
+                    .unwrap()
+                    .into_vector_type()
+                    .get_size(),
             ))
             .unwrap();
 
@@ -77,19 +94,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 params,
                 ty,
             } => {
-                let mut n_params: Vec<(String, BasicTypeEnum<'ctx>)> = vec![("soul".to_string(), klass.into())];
+                let mut n_params: Vec<(String, BasicTypeEnum<'ctx>)> =
+                    vec![("soul".to_string(), klass.into())];
                 n_params.extend(params);
 
-                let pty = n_params.iter().map(|(_, ty)| ty.clone()).collect::<Vec<BasicTypeEnum<'ctx>>>();
+                let pty = n_params
+                    .iter()
+                    .map(|(_, ty)| ty.clone())
+                    .collect::<Vec<BasicTypeEnum<'ctx>>>();
                 self.compile(LLVMNode::Fun {
                     body,
                     name: format!("{}%{}", class, name),
-                    params: {
-                        n_params.clone()
-                    },
-                    ty: ty.into_pointer_type().get_element_type().into_function_type().get_return_type().unwrap().fn_type(&pty[..], false).ptr_type(AddressSpace::Generic).into(),
+                    params: { n_params.clone() },
+                    ty: ty
+                        .into_pointer_type()
+                        .get_element_type()
+                        .into_function_type()
+                        .get_return_type()
+                        .unwrap()
+                        .fn_type(&pty[..], false)
+                        .ptr_type(AddressSpace::Generic)
+                        .into(),
                 })
-            },
+            }
             _ => unreachable!(),
         }
     }

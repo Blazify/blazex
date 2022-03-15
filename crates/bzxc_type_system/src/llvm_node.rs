@@ -181,7 +181,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 methods,
                 constructor,
                 name,
-                static_obj
+                static_obj,
             } => LLVMNode::Class {
                 ty: llvm(ty),
                 name,
@@ -208,7 +208,13 @@ impl<'ctx> TypeSystem<'ctx> {
                     .map(|x| self.gen(subs.clone(), x.clone()))
                     .collect(),
             },
-            TypedNode::Extern { return_type, name, args, ty, var_args} => LLVMNode::Extern {
+            TypedNode::Extern {
+                return_type,
+                name,
+                args,
+                ty,
+                var_args,
+            } => LLVMNode::Extern {
                 ty: llvm(ty),
                 return_type: box self.gen(subs.clone(), *return_type),
                 name,

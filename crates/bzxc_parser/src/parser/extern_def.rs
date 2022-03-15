@@ -24,14 +24,12 @@ impl Parser {
         let pos_start = self.current_token.pos_start.clone();
 
         if self.current_token.value != Tokens::Keyword("extern") {
-            return res.failure(
-                Error::new(
-                    pos_start.file_name,
-                    pos_start,
-                    self.current_token.pos_end,
-                    "Expected extern keyword",
-                )
-            )
+            return res.failure(Error::new(
+                pos_start.file_name,
+                pos_start,
+                self.current_token.pos_end,
+                "Expected extern keyword",
+            ));
         }
 
         self.advance();
@@ -47,25 +45,21 @@ impl Parser {
             self.advance();
             res.register_advancement();
         } else {
-            return res.failure(
-                Error::new(
-                    pos_start.file_name,
-                    pos_start,
-                    self.current_token.pos_end,
-                    "Expected identifier",
-                )
-            )
+            return res.failure(Error::new(
+                pos_start.file_name,
+                pos_start,
+                self.current_token.pos_end,
+                "Expected identifier",
+            ));
         }
 
         if self.current_token.value != Tokens::LeftParenthesis {
-            return res.failure(
-                Error::new(
-                    pos_start.file_name,
-                    pos_start,
-                    self.current_token.pos_end,
-                    "Expected (",
-                )
-            )
+            return res.failure(Error::new(
+                pos_start.file_name,
+                pos_start,
+                self.current_token.pos_end,
+                "Expected (",
+            ));
         }
 
         self.advance();
@@ -79,28 +73,24 @@ impl Parser {
                 res.register_advancement();
 
                 if self.current_token.value != Tokens::Dot {
-                    return res.failure(
-                        Error::new(
-                            pos_start.file_name,
-                            pos_start,
-                            self.current_token.pos_end,
-                            "Expected .",
-                        )
-                    )
+                    return res.failure(Error::new(
+                        pos_start.file_name,
+                        pos_start,
+                        self.current_token.pos_end,
+                        "Expected .",
+                    ));
                 }
 
                 self.advance();
                 res.register_advancement();
 
                 if self.current_token.value != Tokens::Dot {
-                    return res.failure(
-                        Error::new(
-                            pos_start.file_name,
-                            pos_start,
-                            self.current_token.pos_end,
-                            "Expected .",
-                        )
-                    )
+                    return res.failure(Error::new(
+                        pos_start.file_name,
+                        pos_start,
+                        self.current_token.pos_end,
+                        "Expected .",
+                    ));
                 }
 
                 self.advance();
@@ -124,27 +114,23 @@ impl Parser {
             res.register_advancement();
         }
 
-
         if self.current_token.value != Tokens::RightParenthesis {
-            return res.failure(
-                Error::new(
-                    pos_start.file_name,
-                    pos_start,
-                    self.current_token.pos_end,
-                    "Expected )",
-                )
-            )
+            return res.failure(Error::new(
+                pos_start.file_name,
+                pos_start,
+                self.current_token.pos_end,
+                "Expected )",
+            ));
         }
 
         res.register_advancement();
         self.advance();
 
-
         res.success(Node::ExternNode {
             name,
             arg_tokens: args,
             return_type: Box::new(expr.unwrap()),
-            var_args
+            var_args,
         })
     }
 }

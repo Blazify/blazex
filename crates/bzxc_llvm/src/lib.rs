@@ -13,8 +13,16 @@
 
 use std::collections::HashMap;
 
-use bzxc_llvm_wrapper::{AddressSpace, builder::Builder, context::Context, FloatPredicate, IntPredicate, module::Module, passes::PassManager, types::BasicType, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue}};
 use bzxc_llvm_wrapper::module::Linkage;
+use bzxc_llvm_wrapper::{
+    builder::Builder,
+    context::Context,
+    module::Module,
+    passes::PassManager,
+    types::BasicType,
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
+    AddressSpace, FloatPredicate, IntPredicate,
+};
 use bzxc_shared::{LLVMNode, Tokens};
 
 mod oop;
@@ -218,7 +226,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             }
                         }
                     }
-                        .into()
+                    .into()
                 } else {
                     let lhs = self.compile(*left).into_float_value();
                     let rhs = self.compile(*right).into_float_value();
@@ -314,7 +322,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         _ => unreachable!(),
                     }
-                        .into()
+                    .into()
                 }
             }
             LLVMNode::Fun {
@@ -364,7 +372,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     self.fpm.run_on(&func);
                 } else {
                     eprintln!("{}", self.module.print_to_string().to_string());
-                    unsafe { func.delete(); }
+                    unsafe {
+                        func.delete();
+                    }
                     panic!("function {} failed to verify", name);
                 }
 
@@ -374,27 +384,46 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.variables.insert(name, alloca);
                 ptr.into()
             }
-            LLVMNode::Extern {ty: _, name, return_type, args, var_args} => {
+            LLVMNode::Extern {
+                ty: _,
+                name,
+                return_type,
+                args,
+                var_args,
+            } => {
                 let ret = self.compile(*return_type).get_type();
-                let args = args.iter().map(|arg| self.compile(arg.clone()).get_type()).collect::<Vec<_>>();
+                let args = args
+                    .iter()
+                    .map(|arg| self.compile(arg.clone()).get_type())
+                    .collect::<Vec<_>>();
 
-                let fun = self.module.add_function(name.as_str(), ret.fn_type(&args[..], var_args), Some(Linkage::External));
-                let ptr = fun.as_global_value().as_pointer_value();
-                let alloca = self.create_entry_block_alloca(name.as_str(), ptr.get_type());
-                self.builder.build_store(alloca, ptr);
-                self.variables.insert(name, alloca);
-                ptr.into()
+                self.module.add_function(
+                    name.as_str(),
+                    ret.fn_type(&args[..], var_args),
+                    Some(Linkage::External),
+                );
+
+                self.null()
             }
             LLVMNode::Let { ty: _, name, val } => {
                 let val = self.compile(*val);
 
-                let gb = self.module.add_global(val.get_type(), Some(AddressSpace::Global), name.as_str());
+                let gb = self.module.add_global(
+                    val.get_type(),
+                    Some(AddressSpace::Global),
+                    name.as_str(),
+                );
                 gb.set_initializer(&val);
                 gb.set_constant(false);
                 self.variables.insert(name, gb.as_pointer_value());
                 val.into()
             }
-            LLVMNode::Var { ty: _, name } => self.builder.build_load(self.variables.get(name.as_str()).unwrap().clone(), name.as_str()),
+            LLVMNode::Var { ty: _, name } => {
+                match self.variables.get(name.as_str()) {
+                    Some(val) => self.builder.build_load(val.clone(), name.as_str()),
+                    None => self.module.get_function(name.as_str()).unwrap().as_global_value().as_pointer_value().into(),
+                }
+            },
             LLVMNode::Call { ty: _, fun, args } => self
                 .builder
                 .build_call(
@@ -556,7 +585,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let vec_ty = ty.into_vector_type().get_undef();
 
                 for (i, element) in elements.iter().enumerate() {
-                    self.builder.build_insert_element(vec_ty, self.compile(element.clone()), self.context.i128_type().const_int(i as i128, true), "vec_push");
+                    self.builder.build_insert_element(
+                        vec_ty,
+                        self.compile(element.clone()),
+                        self.context.i128_type().const_int(i as i128, true),
+                        "vec_push",
+                    );
                 }
 
                 vec_ty.into()
@@ -564,7 +598,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             LLVMNode::Index { ty: _, array, idx } => {
                 let arr = self.compile(*array).into_vector_value();
 
-                self.builder.build_extract_element(arr, self.compile(*idx).into_int_value(), "vec_extract")
+                self.builder.build_extract_element(
+                    arr,
+                    self.compile(*idx).into_int_value(),
+                    "vec_extract",
+                )
             }
             LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
             LLVMNode::ObjectAccess {
@@ -601,7 +639,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 let ptr = struct_val.into_pointer_value();
 
-                let class = self.classes.get(&ptr.get_type().get_element_type().into_struct_type().get_field_type_at_index(0).unwrap().into_vector_type().get_size()).clone();
+                let class = self
+                    .classes
+                    .get(
+                        &ptr.get_type()
+                            .get_element_type()
+                            .into_struct_type()
+                            .get_field_type_at_index(0)
+                            .unwrap()
+                            .into_vector_type()
+                            .get_size(),
+                    )
+                    .clone();
                 let is_class = class.is_some();
 
                 let mut compiled_args: Vec<BasicValueEnum> = Vec::with_capacity(args.len());
@@ -654,19 +703,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 methods,
                 constructor,
                 name: class,
-                static_obj
+                static_obj,
             } => {
                 let static_obj = self.compile(*static_obj);
 
-                let gb = self.module.add_global(static_obj.get_type(), Some(AddressSpace::Global), "static_obj");
+                let gb = self.module.add_global(
+                    static_obj.get_type(),
+                    Some(AddressSpace::Global),
+                    "static_obj",
+                );
                 gb.set_initializer(&static_obj);
                 gb.set_constant(false);
 
                 self.variables.insert(class.clone(), gb.as_pointer_value());
 
                 let klass = self.create_obj(ty, properties).into_pointer_value();
-                let constructor =
-                    self.class_method(class.clone(), klass.get_type(), *constructor);
+                let constructor = self.class_method(class.clone(), klass.get_type(), *constructor);
 
                 let mut n_methods = HashMap::new();
 
@@ -677,8 +729,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     );
                 }
                 self.classes.insert(
-                    ty.into_pointer_type().get_element_type().into_struct_type().get_field_type_at_index(0).unwrap().into_vector_type().get_size(),
-                    (klass.get_name().to_str().unwrap().to_string(), constructor.into_pointer_value(), n_methods),
+                    ty.into_pointer_type()
+                        .get_element_type()
+                        .into_struct_type()
+                        .get_field_type_at_index(0)
+                        .unwrap()
+                        .into_vector_type()
+                        .get_size(),
+                    (
+                        klass.get_name().to_str().unwrap().to_string(),
+                        constructor.into_pointer_value(),
+                        n_methods,
+                    ),
                 );
                 self.null()
             }
@@ -691,17 +753,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .classes
                     .get(
                         &class
-                            .into_pointer_type().get_element_type().into_struct_type().get_field_type_at_index(0).unwrap().into_vector_type().get_size(),
+                            .into_pointer_type()
+                            .get_element_type()
+                            .into_struct_type()
+                            .get_field_type_at_index(0)
+                            .unwrap()
+                            .into_vector_type()
+                            .get_size(),
                     )
                     .unwrap()
                     .clone();
 
-                let base = self.module.get_global(&*base).unwrap().get_initializer().unwrap();
+                let base = self
+                    .module
+                    .get_global(&*base)
+                    .unwrap()
+                    .get_initializer()
+                    .unwrap();
 
-                let gb = self.module.add_global(base.get_type(), Some(AddressSpace::Global), "soul_obj");
+                let gb =
+                    self.module
+                        .add_global(base.get_type(), Some(AddressSpace::Global), "soul_obj");
                 gb.set_initializer(&base);
                 gb.set_constant(false);
-
 
                 let ptr = gb.as_pointer_value();
 

@@ -350,7 +350,7 @@ pub enum Node {
         name: Token,
         arg_tokens: Vec<Self>,
         return_type: Box<Self>,
-        var_args: bool
+        var_args: bool,
     },
     TypeKeyword {
         token: Token,
@@ -613,7 +613,7 @@ pub enum LLVMNode<'ctx> {
         return_type: Box<Self>,
         args: Vec<Self>,
         var_args: bool,
-    }
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -738,7 +738,7 @@ pub enum TypedNode {
         properties: BTreeMap<String, Self>,
         methods: BTreeMap<String, Self>,
         constructor: Box<Self>,
-        static_obj: Box<Self>
+        static_obj: Box<Self>,
     },
     ClassInit {
         ty: Type,
@@ -751,7 +751,7 @@ pub enum TypedNode {
         return_type: Box<Self>,
         args: Vec<Self>,
         var_args: bool,
-    }
+    },
 }
 
 impl TypedNode {
@@ -790,7 +790,7 @@ impl TypedNode {
             | TypedNode::ObjectMethodCall { ty, .. }
             | TypedNode::Class { ty, .. }
             | TypedNode::ClassInit { ty, .. }
-            | TypedNode::Extern { ty, .. }=> ty.clone(),
+            | TypedNode::Extern { ty, .. } => ty.clone(),
         }
     }
 }
@@ -861,16 +861,14 @@ impl Type {
                         .collect::<Vec<BasicTypeEnum>>()[..],
                     false,
                 )
-                .ptr_type(AddressSpace::Generic)
+                .ptr_type(AddressSpace::Global)
                 .into(),
             Type::Null => ctx.struct_type(&[], true).into(),
-            Type::Var(tvar) => {
-                tvars
-                    .clone()
-                    .get(&Type::Var(*tvar))
-                    .unwrap()
-                    .llvm(ctx, tvars)
-            },
+            Type::Var(tvar) => tvars
+                .clone()
+                .get(&Type::Var(*tvar))
+                .unwrap()
+                .llvm(ctx, tvars),
             Type::Object(tree) => ctx
                 .struct_type(
                     &tree

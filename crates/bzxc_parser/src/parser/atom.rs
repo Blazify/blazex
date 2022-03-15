@@ -139,9 +139,8 @@ impl Parser {
         } else if let Tokens::Keyword(_) = token.value {
             self.advance();
             res.register_advancement();
-            
+
             return res.success(Node::TypeKeyword { token });
-            
         }
 
         res.failure(Error::new(

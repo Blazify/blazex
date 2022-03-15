@@ -69,7 +69,9 @@ impl<'ctx> TypeSystem<'ctx> {
                     name: token.value.into_string(),
                 },
                 None => {
-                    println!("{:?}", self.type_env); panic!("No var found {}", token.value.into_string()); },
+                    println!("{:?}", self.type_env);
+                    panic!("No var found {}", token.value.into_string());
+                }
             },
             Node::VarAssignNode { name, value, .. } => {
                 let val = self.annotate(*value);
@@ -94,7 +96,6 @@ impl<'ctx> TypeSystem<'ctx> {
                 } else {
                     "%anonymous%".to_string()
                 };
-
 
                 self.type_env.push_scope();
                 let mut binders = vec![];
@@ -123,10 +124,7 @@ impl<'ctx> TypeSystem<'ctx> {
             Node::CallNode { args, node_to_call } => TypedNode::Call {
                 ty: Type::fresh_var(),
                 fun: box self.annotate(*node_to_call),
-                args: args
-                    .iter()
-                    .map(|x| self.annotate(x.clone()))
-                    .collect(),
+                args: args.iter().map(|x| self.annotate(x.clone())).collect(),
             },
             Node::ReturnNode { value } => {
                 let val = box if let Some(val) = *value.clone() {
@@ -145,10 +143,7 @@ impl<'ctx> TypeSystem<'ctx> {
                     .iter()
                     .map(|x| {
                         self.type_env.push_scope();
-                        let val = (
-                            self.annotate(x.0.clone()),
-                            self.annotate(x.1.clone()),
-                        );
+                        let val = (self.annotate(x.0.clone()), self.annotate(x.1.clone()));
                         self.type_env.pop_scope();
                         val
                     })
@@ -174,7 +169,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 };
                 self.type_env.pop_scope();
                 val
-            },
+            }
             Node::ForNode {
                 var_name_token,
                 start_value,
@@ -188,7 +183,8 @@ impl<'ctx> TypeSystem<'ctx> {
                     var: var_name_token.value.into_string(),
                     start: {
                         let start = box self.annotate(*start_value);
-                        self.type_env.set(var_name_token.value.into_string(), start.get_type());
+                        self.type_env
+                            .set(var_name_token.value.into_string(), start.get_type());
                         start
                     },
                     end: box self.annotate(*end_value),
@@ -197,7 +193,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 };
                 self.type_env.pop_scope();
                 val
-            },
+            }
             Node::ArrayNode { element_nodes } => TypedNode::Array {
                 ty: Type::fresh_var(),
                 elements: element_nodes
@@ -256,10 +252,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 ty: Type::fresh_var(),
                 object: box self.annotate(*object),
                 property: property.value.into_string(),
-                args: args
-                    .iter()
-                    .map(|x| self.annotate(x.clone()))
-                    .collect(),
+                args: args.iter().map(|x| self.annotate(x.clone())).collect(),
             },
             Node::ClassDefNode {
                 methods: mthds,
@@ -283,25 +276,27 @@ impl<'ctx> TypeSystem<'ctx> {
                 let obj_ty = Type::fresh_var();
                 let ty = Type::Class(box obj_ty.clone());
 
-
-
                 let static_obj = TypedNode::Object {
                     ty: Type::fresh_var(),
                     properties: static_members,
                 };
-                self.type_env.set(name.value.into_string(), static_obj.get_type());
+                self.type_env
+                    .set(name.value.into_string(), static_obj.get_type());
                 self.type_env.push_scope();
                 self.type_env.set("soul".to_string(), obj_ty.clone());
 
                 for (name, args, body) in mthds {
                     methods.insert(
                         name.value.into_string(),
-                        self.annotate(Node::FunDef { name: Some(name), body_node: box body, arg_tokens: args })
+                        self.annotate(Node::FunDef {
+                            name: Some(name),
+                            body_node: box body,
+                            arg_tokens: args,
+                        }),
                     );
                 }
 
                 self.class_env.insert(name.value.into_string(), ty.clone());
-
 
                 let mut params = vec![];
                 let mut params_ty = vec![];
@@ -326,7 +321,7 @@ impl<'ctx> TypeSystem<'ctx> {
                         body: box self.annotate(*constructor.1),
                     },
                     methods,
-                    static_obj: box static_obj
+                    static_obj: box static_obj,
                 };
 
                 self.type_env.pop_scope();
@@ -338,7 +333,11 @@ impl<'ctx> TypeSystem<'ctx> {
                 constructor_params,
             } => TypedNode::ClassInit {
                 ty: Type::fresh_var(),
-                class: self.class_env.get(&*name.value.into_string()).unwrap().clone(),
+                class: self
+                    .class_env
+                    .get(&*name.value.into_string())
+                    .unwrap()
+                    .clone(),
                 constructor_params: constructor_params
                     .iter()
                     .map(|x| self.annotate(x.clone()))
@@ -348,7 +347,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 name,
                 arg_tokens,
                 return_type,
-                var_args
+                var_args,
             } => {
                 self.type_env.push_scope();
                 let name = name.value.into_string();
@@ -364,37 +363,33 @@ impl<'ctx> TypeSystem<'ctx> {
                     name: name.clone(),
                     args: params,
                     return_type: box ret,
-                    var_args
+                    var_args,
                 };
                 self.type_env.pop_scope();
                 self.type_env.set(name, fun.get_type());
 
                 fun
             }
-            Node::TypeKeyword { token } => {
-                match token.value.into_string().as_str() {
-                    "int" => TypedNode::Int {
-                        ty: Type::Int,
-                        val: 0
-                    },
-                    "float" => TypedNode::Float {
-                        ty: Type::Float,
-                        val: 0.0
-                    },
-                    "bool" => TypedNode::Boolean {
-                        ty: Type::Boolean,
-                        val: false
-                    },
-                    "string" => TypedNode::String {
-                        ty: Type::String,
-                        val: String::new()
-                    },
-                    "void" => TypedNode::Null {
-                        ty: Type::Null,
-                    },
-                    _ => unreachable!()
-                }
-            }
+            Node::TypeKeyword { token } => match token.value.into_string().as_str() {
+                "int" => TypedNode::Int {
+                    ty: Type::Int,
+                    val: 0,
+                },
+                "float" => TypedNode::Float {
+                    ty: Type::Float,
+                    val: 0.0,
+                },
+                "bool" => TypedNode::Boolean {
+                    ty: Type::Boolean,
+                    val: false,
+                },
+                "string" => TypedNode::String {
+                    ty: Type::String,
+                    val: String::new(),
+                },
+                "void" => TypedNode::Null { ty: Type::Null },
+                _ => unreachable!(),
+            },
         }
     }
 }

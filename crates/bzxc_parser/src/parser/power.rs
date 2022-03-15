@@ -15,7 +15,6 @@ use super::Parser;
 use crate::parse_result::ParseResult;
 use bzxc_shared::{Node, Tokens};
 
-
 impl Parser {
     /*
      * Parses a power expression

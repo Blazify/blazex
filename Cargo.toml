@@ -6,8 +6,16 @@ members = [
     "crates/bzxc_shared",
     "crates/bzxc_llvm",
     "crates/bzxc_llvm_wrapper",
-    "crates/bzxc_type_system"
+    "crates/bzxc_type_system",
 ]
+
+[profile.dev]
+panic = "abort"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false
+
 
 [profile.release]
 opt-level = 3

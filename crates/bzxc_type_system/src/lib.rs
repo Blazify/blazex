@@ -13,8 +13,8 @@
 #![feature(box_syntax, box_patterns)]
 #![allow(unused_variables)]
 
-use std::collections::HashMap;
 use bzxc_llvm_wrapper::context::Context;
+use std::collections::HashMap;
 
 use bzxc_shared::{LLVMNode, Node, Type};
 use type_env::TypeEnv;

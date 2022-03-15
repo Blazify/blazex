@@ -1,25 +1,6 @@
-extern int printf(string, ...);
+extern int print(string, ...);
+extern int println(string, ...)
+extern string input_string()
 
-class A {
-    var x = 0
-
-    fun() {
-        soul.x = 2
-        return soul
-    }
-
-    fun y(r) {
-        return soul.x + r
-    }
-
-    static var z = 2
-}
-
-var a = new A()
-var b = new A()
-
-b.x = 3
-
-var closure = (fun() { return b.y(A.z + a.x)})
-
-printf("%i\n", closure())
+print("Enter your name: ")
+println("Hello, %s!", input_string())

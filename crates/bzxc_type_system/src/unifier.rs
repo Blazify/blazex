@@ -64,7 +64,9 @@ impl<'ctx> TypeSystem<'ctx> {
 
                 let mut constr = vec![];
                 for (name, ty1) in &other_tree {
-                    if name.as_str() == "%alignment%" { continue; }
+                    if name.as_str() == "%alignment%" {
+                        continue;
+                    }
                     let mut ty2 = main_tree.get(name);
 
                     if ty2.is_none() {
@@ -109,7 +111,10 @@ impl<'ctx> TypeSystem<'ctx> {
                     for (x, class) in methods {
                         for (y, method) in class {
                             if method == Type::Var(tvar) {
-                                self.methods.get_mut(&x.clone()).unwrap().insert(y.clone(), ty.clone());
+                                self.methods
+                                    .get_mut(&x.clone())
+                                    .unwrap()
+                                    .insert(y.clone(), ty.clone());
                             }
                         }
                     }
