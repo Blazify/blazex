@@ -96,6 +96,7 @@ pub fn compile(
         Ok(_) => {
             if !is_quiet {
                 let out_dir = env::var("OUT_DIR").unwrap();
+
                 Command::new("clang-10")
                     .args([out_file.clone(), format!("{}/libblazex.a", out_dir), format!("-o{}", out_file.replace(".o", ""))])
                     .status()

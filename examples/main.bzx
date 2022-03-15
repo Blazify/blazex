@@ -1,6 +1,15 @@
 extern int print(string, ...);
 extern int println(string, ...)
 extern string input_string()
+extern string platform()
+extern string read_file(string)
+extern int write_file(string, string)
+extern int delete_file(string)
 
 print("Enter your name: ")
 println("Hello, %s!", input_string())
+println("Called in %s Platform", platform())
+
+write_file("a.txt", "Hello, World!")
+println("File content: %s", read_file("a.txt"))
+delete_file("a.txt")

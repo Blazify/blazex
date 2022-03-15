@@ -1,12 +1,27 @@
-use std::env;
-use std::process::Command;
+use std::fs;
 
 fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
+    let files = rerunners("stdlib".to_string());
+    cc::Build::new()
+        .files(files)
+        .warnings(true)
+        .extra_warnings(true)
+        .compile("blazex");
+    println!("cargo:rerun-if-changed=build.rs");
+}
 
-    println!("cargo:rerun-if-changed=stdlib/main.c");
-    Command::new("gcc").args(&["-c", "stdlib/main.c", "-o", &format!("{}/main.o", out_dir)])
-        .status().unwrap();
-    Command::new("ar").args(&["crus", &format!("{}/libblazex.a", out_dir), &format!("{}/main.o", out_dir)])
-        .status().unwrap();
+fn rerunners(path: String) -> Vec<String> {
+    let mut vec = vec![];
+    for entry in fs::read_dir(path).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+            vec.push(path.to_str().unwrap().to_string());
+            println!("cargo:rerun-if-changed={}", path.display());
+        } else {
+            vec.extend(rerunners(entry.path().to_str().unwrap().to_string()));
+        }
+    }
+
+    vec
 }
