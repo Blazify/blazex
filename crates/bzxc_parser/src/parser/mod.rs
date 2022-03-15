@@ -23,6 +23,7 @@ mod class_def;
 mod class_init;
 mod comp_expr;
 mod expr;
+mod extern_def;
 mod factor;
 mod for_expr;
 mod fun_def;

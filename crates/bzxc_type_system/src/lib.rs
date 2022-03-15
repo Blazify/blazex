@@ -14,39 +14,41 @@
 #![allow(unused_variables)]
 
 use std::collections::HashMap;
+use bzxc_llvm_wrapper::context::Context;
 
-use bzxc_shared::{Node, Type, TypedNode};
-use substitution::Substitution;
+use bzxc_shared::{LLVMNode, Node, Type};
 use type_env::TypeEnv;
 
 mod annotate;
 mod constraint;
-pub mod llvm_node;
+mod llvm_node;
 mod substitution;
 mod type_env;
 mod unifier;
 
-pub struct TypeSystem {
+pub struct TypeSystem<'ctx> {
     node: Node,
     methods: HashMap<Type, HashMap<String, Type>>,
     type_env: TypeEnv,
     class_env: HashMap<String, Type>,
+    pub context: &'ctx Context,
 }
 
-impl TypeSystem {
-    pub fn new(node: Node) -> Self {
+impl<'ctx> TypeSystem<'ctx> {
+    pub fn new(node: Node, context: &'ctx Context) -> Self {
         TypeSystem {
             node,
             methods: HashMap::new(),
             type_env: TypeEnv::new(),
             class_env: HashMap::new(),
+            context,
         }
     }
 
-    pub fn typed_node(&mut self) -> (Substitution, TypedNode) {
+    pub fn llvm_node(&mut self) -> LLVMNode<'ctx> {
         let annotation = self.annotate(self.node.clone());
         let constraints = self.collect(annotation.clone());
         let substitution = self.unify(constraints.clone());
-        (substitution, annotation)
+        self.gen(substitution, annotation)
     }
 }

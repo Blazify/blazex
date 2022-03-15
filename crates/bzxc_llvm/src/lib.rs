@@ -14,6 +14,7 @@
 use std::collections::HashMap;
 
 use bzxc_llvm_wrapper::{AddressSpace, builder::Builder, context::Context, FloatPredicate, IntPredicate, module::Module, passes::PassManager, types::BasicType, values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue}};
+use bzxc_llvm_wrapper::module::Linkage;
 use bzxc_shared::{LLVMNode, Tokens};
 
 mod oop;
@@ -94,7 +95,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn compile_main(&mut self) {
         let func =
             self.module
-                .add_function("_main", self.context.i32_type().fn_type(&[], false), None);
+                .add_function("main", self.context.i32_type().fn_type(&[], false), None);
 
         let entry = self.context.append_basic_block(func, "entry");
         self.builder.position_at_end(entry);
@@ -368,6 +369,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
 
                 let ptr = func.as_global_value().as_pointer_value();
+                let alloca = self.create_entry_block_alloca(name.as_str(), ptr.get_type());
+                self.builder.build_store(alloca, ptr);
+                self.variables.insert(name, alloca);
+                ptr.into()
+            }
+            LLVMNode::Extern {ty: _, name, return_type, args, var_args} => {
+                let ret = self.compile(*return_type).get_type();
+                let args = args.iter().map(|arg| self.compile(arg.clone()).get_type()).collect::<Vec<_>>();
+
+                let fun = self.module.add_function(name.as_str(), ret.fn_type(&args[..], var_args), Some(Linkage::External));
+                let ptr = fun.as_global_value().as_pointer_value();
                 let alloca = self.create_entry_block_alloca(name.as_str(), ptr.get_type());
                 self.builder.build_store(alloca, ptr);
                 self.variables.insert(name, alloca);

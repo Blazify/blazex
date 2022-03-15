@@ -10,17 +10,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-use bzxc_llvm_wrapper::context::Context;
 use bzxc_shared::{LLVMNode, Type, TypedNode};
 
 use crate::substitution::Substitution;
+use crate::TypeSystem;
 
-pub struct LLVMNodeGenerator<'ctx> {
-    pub context: &'ctx Context,
-}
-
-impl<'ctx> LLVMNodeGenerator<'ctx> {
-    pub fn gen(&self, subs: Substitution, node: TypedNode) -> LLVMNode<'ctx> {
+impl<'ctx> TypeSystem<'ctx> {
+    pub(crate) fn gen(&self, subs: Substitution, node: TypedNode) -> LLVMNode<'ctx> {
         let llvm = |ty: Type| ty.llvm(self.context, subs.0.clone());
         match node {
             TypedNode::Statements(stmts) => LLVMNode::Statements(
@@ -211,6 +207,16 @@ impl<'ctx> LLVMNodeGenerator<'ctx> {
                     .iter()
                     .map(|x| self.gen(subs.clone(), x.clone()))
                     .collect(),
+            },
+            TypedNode::Extern { return_type, name, args, ty, var_args} => LLVMNode::Extern {
+                ty: llvm(ty),
+                return_type: box self.gen(subs.clone(), *return_type),
+                name,
+                args: args
+                    .iter()
+                    .map(|x| self.gen(subs.clone(), x.clone()))
+                    .collect(),
+                var_args,
             },
         }
     }

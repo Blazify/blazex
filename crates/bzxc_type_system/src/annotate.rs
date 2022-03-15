@@ -16,8 +16,8 @@ use bzxc_shared::{Binder, Node, Tokens, Type, TypedNode};
 
 use crate::TypeSystem;
 
-impl TypeSystem {
-    pub fn annotate(&mut self, node: Node) -> TypedNode {
+impl<'ctx> TypeSystem<'ctx> {
+    pub(crate) fn annotate(&mut self, node: Node) -> TypedNode {
         match node.clone() {
             Node::Statements { statements } => TypedNode::Statements(
                 statements
@@ -68,7 +68,8 @@ impl TypeSystem {
                     ty,
                     name: token.value.into_string(),
                 },
-                None => panic!("No var found"),
+                None => {
+                    println!("{:?}", self.type_env); panic!("No var found {}", token.value.into_string()); },
             },
             Node::VarAssignNode { name, value, .. } => {
                 let val = self.annotate(*value);
@@ -85,6 +86,16 @@ impl TypeSystem {
                 body_node,
                 name,
             } => {
+                let ty = Type::fresh_var();
+
+                let name = if let Some(tok) = name {
+                    self.type_env.set(tok.value.into_string(), ty.clone());
+                    tok.value.into_string()
+                } else {
+                    "%anonymous%".to_string()
+                };
+
+
                 self.type_env.push_scope();
                 let mut binders = vec![];
                 for arg in arg_tokens {
@@ -97,15 +108,6 @@ impl TypeSystem {
                     };
                     binders.push(binder);
                 }
-
-                let ty = Type::fresh_var();
-
-                let name = if let Some(tok) = name {
-                    self.type_env.set(tok.value.into_string(), ty.clone());
-                    tok.value.into_string()
-                } else {
-                    "%anonymous%".to_string()
-                };
 
                 let fun = TypedNode::Fun {
                     ty,
@@ -280,6 +282,15 @@ impl TypeSystem {
 
                 let obj_ty = Type::fresh_var();
                 let ty = Type::Class(box obj_ty.clone());
+
+
+
+                let static_obj = TypedNode::Object {
+                    ty: Type::fresh_var(),
+                    properties: static_members,
+                };
+                self.type_env.set(name.value.into_string(), static_obj.get_type());
+                self.type_env.push_scope();
                 self.type_env.set("soul".to_string(), obj_ty.clone());
 
                 for (name, args, body) in mthds {
@@ -289,15 +300,9 @@ impl TypeSystem {
                     );
                 }
 
-                let static_obj = TypedNode::Object {
-                    ty: Type::fresh_var(),
-                    properties: static_members,
-                };
-
                 self.class_env.insert(name.value.into_string(), ty.clone());
-                self.type_env.set(name.value.into_string(), static_obj.get_type());
 
-                self.type_env.push_scope();
+
                 let mut params = vec![];
                 let mut params_ty = vec![];
                 for arg in constructor.0 {
@@ -343,7 +348,53 @@ impl TypeSystem {
                 name,
                 arg_tokens,
                 return_type,
-            } => todo!(),
+                var_args
+            } => {
+                self.type_env.push_scope();
+                let name = name.value.into_string();
+                let mut params = vec![];
+                for arg in arg_tokens {
+                    params.push(self.annotate(arg.clone()));
+                }
+
+                let ret = self.annotate(*return_type);
+
+                let fun = TypedNode::Extern {
+                    ty: Type::fresh_var(),
+                    name: name.clone(),
+                    args: params,
+                    return_type: box ret,
+                    var_args
+                };
+                self.type_env.pop_scope();
+                self.type_env.set(name, fun.get_type());
+
+                fun
+            }
+            Node::TypeKeyword { token } => {
+                match token.value.into_string().as_str() {
+                    "int" => TypedNode::Int {
+                        ty: Type::Int,
+                        val: 0
+                    },
+                    "float" => TypedNode::Float {
+                        ty: Type::Float,
+                        val: 0.0
+                    },
+                    "bool" => TypedNode::Boolean {
+                        ty: Type::Boolean,
+                        val: false
+                    },
+                    "string" => TypedNode::String {
+                        ty: Type::String,
+                        val: String::new()
+                    },
+                    "void" => TypedNode::Null {
+                        ty: Type::Null,
+                    },
+                    _ => unreachable!()
+                }
+            }
         }
     }
 }

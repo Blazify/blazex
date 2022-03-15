@@ -12,7 +12,6 @@ use bzxc_llvm_wrapper::{
     OptimizationLevel,
 };
 use bzxc_parser::parser::Parser;
-use bzxc_type_system::llvm_node::LLVMNodeGenerator;
 use bzxc_type_system::TypeSystem;
 use std::path::Path;
 
@@ -55,8 +54,7 @@ pub fn compile(
     }
 
     let context = Context::create();
-    let (subs, node) = TypeSystem::new(parsed.node.unwrap()).typed_node();
-    let llvm_node = LLVMNodeGenerator { context: &context }.gen(subs, node);
+    let llvm_node = TypeSystem::new(parsed.node.unwrap(), &context).llvm_node();
 
     let module = context.create_module(name);
     let builder = context.create_builder();

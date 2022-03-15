@@ -35,16 +35,15 @@ pub fn get_keywords() -> Vec<String> {
         string("return"),
         string("class"),
         string("new"),
+        string("extern"),
+        string("soul"),
+        string("static"),
+        string("void"),
         string("int"),
         string("float"),
+        string("bool"),
         string("string"),
         string("char"),
-        string("boolean"),
-        string("extern"),
-        string("variadic"),
-        string("void"),
-        string("soul"),
-        string("static")
     ]
 }
 

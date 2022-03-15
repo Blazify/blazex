@@ -1,3 +1,5 @@
+extern int printf(string, ...);
+
 class A {
     var x = 0
 
@@ -13,11 +15,11 @@ class A {
     static var z = 2
 }
 
-@ keep all the code in this function for now until extern functions are a thing
-fun MAIN() {
-    var a = new A()
-    var b = new A()
+var a = new A()
+var b = new A()
 
-    b.x = 3
-    return (fun() { return b.y(A.z + a.x)})()
-}
+b.x = 3
+
+var closure = (fun() { return b.y(A.z + a.x)})
+
+printf("%i\n", closure())

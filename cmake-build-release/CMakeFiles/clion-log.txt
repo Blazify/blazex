@@ -1,1 +1,0 @@
-CMakeLists.txt not found in \\wsl$\Ubuntu\home\romeah\blazex Select CMakeLists.txt

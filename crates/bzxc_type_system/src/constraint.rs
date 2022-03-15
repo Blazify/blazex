@@ -19,8 +19,8 @@ use crate::TypeSystem;
 #[derive(Debug, Clone)]
 pub struct Constraint(pub Type, pub Type);
 
-impl TypeSystem {
-    pub fn collect(&mut self, node: TypedNode) -> Vec<Constraint> {
+impl<'ctx> TypeSystem<'ctx> {
+    pub(crate) fn collect(&mut self, node: TypedNode) -> Vec<Constraint> {
         match node {
             TypedNode::Statements(stmts) => stmts
                 .iter()
@@ -86,6 +86,27 @@ impl TypeSystem {
                     ),
                 ));
 
+                constr
+            }
+            TypedNode::Extern { ty, return_type, args, .. } => {
+                let mut constr = vec![];
+                
+                let mut param_ty = vec![];
+                for arg in args {
+                    constr.extend(self.collect(arg.clone()));
+                    param_ty.push(arg.get_type());
+                }
+                
+                constr.extend(self.collect(*return_type.clone()));
+                
+                constr.push(Constraint(
+                    ty,
+                    Type::Fun(
+                        param_ty,
+                        box return_type.get_type().clone(),
+                    ),
+                ));
+                
                 constr
             }
             TypedNode::Call { ty, fun, args } => {

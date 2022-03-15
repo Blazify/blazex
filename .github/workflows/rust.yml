@@ -32,7 +32,7 @@ jobs:
       - name: Compile to Object Code
         run: ~/.blazex/bin/${{ matrix.artifact_name }} examples/main.bzx -l
       - name: Link to libc and compile to native machine executable
-        run: clang -o${{ matrix.exe }} -Ofast -lc examples/main.o test.c -fPIE
+        run: clang -o${{ matrix.exe }} -Ofast -lc examples/main.o
       - name: Run Native Executable
         run: ./${{ matrix.exe }}
       - name: Archive into tar.xz

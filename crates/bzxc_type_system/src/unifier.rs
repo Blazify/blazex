@@ -16,8 +16,8 @@ use bzxc_shared::Type;
 
 use crate::{constraint::Constraint, substitution::Substitution, TypeSystem};
 
-impl TypeSystem {
-    pub fn unify(&mut self, constraints: Vec<Constraint>) -> Substitution {
+impl<'ctx> TypeSystem<'ctx> {
+    pub(crate) fn unify(&mut self, constraints: Vec<Constraint>) -> Substitution {
         if constraints.is_empty() {
             Substitution::empty()
         } else {

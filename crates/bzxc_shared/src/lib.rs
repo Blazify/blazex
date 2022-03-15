@@ -348,8 +348,12 @@ pub enum Node {
     },
     ExternNode {
         name: Token,
-        arg_tokens: Vec<String>,
-        return_type: String,
+        arg_tokens: Vec<Self>,
+        return_type: Box<Self>,
+        var_args: bool
+    },
+    TypeKeyword {
+        token: Token,
     },
 }
 
@@ -475,6 +479,7 @@ impl Node {
                 },
             ),
             Node::ExternNode { name, .. } => (name.pos_start, name.pos_end),
+            Node::TypeKeyword { token } => (token.pos_start, token.pos_end),
         }
     }
 }
@@ -602,6 +607,13 @@ pub enum LLVMNode<'ctx> {
         class: BasicTypeEnum<'ctx>,
         constructor_params: Vec<Self>,
     },
+    Extern {
+        ty: BasicTypeEnum<'ctx>,
+        name: String,
+        return_type: Box<Self>,
+        args: Vec<Self>,
+        var_args: bool,
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -733,6 +745,13 @@ pub enum TypedNode {
         class: Type,
         constructor_params: Vec<Self>,
     },
+    Extern {
+        ty: Type,
+        name: String,
+        return_type: Box<Self>,
+        args: Vec<Self>,
+        var_args: bool,
+    }
 }
 
 impl TypedNode {
@@ -770,7 +789,8 @@ impl TypedNode {
             | TypedNode::ObjectEdit { ty, .. }
             | TypedNode::ObjectMethodCall { ty, .. }
             | TypedNode::Class { ty, .. }
-            | TypedNode::ClassInit { ty, .. } => ty.clone(),
+            | TypedNode::ClassInit { ty, .. }
+            | TypedNode::Extern { ty, .. }=> ty.clone(),
         }
     }
 }

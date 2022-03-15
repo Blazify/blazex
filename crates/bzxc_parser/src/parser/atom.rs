@@ -130,6 +130,18 @@ impl Parser {
             res.register_advancement();
 
             return res.success(Node::VarAccessNode { token });
+        } else if token.value == Tokens::Keyword("extern") {
+            let extern_def = res.register(self.extern_def());
+            if res.error.is_some() {
+                return res;
+            }
+            return res.success(extern_def.unwrap());
+        } else if let Tokens::Keyword(_) = token.value {
+            self.advance();
+            res.register_advancement();
+            
+            return res.success(Node::TypeKeyword { token });
+            
         }
 
         res.failure(Error::new(
