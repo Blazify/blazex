@@ -98,10 +98,10 @@ pub fn compile(
                 let out_dir = env::var("OUT_DIR").unwrap();
 
                 Command::new("clang-10")
-                    .args([out_file.clone(), format!("{}/libblazex.a", out_dir), format!("-o{}", out_file.replace(".o", ""))])
+                    .args([out_file.clone(), format!("{}/libblazex.a", out_dir), format!("-o{}", out_file.replace(".o", ".out"))])
                     .status()
                     .unwrap();
-                println!("Compiled executable to {}", out_file.replace(".o", ""));
+                println!("Compiled executable to {}", out_file.replace(".o", ".out"));
             }
         }
         Err(e) => {

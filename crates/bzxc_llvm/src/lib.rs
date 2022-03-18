@@ -145,10 +145,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     ret.unwrap()
                 };
             }
-            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val, true).into(),
+            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val, false).into(),
             LLVMNode::Float { ty, val } => ty.into_float_type().const_float(val).into(),
-            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as i128, true).into(),
-            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as i128, true).into(),
+            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as i128, false).into(),
+            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as i128, false).into(),
             LLVMNode::String { ty, val } => self
                 .builder
                 .build_pointer_cast(
@@ -167,6 +167,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     match op_token.value {
                         Tokens::Plus => val,
                         Tokens::Minus => val.into_int_value().const_neg().into(),
+                        Tokens::Keyword("not") => val.into_int_value().const_not().into(),
                         _ => unreachable!(),
                     }
                 } else {
@@ -191,30 +192,50 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
                         Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
                         Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
-                        Tokens::Divide => self.builder.build_int_signed_div(lhs, rhs, "tmpdiv"),
+                        Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
+                        Tokens::Modulo => self.builder.build_int_unsigned_rem(lhs, rhs, "tmpmod"),
                         Tokens::LessThan => {
-                            self.builder
-                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
                         }
                         Tokens::GreaterThan => {
-                            self.builder
-                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
                         }
                         Tokens::LessThanEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
                         }
                         Tokens::GreaterThanEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
                         }
                         Tokens::DoubleEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
                         }
                         Tokens::NotEquals => {
-                            self.builder
-                                .build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp")
+                            self.builder.build_int_cast(
+                                self.builder.build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp"),
+                                self.context.bool_type(),
+                                "bool_cast"
+                            )
+
                         }
                         _ => {
                             if op_token.value == Tokens::Keyword("and") {
@@ -232,10 +253,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     let rhs = self.compile(*right).into_float_value();
 
                     match op_token.value {
-                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd"),
-                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub"),
-                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul"),
-                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv"),
+                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd").into(),
+                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub").into(),
+                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul").into(),
+                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv").into(),
+                        Tokens::Modulo => self.builder.build_float_rem(lhs, rhs, "tmpmod").into(),
                         Tokens::LessThan => {
                             let cmp = self.builder.build_float_compare(
                                 FloatPredicate::ULT,
@@ -244,11 +266,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         Tokens::GreaterThan => {
                             let cmp = self.builder.build_float_compare(
@@ -258,11 +280,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         Tokens::LessThanEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -272,11 +294,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         Tokens::GreaterThanEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -286,11 +308,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         Tokens::DoubleEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -300,11 +322,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         Tokens::NotEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -314,15 +336,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_unsigned_int_to_float(
+                            self.builder.build_int_cast(
                                 cmp,
-                                self.context.f64_type(),
-                                "tmpbool",
-                            )
+                                self.context.bool_type(),
+                                "bool_cast"
+                            ).into()
                         }
                         _ => unreachable!(),
                     }
-                    .into()
                 }
             }
             LLVMNode::Fun {
@@ -407,16 +428,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             LLVMNode::Let { ty: _, name, val } => {
                 let val = self.compile(*val);
-
-                let gb = self.module.add_global(
-                    val.get_type(),
-                    Some(AddressSpace::Global),
-                    name.as_str(),
-                );
-                gb.set_initializer(&val);
-                gb.set_constant(false);
-                self.variables.insert(name, gb.as_pointer_value());
-                val.into()
+                let alloca = self.create_entry_block_alloca(name.as_str(), val.get_type());
+                self.builder.build_store(alloca, val);
+                self.variables.insert(name.to_string(), alloca);
+                self.null()
             }
             LLVMNode::Var { ty: _, name } => {
                 match self.variables.get(name.as_str()) {
@@ -501,25 +516,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             LLVMNode::While { ty: _, cond, body } => {
                 let parent = self.fn_value();
-                let loop_block = self.context.append_basic_block(parent, "while_loop");
+                let cond_block = self.context.append_basic_block(parent, "while_cond");
+                let body_block = self.context.append_basic_block(parent, "while_body");
+                let after_block = self.context.append_basic_block(parent, "after");
+                self.builder.build_unconditional_branch(cond_block);
+                self.builder.position_at_end(cond_block);
 
-                let after_block = self.context.append_basic_block(parent, "afterloop");
-
+                let cond = self.compile(*cond.clone());
                 self.builder.build_conditional_branch(
-                    self.compile(*cond.clone()).into_int_value(),
-                    loop_block,
-                    after_block,
+                    cond.into_int_value(),
+                    body_block,
+                    after_block
                 );
+                self.builder.position_at_end(body_block);
+                self.compile(*body.clone());
+                self.builder.build_unconditional_branch(cond_block);
 
-                self.builder.position_at_end(loop_block);
-                self.compile(*body);
-                self.builder.build_conditional_branch(
-                    self.compile(*cond.clone()).into_int_value(),
-                    loop_block,
-                    after_block,
-                );
                 self.builder.position_at_end(after_block);
 
+                self.ret = false;
                 self.null()
             }
             LLVMNode::For {

@@ -67,6 +67,7 @@ impl<'ctx> TypeSystem<'ctx> {
                     val: box self.gen(subs, *val),
                 }
             }
+
             TypedNode::Var { ty, name } => LLVMNode::Var { ty: llvm(ty), name },
             TypedNode::Call { ty, fun, args } => LLVMNode::Call {
                 ty: llvm(ty),

@@ -55,7 +55,7 @@ impl<'ctx> TypeSystem<'ctx> {
                 constr.push(Constraint(
                     ty.clone(),
                     match op_token.value {
-                        Tokens::Plus | Tokens::Minus | Tokens::Multiply | Tokens::Divide => {
+                        Tokens::Plus | Tokens::Minus | Tokens::Multiply | Tokens::Divide | Tokens::Modulo => {
                             left.get_type()
                         }
                         _ => Type::Boolean,
@@ -166,7 +166,8 @@ impl<'ctx> TypeSystem<'ctx> {
             TypedNode::While { ty, cond, body } => {
                 let mut constr = self.collect(*body.clone());
                 constr.push(Constraint(ty, body.get_type()));
-                constr.extend(self.collect(*cond));
+                constr.extend(self.collect(*cond.clone()));
+                constr.push(Constraint(Type::Boolean, cond.get_type()));
                 constr
             }
             TypedNode::Array { ty, elements } => {

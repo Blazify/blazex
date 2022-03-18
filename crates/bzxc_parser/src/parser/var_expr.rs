@@ -33,6 +33,7 @@ impl Parser {
             Tokens::MultiplyEquals,
             Tokens::DivideEquals,
             Tokens::PowerEquals,
+            Tokens::ModuloEquals,
         ]
         .contains(&type_tok.value)
         {

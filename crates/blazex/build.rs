@@ -6,6 +6,7 @@ fn main() {
         .files(files)
         .warnings(true)
         .extra_warnings(true)
+        .flag_if_supported("-Wno-unused-result")
         .compile("blazex");
     println!("cargo:rerun-if-changed=build.rs");
 }

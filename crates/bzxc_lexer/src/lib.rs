@@ -165,6 +165,7 @@ impl Lexer {
                         tokens.push(self.make_arith_ops(Tokens::Multiply, Tokens::MultiplyEquals))
                     }
                     '/' => tokens.push(self.make_arith_ops(Tokens::Divide, Tokens::DivideEquals)),
+                    '%' => tokens.push(self.make_arith_ops(Tokens::Modulo, Tokens::ModuloEquals)),
                     '^' => tokens.push(self.make_arith_ops(Tokens::Power, Tokens::PowerEquals)),
                     '@' => self.skip_comment(),
                     '"' => tokens.push(self.make_string()),
