@@ -21,8 +21,9 @@ use bzxc_llvm_wrapper::{
     passes::PassManager,
     types::BasicType,
     values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    AddressSpace, FloatPredicate, IntPredicate,
+    FloatPredicate, IntPredicate,
 };
+
 use bzxc_shared::{LLVMNode, Tokens};
 
 mod oop;
@@ -41,7 +42,7 @@ pub struct Compiler<'a, 'ctx> {
     classes: HashMap<
         u32,
         (
-            String,
+            PointerValue<'ctx>,
             PointerValue<'ctx>,
             HashMap<String, BasicValueEnum<'ctx>>,
         ),
@@ -147,7 +148,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val, false).into(),
             LLVMNode::Float { ty, val } => ty.into_float_type().const_float(val).into(),
-            LLVMNode::Boolean { ty, val } => ty.into_int_type().const_int(val as i128, false).into(),
+            LLVMNode::Boolean { ty, val } => {
+                ty.into_int_type().const_int(val as i128, false).into()
+            }
             LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as i128, false).into(),
             LLVMNode::String { ty, val } => self
                 .builder
@@ -194,49 +197,42 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
                         Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
                         Tokens::Modulo => self.builder.build_int_unsigned_rem(lhs, rhs, "tmpmod"),
-                        Tokens::LessThan => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-                        }
-                        Tokens::GreaterThan => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-                        }
-                        Tokens::LessThanEquals => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-                        }
-                        Tokens::GreaterThanEquals => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-                        }
-                        Tokens::DoubleEquals => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-                        }
-                        Tokens::NotEquals => {
-                            self.builder.build_int_cast(
-                                self.builder.build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp"),
-                                self.context.bool_type(),
-                                "bool_cast"
-                            )
-
-                        }
+                        Tokens::LessThan => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
+                        Tokens::GreaterThan => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
+                        Tokens::LessThanEquals => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
+                        Tokens::GreaterThanEquals => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
+                        Tokens::DoubleEquals => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
+                        Tokens::NotEquals => self.builder.build_int_cast(
+                            self.builder
+                                .build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp"),
+                            self.context.bool_type(),
+                            "bool_cast",
+                        ),
                         _ => {
                             if op_token.value == Tokens::Keyword("and") {
                                 self.builder.build_and(lhs, rhs, "and")
@@ -266,11 +262,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         Tokens::GreaterThan => {
                             let cmp = self.builder.build_float_compare(
@@ -280,11 +274,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         Tokens::LessThanEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -294,11 +286,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         Tokens::GreaterThanEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -308,11 +298,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         Tokens::DoubleEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -322,11 +310,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         Tokens::NotEquals => {
                             let cmp = self.builder.build_float_compare(
@@ -336,11 +322,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 "tmpcmp",
                             );
 
-                            self.builder.build_int_cast(
-                                cmp,
-                                self.context.bool_type(),
-                                "bool_cast"
-                            ).into()
+                            self.builder
+                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
+                                .into()
                         }
                         _ => unreachable!(),
                     }
@@ -433,11 +417,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.variables.insert(name.to_string(), alloca);
                 self.null()
             }
-            LLVMNode::Var { ty: _, name } => {
-                match self.variables.get(name.as_str()) {
-                    Some(val) => self.builder.build_load(val.clone(), name.as_str()),
-                    None => self.module.get_function(name.as_str()).unwrap().as_global_value().as_pointer_value().into(),
-                }
+            LLVMNode::Var { ty: _, name } => match self.variables.get(name.as_str()) {
+                Some(val) => self.builder.build_load(val.clone(), name.as_str()),
+                None => self
+                    .module
+                    .get_function(name.as_str())
+                    .unwrap()
+                    .as_global_value()
+                    .as_pointer_value()
+                    .into(),
             },
             LLVMNode::Call { ty: _, fun, args } => self
                 .builder
@@ -526,7 +514,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.builder.build_conditional_branch(
                     cond.into_int_value(),
                     body_block,
-                    after_block
+                    after_block,
                 );
                 self.builder.position_at_end(body_block);
                 self.compile(*body.clone());
@@ -620,6 +608,69 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 )
             }
             LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
+            LLVMNode::CObject { ty: _ty, object } => {
+                let obj = self.compile(*object);
+                let object = self.builder.build_load(obj.into_pointer_value(), "cobj").into_struct_value();
+                let mut c_obj_fields = object.get_type().get_field_types();
+                c_obj_fields.remove(0);
+                let mut struct_val = self.context.struct_type(&c_obj_fields, false).get_undef();
+
+                for i in 1..object.get_type().count_fields() {
+                    struct_val = self
+                        .builder
+                        .build_insert_value(
+                            struct_val,
+                            self.builder.build_load(self.builder
+                                .build_struct_gep(obj.into_pointer_value(), i, "struct_gep")
+                                .ok()
+                                .unwrap(), "struct_load"),
+                            i-1,
+                            "c_obj_load",
+                        )
+                        .unwrap()
+                        .into_struct_value();
+                }
+
+                let alloc = self.builder.build_alloca(struct_val.get_type(), "c_obj_alloc");
+                self.builder.build_store(alloc, struct_val);
+                alloc.into()
+            }
+            LLVMNode::CToBzxObject { ty, object } => {
+                let ty = ty.into_pointer_type().get_element_type().into_struct_type();
+                let mut struct_val = self
+                    .builder
+                    .build_insert_value(
+                        ty.get_undef(),
+                        ty.get_field_type_at_index(0).unwrap().const_zero(),
+                        0,
+                        "%alignment%",
+                    )
+                    .unwrap()
+                    .into_struct_value();
+
+                let obj = self.compile(*object);
+                let object = self.builder.build_load(obj.into_pointer_value(), "cobj").into_struct_value();
+
+                for i in 0..object.get_type().count_fields() {
+                    struct_val = self
+                        .builder
+                        .build_insert_value(
+                            struct_val,
+                            self.builder.build_load(self.builder
+                                .build_struct_gep(obj.into_pointer_value(), i, "struct_gep")
+                                .ok()
+                                .unwrap(), "struct_load"),
+                            i+1,
+                            "c_obj_load",
+                        )
+                        .unwrap()
+                        .into_struct_value();
+                }
+
+                let alloc = self.builder.build_alloca(struct_val.get_type(), "c_obj_alloc");
+                self.builder.build_store(alloc, struct_val);
+                alloc.into()
+            }
             LLVMNode::ObjectAccess {
                 ty: _,
                 object,
@@ -721,16 +772,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 static_obj,
             } => {
                 let static_obj = self.compile(*static_obj);
-
-                let gb = self.module.add_global(
-                    static_obj.get_type(),
-                    Some(AddressSpace::Global),
-                    "static_obj",
-                );
-                gb.set_initializer(&static_obj);
-                gb.set_constant(false);
-
-                self.variables.insert(class.clone(), gb.as_pointer_value());
+                let alloca = self
+                    .builder
+                    .build_alloca(static_obj.get_type(), "class_alloca");
+                self.builder.build_store(alloca, static_obj);
+                self.variables.insert(class.clone(), alloca);
 
                 let klass = self.create_obj(ty, properties).into_pointer_value();
                 let constructor = self.class_method(class.clone(), klass.get_type(), *constructor);
@@ -751,11 +797,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .unwrap()
                         .into_vector_type()
                         .get_size(),
-                    (
-                        klass.get_name().to_str().unwrap().to_string(),
-                        constructor.into_pointer_value(),
-                        n_methods,
-                    ),
+                    (klass, constructor.into_pointer_value(), n_methods),
                 );
                 self.null()
             }
@@ -779,20 +821,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     .unwrap()
                     .clone();
 
-                let base = self
-                    .module
-                    .get_global(&*base)
-                    .unwrap()
-                    .get_initializer()
-                    .unwrap();
+                let base = self.builder.build_load(base, "base");
 
-                let gb =
-                    self.module
-                        .add_global(base.get_type(), Some(AddressSpace::Global), "soul_obj");
-                gb.set_initializer(&base);
-                gb.set_constant(false);
-
-                let ptr = gb.as_pointer_value();
+                let ptr = self.builder.build_alloca(base.get_type(), "ptr");
+                self.builder.build_store(ptr, base);
 
                 let mut params: Vec<BasicValueEnum<'ctx>> = vec![ptr.into()];
                 params.extend(

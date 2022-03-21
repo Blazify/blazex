@@ -27,7 +27,7 @@ use llvm_sys::core::{
 use llvm_sys::core::{LLVMBuildAtomicCmpXchg, LLVMMetadataAsValue, LLVMSetCurrentDebugLocation};
 use llvm_sys::core::{LLVMBuildMemCpy, LLVMBuildMemMove};
 use llvm_sys::prelude::{LLVMBuilderRef, LLVMValueRef};
-use llvm_sys::{LLVMTypeKind};
+use llvm_sys::LLVMTypeKind;
 
 use crate::basic_block::BasicBlock;
 use crate::debug_info::DILocation;
@@ -1545,8 +1545,6 @@ impl<'ctx> Builder<'ctx> {
         name: &str,
     ) -> T {
         let c_string = to_c_str(name);
-
-        println!("OP CALLED: {:?}", op);
 
         let value = unsafe {
             LLVMBuildICmp(

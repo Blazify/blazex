@@ -142,6 +142,14 @@ impl<'ctx> TypeSystem<'ctx> {
                     .map(|(name, node)| (name.clone(), self.gen(subs.clone(), node.clone())))
                     .collect(),
             },
+            TypedNode::CObject { ty, object } => LLVMNode::CObject {
+                ty: llvm(ty),
+                object: box self.gen(subs.clone(), *object),
+            },
+            TypedNode::CToBzxObject { ty, object } => LLVMNode::CToBzxObject {
+                ty: llvm(ty),
+                object: box self.gen(subs.clone(), *object),
+            },
             TypedNode::ObjectAccess {
                 ty,
                 object,

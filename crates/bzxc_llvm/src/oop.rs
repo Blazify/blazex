@@ -45,14 +45,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_struct_value();
         }
 
-        let gb = self
-            .module
-            .add_global(struct_val.get_type(), Some(AddressSpace::Global), "obj");
-
-        gb.set_initializer(&struct_val);
-        gb.set_constant(false);
-
-        gb.as_pointer_value().into()
+        let ptr = self.builder.build_alloca(struct_val.get_type(), "obj");
+        self.builder.build_store(ptr, struct_val);
+        ptr.into()
     }
 
     pub(super) fn obj_property(

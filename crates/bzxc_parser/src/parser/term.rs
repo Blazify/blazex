@@ -26,7 +26,8 @@ impl Parser {
             return res;
         }
 
-        while [Tokens::Multiply, Tokens::Divide, Tokens::Modulo].contains(&self.current_token.value) {
+        while [Tokens::Multiply, Tokens::Divide, Tokens::Modulo].contains(&self.current_token.value)
+        {
             let op_token = self.current_token.clone();
             res.register_advancement();
             self.advance();

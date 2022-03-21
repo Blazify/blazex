@@ -136,6 +136,18 @@ impl Parser {
                 return res;
             }
             return res.success(extern_def.unwrap());
+        } else if token.value == Tokens::Keyword("CObject") {
+            let c_object_def = res.register(self.c_object());
+            if res.error.is_some() {
+                return res;
+            }
+            return res.success(c_object_def.unwrap());
+        } else if token.value == Tokens::Keyword("CToBzxObject") {
+            let c_object_def = res.register(self.c_to_bzx_object());
+            if res.error.is_some() {
+                return res;
+            }
+            return res.success(c_object_def.unwrap());
         } else if let Tokens::Keyword(_) = token.value {
             self.advance();
             res.register_advancement();

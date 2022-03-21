@@ -1,11 +1,7 @@
-extern int input_int();
-extern float input_float();
-extern char input_char();
-extern string input_string();
+extern int println(string, ...)
 
-class Input {
-    fun int() { return input_int(); }
-    fun float() { return input_float(); }
-    fun char() { return input_char(); }
-    fun string() { return input_string(); }
-}
+var obj = { a: int };
+extern CObject(obj) accept_obj(CObject(obj));
+
+var a = CToBzxObject(accept_obj(CObject({ a: 50 })),obj).a
+println("%i", a)

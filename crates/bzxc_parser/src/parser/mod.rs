@@ -17,6 +17,8 @@ use bzxc_shared::{Error, Token, Tokens};
 mod arith_expr;
 mod array_expr;
 mod atom;
+mod c_object;
+mod c_to_bzx_obj;
 mod call;
 mod call_access_expr;
 mod class_def;

@@ -357,6 +357,13 @@ pub enum Node {
     TypeKeyword {
         token: Token,
     },
+    CObject {
+        object: Box<Node>,
+    },
+    CToBzxObject {
+        object: Box<Node>,
+        bzx_object: Box<Node>,
+    },
 }
 
 impl Node {
@@ -450,6 +457,8 @@ impl Node {
                 properties.first().unwrap().0.pos_start,
                 properties.last().unwrap().1.get_pos().1,
             ),
+            Node::CObject { object } => object.get_pos(),
+            Node::CToBzxObject { bzx_object, object } => (bzx_object.get_pos().0, object.get_pos().1),
             Node::ObjectPropAccess { object, property } => (object.get_pos().0, property.pos_end),
             Node::ObjectPropEdit {
                 object,
@@ -578,6 +587,14 @@ pub enum LLVMNode<'ctx> {
     Object {
         ty: BasicTypeEnum<'ctx>,
         properties: Vec<(String, Self)>,
+    },
+    CObject {
+        ty: BasicTypeEnum<'ctx>,
+        object: Box<Self>,
+    },
+    CToBzxObject {
+        ty: BasicTypeEnum<'ctx>,
+        object: Box<Self>,
     },
     ObjectAccess {
         ty: BasicTypeEnum<'ctx>,
@@ -717,6 +734,14 @@ pub enum TypedNode {
         ty: Type,
         properties: BTreeMap<String, Self>,
     },
+    CObject {
+        ty: Type,
+        object: Box<Self>,
+    },
+    CToBzxObject {
+        ty: Type,
+        object: Box<Self>,
+    },
     ObjectAccess {
         ty: Type,
         object: Box<Self>,
@@ -787,6 +812,8 @@ impl TypedNode {
             | TypedNode::Array { ty, .. }
             | TypedNode::Index { ty, .. }
             | TypedNode::Object { ty, .. }
+            | TypedNode::CObject { ty, .. }
+            | TypedNode::CToBzxObject { ty, .. }
             | TypedNode::ObjectAccess { ty, .. }
             | TypedNode::ObjectEdit { ty, .. }
             | TypedNode::ObjectMethodCall { ty, .. }
@@ -865,7 +892,10 @@ impl Type {
                 )
                 .ptr_type(AddressSpace::Global)
                 .into(),
-            Type::Null => ctx.struct_type(&[], true).into(),
+            Type::Null => ctx
+                .struct_type(&[], false)
+                .ptr_type(AddressSpace::Generic)
+                .into(),
             Type::Var(tvar) => tvars
                 .clone()
                 .get(&Type::Var(*tvar))
@@ -879,7 +909,7 @@ impl Type {
                         .collect::<Vec<BasicTypeEnum>>()[..],
                     false,
                 )
-                .ptr_type(AddressSpace::Global)
+                .ptr_type(AddressSpace::Generic)
                 .into(),
             Type::Class(obj) => obj.llvm(ctx, tvars),
         }

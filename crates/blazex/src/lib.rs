@@ -1,6 +1,5 @@
 #![allow(dead_code, unused_variables, unused_imports)]
 
-use std::env;
 use bzxc_lexer::Lexer;
 use bzxc_llvm::Compiler;
 use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
@@ -14,6 +13,7 @@ use bzxc_llvm_wrapper::{
 };
 use bzxc_parser::parser::Parser;
 use bzxc_type_system::TypeSystem;
+use std::env;
 use std::path::Path;
 use std::process::Command;
 
@@ -98,7 +98,11 @@ pub fn compile(
                 let out_dir = env::var("OUT_DIR").unwrap();
 
                 Command::new("clang-10")
-                    .args([out_file.clone(), format!("{}/libblazex.a", out_dir), format!("-o{}", out_file.replace(".o", ".out"))])
+                    .args([
+                        out_file.clone(),
+                        format!("{}/libblazex.a", out_dir),
+                        format!("-o{}", out_file.replace(".o", ".out")),
+                    ])
                     .status()
                     .unwrap();
                 println!("Compiled executable to {}", out_file.replace(".o", ".out"));

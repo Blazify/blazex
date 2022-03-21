@@ -25,3 +25,12 @@ char *platform() {
     return "unknown";
 #endif
 }
+
+struct Person {
+    int a;
+};
+
+struct Person *accept_obj(struct Person *x) {
+    struct Person *r = x;
+    return r;
+}

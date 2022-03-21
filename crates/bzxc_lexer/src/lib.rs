@@ -44,6 +44,9 @@ pub fn get_keywords() -> Vec<String> {
         string("bool"),
         string("string"),
         string("char"),
+        string("CObject"),
+        string("CArray"),
+        string("CToBzxObject")
     ]
 }
 
@@ -74,9 +77,9 @@ pub(crate) fn get_ascii_letters() -> Vec<&'static str> {
 * Returns all ascii charecters with numbers
 */
 pub(crate) fn get_ascii_letters_and_digits() -> Vec<&'static str> {
-    "_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-        .split("")
-        .collect::<Vec<&str>>()
+    let mut vec = get_ascii_letters();
+    vec.extend(get_number().iter().map(|x| to_static_str(x.to_string())));
+    vec
 }
 
 /*

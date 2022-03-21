@@ -55,9 +55,11 @@ impl<'ctx> TypeSystem<'ctx> {
                 constr.push(Constraint(
                     ty.clone(),
                     match op_token.value {
-                        Tokens::Plus | Tokens::Minus | Tokens::Multiply | Tokens::Divide | Tokens::Modulo => {
-                            left.get_type()
-                        }
+                        Tokens::Plus
+                        | Tokens::Minus
+                        | Tokens::Multiply
+                        | Tokens::Divide
+                        | Tokens::Modulo => left.get_type(),
                         _ => Type::Boolean,
                     },
                 ));
@@ -204,6 +206,16 @@ impl<'ctx> TypeSystem<'ctx> {
                     tree.insert(name.clone(), node.get_type());
                 }
                 constr.push(Constraint(ty, Type::create_obj(tree)));
+                constr
+            }
+            TypedNode::CObject { ty, object } => {
+                let mut constr = self.collect(*object.clone());
+                constr.push(Constraint(ty, object.get_type()));
+                constr
+            }
+            TypedNode::CToBzxObject { ty, object } => {
+                let mut constr = self.collect(*object.clone());
+                constr.push(Constraint(ty, object.get_type()));
                 constr
             }
             TypedNode::ObjectAccess {

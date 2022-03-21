@@ -370,6 +370,18 @@ impl<'ctx> TypeSystem<'ctx> {
 
                 fun
             }
+            Node::CObject { object } => {
+                TypedNode::CObject {
+                    ty: Type::fresh_var(),
+                    object: box self.annotate(*object),
+                }
+            }
+            Node::CToBzxObject { object, bzx_object } => {
+                TypedNode::CToBzxObject {
+                    ty: self.annotate(*bzx_object).get_type(),
+                    object: box self.annotate(*object),
+                }
+            }
             Node::TypeKeyword { token } => match token.value.into_string().as_str() {
                 "int" => TypedNode::Int {
                     ty: Type::Int,
@@ -382,6 +394,10 @@ impl<'ctx> TypeSystem<'ctx> {
                 "bool" => TypedNode::Boolean {
                     ty: Type::Boolean,
                     val: false,
+                },
+                "char" => TypedNode::Char {
+                    ty: Type::Char,
+                    val: '\0',
                 },
                 "string" => TypedNode::String {
                     ty: Type::String,
