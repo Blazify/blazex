@@ -46,7 +46,7 @@ pub fn get_keywords() -> Vec<String> {
         string("char"),
         string("CObject"),
         string("CArray"),
-        string("CToBzxObject")
+        string("CToBzxObject"),
     ]
 }
 

@@ -16,7 +16,7 @@ use bzxc_shared::{Binder, Node, Tokens, Type, TypedNode};
 
 use crate::TypeSystem;
 
-impl<'ctx> TypeSystem<'ctx> {
+impl TypeSystem {
     pub(crate) fn annotate(&mut self, node: Node) -> TypedNode {
         match node.clone() {
             Node::Statements { statements } => TypedNode::Statements(
@@ -370,18 +370,14 @@ impl<'ctx> TypeSystem<'ctx> {
 
                 fun
             }
-            Node::CObject { object } => {
-                TypedNode::CObject {
-                    ty: Type::fresh_var(),
-                    object: box self.annotate(*object),
-                }
-            }
-            Node::CToBzxObject { object, bzx_object } => {
-                TypedNode::CToBzxObject {
-                    ty: self.annotate(*bzx_object).get_type(),
-                    object: box self.annotate(*object),
-                }
-            }
+            Node::CObject { object } => TypedNode::CObject {
+                ty: Type::fresh_var(),
+                object: box self.annotate(*object),
+            },
+            Node::CToBzxObject { object, bzx_object } => TypedNode::CToBzxObject {
+                ty: self.annotate(*bzx_object).get_type(),
+                object: box self.annotate(*object),
+            },
             Node::TypeKeyword { token } => match token.value.into_string().as_str() {
                 "int" => TypedNode::Int {
                     ty: Type::Int,

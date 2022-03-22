@@ -7,5 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }
+llvm-sys = "100.0"
 bzxc_shared = { path = "../bzxc_shared" }

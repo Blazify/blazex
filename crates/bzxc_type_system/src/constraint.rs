@@ -19,7 +19,7 @@ use crate::TypeSystem;
 #[derive(Debug, Clone)]
 pub struct Constraint(pub Type, pub Type);
 
-impl<'ctx> TypeSystem<'ctx> {
+impl TypeSystem {
     pub(crate) fn collect(&mut self, node: TypedNode) -> Vec<Constraint> {
         match node {
             TypedNode::Statements(stmts) => stmts

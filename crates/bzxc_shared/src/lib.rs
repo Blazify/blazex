@@ -11,16 +11,22 @@
  * limitations under the License.
 */
 #![allow(unused_must_use)]
+
+use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::convert::TryInto;
+use std::ffi::{CStr, CString};
 use std::hash::Hash;
 
-use bzxc_llvm_wrapper::context::Context;
-use bzxc_llvm_wrapper::types::BasicTypeEnum;
-use bzxc_llvm_wrapper::AddressSpace;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+use llvm_sys::core::{
+    LLVMFloatTypeInContext, LLVMFunctionType, LLVMInt128TypeInContext, LLVMInt1TypeInContext,
+    LLVMInt8TypeInContext, LLVMPointerType, LLVMStructTypeInContext, LLVMVectorType,
+};
+use llvm_sys::prelude::{LLVMContextRef, LLVMTypeRef};
 
 /*
 * Enum of all the Token Types
@@ -458,7 +464,9 @@ impl Node {
                 properties.last().unwrap().1.get_pos().1,
             ),
             Node::CObject { object } => object.get_pos(),
-            Node::CToBzxObject { bzx_object, object } => (bzx_object.get_pos().0, object.get_pos().1),
+            Node::CToBzxObject { bzx_object, object } => {
+                (bzx_object.get_pos().0, object.get_pos().1)
+            }
             Node::ObjectPropAccess { object, property } => (object.get_pos().0, property.pos_end),
             Node::ObjectPropEdit {
                 object,
@@ -495,80 +503,92 @@ impl Node {
     }
 }
 
+pub fn to_c_str(mut s: &str) -> Cow<CStr> {
+    if s.is_empty() {
+        s = "\0";
+    }
+
+    if s.chars().rev().find(|&ch| ch == '\0').is_none() {
+        return Cow::from(CString::new(s).expect("unreachable since null bytes are checked"));
+    }
+
+    unsafe { Cow::from(CStr::from_ptr(s.as_ptr() as *const _)) }
+}
+
 #[derive(Debug, Clone)]
-pub enum LLVMNode<'ctx> {
+pub enum LLVMNode {
     Statements(Vec<Self>),
 
     Int {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: i128,
     },
     Float {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: f64,
     },
     Boolean {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: bool,
     },
     Char {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: char,
     },
     String {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: String,
     },
     Unary {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: Box<Self>,
         op_token: Token,
     },
     Binary {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         left: Box<Self>,
         right: Box<Self>,
         op_token: Token,
     },
     Fun {
         name: String,
-        ty: BasicTypeEnum<'ctx>,
-        params: Vec<(String, BasicTypeEnum<'ctx>)>,
+        ty: LLVMTypeRef,
+        params: Vec<(String, LLVMTypeRef)>,
         body: Box<Self>,
     },
     Let {
         name: String,
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: Box<Self>,
     },
     Var {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         name: String,
     },
     Call {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         fun: Box<Self>,
         args: Vec<Self>,
     },
     Return {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         val: Box<Self>,
     },
     Null {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
     },
     If {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         cases: Vec<(Self, Self)>,
         else_case: Option<Box<Self>>,
     },
     While {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         cond: Box<Self>,
         body: Box<Self>,
     },
     For {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         var: String,
         start: Box<Self>,
         end: Box<Self>,
@@ -576,45 +596,45 @@ pub enum LLVMNode<'ctx> {
         body: Box<Self>,
     },
     Array {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         elements: Vec<Self>,
     },
     Index {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         array: Box<Self>,
         idx: Box<Self>,
     },
     Object {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         properties: Vec<(String, Self)>,
     },
     CObject {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         object: Box<Self>,
     },
     CToBzxObject {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         object: Box<Self>,
     },
     ObjectAccess {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         object: Box<Self>,
         property: String,
     },
     ObjectEdit {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         object: Box<Self>,
         property: String,
         new_val: Box<Self>,
     },
     ObjectMethodCall {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         object: Box<Self>,
         property: String,
         args: Vec<Self>,
     },
     Class {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         name: String,
         properties: Vec<(String, Self)>,
         methods: Vec<(String, Self)>,
@@ -622,12 +642,12 @@ pub enum LLVMNode<'ctx> {
         static_obj: Box<Self>,
     },
     ClassInit {
-        ty: BasicTypeEnum<'ctx>,
-        class: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
+        class: LLVMTypeRef,
         constructor_params: Vec<Self>,
     },
     Extern {
-        ty: BasicTypeEnum<'ctx>,
+        ty: LLVMTypeRef,
         name: String,
         return_type: Box<Self>,
         args: Vec<Self>,
@@ -869,49 +889,59 @@ impl Type {
         }
     }
 
-    pub fn llvm<'ctx>(
-        &self,
-        ctx: &'ctx Context,
-        tvars: BTreeMap<Type, Type>,
-    ) -> BasicTypeEnum<'ctx> {
-        match self {
-            Type::Int => ctx.i128_type().into(),
-            Type::Float => ctx.f64_type().into(),
-            Type::Boolean => ctx.bool_type().into(),
-            Type::Char => ctx.i8_type().into(),
-            Type::String => ctx.i8_type().ptr_type(AddressSpace::Generic).into(),
-            Type::Array(ty, i) => ty.llvm(ctx, tvars).vec_type(i.clone()).into(),
-            Type::Fun(params, ret) => ret
-                .llvm(ctx, tvars.clone())
-                .fn_type(
-                    &params
-                        .iter()
-                        .map(|x| x.llvm(ctx, tvars.clone()))
-                        .collect::<Vec<BasicTypeEnum>>()[..],
-                    false,
-                )
-                .ptr_type(AddressSpace::Global)
-                .into(),
-            Type::Null => ctx
-                .struct_type(&[], false)
-                .ptr_type(AddressSpace::Generic)
-                .into(),
-            Type::Var(tvar) => tvars
-                .clone()
-                .get(&Type::Var(*tvar))
-                .unwrap()
-                .llvm(ctx, tvars),
-            Type::Object(tree) => ctx
-                .struct_type(
-                    &tree
-                        .iter()
-                        .map(|(_, ty)| ty.llvm(ctx, tvars.clone()))
-                        .collect::<Vec<BasicTypeEnum>>()[..],
-                    false,
-                )
-                .ptr_type(AddressSpace::Generic)
-                .into(),
-            Type::Class(obj) => obj.llvm(ctx, tvars),
+    pub fn llvm(&self, ctx: LLVMContextRef, tvars: BTreeMap<Type, Type>) -> LLVMTypeRef {
+        unsafe {
+            match self {
+                Type::Int => LLVMInt128TypeInContext(ctx),
+                Type::Float => LLVMFloatTypeInContext(ctx),
+                Type::Boolean => LLVMInt1TypeInContext(ctx),
+                Type::Char => LLVMInt8TypeInContext(ctx),
+                Type::String => LLVMPointerType(LLVMInt8TypeInContext(ctx), 0),
+                Type::Array(ty, i) => LLVMVectorType(
+                    ty.llvm(ctx, tvars),
+                    match i {
+                        Some(i) => *i,
+                        None => 0,
+                    }
+                    .try_into()
+                    .unwrap(),
+                ),
+                Type::Fun(params, ret) => LLVMPointerType(
+                    LLVMFunctionType(
+                        ret.llvm(ctx, tvars.clone()),
+                        params
+                            .iter()
+                            .map(|p| p.llvm(ctx, tvars.clone()))
+                            .collect::<Vec<_>>()
+                            .as_mut_ptr(),
+                        params.len().try_into().unwrap(),
+                        0,
+                    ),
+                    0,
+                ),
+                Type::Null => LLVMPointerType(
+                    LLVMStructTypeInContext(ctx, [].as_mut_ptr(), 0.try_into().unwrap(), 0),
+                    0,
+                ),
+                Type::Var(tvar) => tvars
+                    .clone()
+                    .get(&Type::Var(*tvar))
+                    .unwrap()
+                    .llvm(ctx, tvars),
+                Type::Object(tree) => LLVMPointerType(
+                    LLVMStructTypeInContext(
+                        ctx,
+                        tree.iter()
+                            .map(|(_, v)| v.llvm(ctx, tvars.clone()))
+                            .collect::<Vec<_>>()
+                            .as_mut_ptr(),
+                        tree.len().try_into().unwrap(),
+                        0,
+                    ),
+                    0,
+                ),
+                Type::Class(obj) => obj.llvm(ctx, tvars),
+            }
         }
     }
 }

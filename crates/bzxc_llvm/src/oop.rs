@@ -1,87 +1,78 @@
-use bzxc_llvm_wrapper::{
-    types::{BasicTypeEnum, PointerType},
-    values::{BasicValueEnum, PointerValue},
-    AddressSpace,
+use llvm_sys::core::{
+    LLVMBuildInsertValue, LLVMBuildStore, LLVMBuildStructGEP, LLVMConstNull, LLVMFunctionType,
+    LLVMGetElementType, LLVMGetReturnType, LLVMGetUndef, LLVMGetVectorSize, LLVMPointerType,
+    LLVMStructGetTypeAtIndex, LLVMTypeOf,
 };
-use bzxc_shared::LLVMNode;
+use llvm_sys::prelude::{LLVMTypeRef, LLVMValueRef};
+
+use bzxc_shared::{to_c_str, LLVMNode};
 
 use crate::Compiler;
 
-impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    pub(super) fn create_obj(
+impl Compiler {
+    pub(super) unsafe fn create_obj(
         &mut self,
-        ty: BasicTypeEnum<'ctx>,
-        properties: Vec<(String, LLVMNode<'ctx>)>,
-    ) -> BasicValueEnum<'ctx> {
-        let ty = ty.into_pointer_type().get_element_type().into_struct_type();
-        let aligner = ty
-            .get_field_type_at_index(0)
-            .unwrap()
-            .into_vector_type()
-            .get_size();
+        ty: LLVMTypeRef,
+        properties: Vec<(String, LLVMNode)>,
+    ) -> LLVMValueRef {
+        let aligner =
+            LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0)) as usize as u32;
 
-        let mut struct_val = self
-            .builder
-            .build_insert_value(
-                ty.get_undef(),
-                ty.get_field_type_at_index(0).unwrap().const_zero(),
-                0,
-                "%alignment%",
-            )
-            .unwrap()
-            .into_struct_value();
+        let mut struct_val = LLVMBuildInsertValue(
+            self.builder,
+            LLVMGetUndef(LLVMGetElementType(ty)),
+            LLVMConstNull(LLVMStructGetTypeAtIndex(ty, 0)),
+            0,
+            to_c_str("c_to_bzx_obj_load").as_ptr(),
+        );
+
         for (i, (name, val)) in properties.iter().enumerate() {
             let idx = i + 1;
             self.objects.insert((name.clone(), aligner), idx);
-            struct_val = self
-                .builder
-                .build_insert_value(
-                    struct_val,
-                    self.compile(val.clone()),
-                    idx as u32,
-                    name.as_str(),
-                )
-                .unwrap()
-                .into_struct_value();
+            struct_val = LLVMBuildInsertValue(
+                self.builder,
+                struct_val,
+                self.compile(val.clone()),
+                idx as u32,
+                to_c_str("c_to_bzx_obj_load").as_ptr(),
+            );
         }
 
-        let ptr = self.builder.build_alloca(struct_val.get_type(), "obj");
-        self.builder.build_store(ptr, struct_val);
-        ptr.into()
+        let ptr = self.create_entry_block_alloca("obj", LLVMTypeOf(struct_val));
+        LLVMBuildStore(self.builder, struct_val, ptr);
+        ptr
     }
 
-    pub(super) fn obj_property(
+    pub(super) unsafe fn obj_property(
         &mut self,
-        object: PointerValue<'ctx>,
+        object: LLVMValueRef,
         property: String,
-    ) -> PointerValue<'ctx> {
+    ) -> LLVMValueRef {
         let i = self
             .objects
             .get(&(
                 property,
-                object
-                    .get_type()
-                    .get_element_type()
-                    .into_struct_type()
-                    .get_field_type_at_index(0)
-                    .unwrap()
-                    .into_vector_type()
-                    .get_size(),
+                LLVMGetVectorSize(LLVMStructGetTypeAtIndex(
+                    LLVMGetElementType(LLVMTypeOf(object)),
+                    0,
+                )) as usize as u32,
             ))
             .unwrap();
 
-        self.builder
-            .build_struct_gep(object, *i as u32, "struct_gep")
-            .ok()
-            .unwrap()
+        LLVMBuildStructGEP(
+            self.builder,
+            object,
+            *i as u32,
+            to_c_str("obj_load").as_ptr(),
+        )
     }
 
-    pub(super) fn class_method(
+    pub(super) unsafe fn class_method(
         &mut self,
         class: String,
-        klass: PointerType<'ctx>,
-        method: LLVMNode<'ctx>,
-    ) -> BasicValueEnum<'ctx> {
+        klass: LLVMTypeRef,
+        method: LLVMNode,
+    ) -> LLVMValueRef {
         match method {
             LLVMNode::Fun {
                 body,
@@ -89,27 +80,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 params,
                 ty,
             } => {
-                let mut n_params: Vec<(String, BasicTypeEnum<'ctx>)> =
-                    vec![("soul".to_string(), klass.into())];
+                let mut n_params = vec![("soul".to_string(), klass)];
                 n_params.extend(params);
 
-                let pty = n_params
+                let mut pty = n_params
                     .iter()
                     .map(|(_, ty)| ty.clone())
-                    .collect::<Vec<BasicTypeEnum<'ctx>>>();
+                    .collect::<Vec<_>>();
+
+                let ty = LLVMFunctionType(
+                    LLVMGetReturnType(LLVMGetElementType(ty)),
+                    pty.as_mut_ptr(),
+                    pty.len() as u32,
+                    0,
+                );
                 self.compile(LLVMNode::Fun {
                     body,
                     name: format!("{}%{}", class, name),
-                    params: { n_params.clone() },
-                    ty: ty
-                        .into_pointer_type()
-                        .get_element_type()
-                        .into_function_type()
-                        .get_return_type()
-                        .unwrap()
-                        .fn_type(&pty[..], false)
-                        .ptr_type(AddressSpace::Generic)
-                        .into(),
+                    params: n_params.clone(),
+                    ty: LLVMPointerType(ty, 0),
                 })
             }
             _ => unreachable!(),

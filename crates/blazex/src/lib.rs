@@ -1,23 +1,45 @@
 #![allow(dead_code, unused_variables, unused_imports)]
 
-use bzxc_lexer::Lexer;
-use bzxc_llvm::Compiler;
-use bzxc_llvm_wrapper::support::enable_llvm_pretty_stack_trace;
-use bzxc_llvm_wrapper::{
-    context::Context,
-    execution_engine::JitFunction,
-    module::Module,
-    passes::PassManager,
-    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    OptimizationLevel,
-};
-use bzxc_parser::parser::Parser;
-use bzxc_type_system::TypeSystem;
-use std::env;
+use std::ffi::{CStr, CString};
+use std::mem::MaybeUninit;
 use std::path::Path;
 use std::process::Command;
+use std::{env, ptr};
 
-pub fn compile(
+use llvm_sys::core::{
+    LLVMContextCreate, LLVMContextDispose, LLVMCreateBuilderInContext,
+    LLVMCreateFunctionPassManager, LLVMCreateModuleProviderForExistingModule, LLVMDisposeBuilder,
+    LLVMDisposeMessage, LLVMDisposeModule, LLVMDumpModule, LLVMInitializeFunctionPassManager,
+    LLVMModuleCreateWithNameInContext, LLVMSetDataLayout, LLVMSetTarget,
+};
+use llvm_sys::error_handling::LLVMEnablePrettyStackTrace;
+use llvm_sys::target::{
+    LLVMCopyStringRepOfTargetData, LLVM_InitializeAllAsmParsers, LLVM_InitializeAllAsmPrinters,
+    LLVM_InitializeAllTargetInfos, LLVM_InitializeAllTargetMCs, LLVM_InitializeAllTargets,
+    LLVM_InitializeNativeTarget,
+};
+use llvm_sys::target_machine::LLVMCodeGenFileType::LLVMObjectFile;
+use llvm_sys::target_machine::LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive;
+use llvm_sys::target_machine::LLVMCodeModel::LLVMCodeModelDefault;
+use llvm_sys::target_machine::LLVMRelocMode::LLVMRelocDefault;
+use llvm_sys::target_machine::{
+    LLVMCreateTargetDataLayout, LLVMCreateTargetMachine, LLVMGetDefaultTargetTriple,
+    LLVMGetFirstTarget, LLVMGetHostCPUFeatures, LLVMGetHostCPUName, LLVMGetTargetFromName,
+    LLVMGetTargetFromTriple, LLVMTargetMachineEmitToFile, LLVMTargetRef,
+};
+use llvm_sys::transforms::scalar::{
+    LLVMAddBasicAliasAnalysisPass, LLVMAddCFGSimplificationPass, LLVMAddGVNPass,
+    LLVMAddInstructionCombiningPass, LLVMAddReassociatePass,
+};
+use llvm_sys::transforms::util::LLVMAddPromoteMemoryToRegisterPass;
+
+use bzxc_lexer::Lexer;
+use bzxc_llvm::Compiler;
+use bzxc_parser::parser::Parser;
+use bzxc_shared::to_c_str;
+use bzxc_type_system::TypeSystem;
+
+pub unsafe fn compile(
     file_name: String,
     cnt: String,
     is_quiet: bool,
@@ -55,64 +77,85 @@ pub fn compile(
         }
     }
 
-    let context = Context::create();
-    let llvm_node = TypeSystem::new(parsed.node.unwrap(), &context).llvm_node();
+    let context = LLVMContextCreate();
+    let llvm_node = TypeSystem::new(parsed.node.unwrap(), context).llvm_node();
 
-    let module = context.create_module(name);
-    let builder = context.create_builder();
-    let fpm = PassManager::create(&module);
+    let module = LLVMModuleCreateWithNameInContext(to_c_str(name).as_ptr(), context);
+    let builder = LLVMCreateBuilderInContext(context);
 
-    fpm.add_instruction_combining_pass();
-    fpm.add_reassociate_pass();
-    fpm.add_gvn_pass();
-    fpm.add_cfg_simplification_pass();
-    fpm.add_basic_alias_analysis_pass();
-    fpm.add_promote_memory_to_register_pass();
-    fpm.add_reassociate_pass();
-    fpm.initialize();
-    enable_llvm_pretty_stack_trace();
+    let fpm = LLVMCreateFunctionPassManager(LLVMCreateModuleProviderForExistingModule(module));
+    LLVMAddInstructionCombiningPass(fpm);
+    LLVMAddReassociatePass(fpm);
+    LLVMAddGVNPass(fpm);
+    LLVMAddCFGSimplificationPass(fpm);
+    LLVMAddBasicAliasAnalysisPass(fpm);
+    LLVMAddPromoteMemoryToRegisterPass(fpm);
+    LLVMInitializeFunctionPassManager(fpm);
 
-    Compiler::init(&context, &builder, &module, &fpm, llvm_node).compile_main();
+    LLVMEnablePrettyStackTrace();
+
+    Compiler::init(context, builder, module, fpm, llvm_node).compile_main();
     if llvm {
-        println!("LLVM IR:\n{}", module.print_to_string().to_string());
+        LLVMDumpModule(module);
     }
 
-    let path = Path::new(&out_file);
+    LLVM_InitializeAllTargetInfos();
+    LLVM_InitializeAllTargets();
+    LLVM_InitializeAllTargetMCs();
+    LLVM_InitializeAllAsmParsers();
+    LLVM_InitializeAllAsmPrinters();
 
-    Target::initialize_all(&InitializationConfig::default());
-    let target = Target::from_name("x86-64").unwrap();
-    let target_machine = target
-        .create_target_machine(
-            &TargetMachine::get_default_triple(),
-            "x86-64",
-            TargetMachine::get_host_cpu_features().to_string().as_str(),
-            OptimizationLevel::Aggressive,
-            RelocMode::Default,
-            CodeModel::Default,
-        )
+    let mut errors = MaybeUninit::uninit();
+    let mut target: MaybeUninit<LLVMTargetRef> = MaybeUninit::uninit();
+    let mut ret = LLVMGetTargetFromTriple(
+        LLVMGetDefaultTargetTriple(),
+        target.as_mut_ptr(),
+        errors.as_mut_ptr(),
+    );
+    if ret == 1 {
+        LLVMDisposeMessage(errors.assume_init());
+    }
+    let machine = LLVMCreateTargetMachine(
+        target.assume_init(),
+        LLVMGetDefaultTargetTriple(),
+        to_c_str("generic").as_ptr(),
+        LLVMGetHostCPUFeatures(),
+        LLVMCodeGenLevelAggressive,
+        LLVMRelocDefault,
+        LLVMCodeModelDefault,
+    );
+
+    LLVMSetTarget(module, LLVMGetDefaultTargetTriple());
+    let datalayout = LLVMCreateTargetDataLayout(machine);
+    let datalayout_str = LLVMCopyStringRepOfTargetData(datalayout);
+    LLVMSetDataLayout(module, datalayout_str);
+    LLVMDisposeMessage(datalayout_str);
+
+    ret = LLVMTargetMachineEmitToFile(
+        machine,
+        module,
+        to_c_str(out_file.as_str()).as_ptr() as *mut _,
+        LLVMObjectFile,
+        errors.as_mut_ptr(),
+    );
+    if ret == 1 {
+        LLVMDisposeMessage(errors.assume_init());
+    }
+
+    LLVMDisposeBuilder(builder);
+    LLVMDisposeModule(module);
+    LLVMContextDispose(context);
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    Command::new("clang-10")
+        .args([
+            out_file.clone(),
+            format!("{}/libblazex.a", out_dir),
+            format!("-o{}", out_file.replace(".o", ".out")),
+        ])
+        .status()
         .unwrap();
-
-    match target_machine.write_to_file(&module, FileType::Object, &path) {
-        Ok(_) => {
-            if !is_quiet {
-                let out_dir = env::var("OUT_DIR").unwrap();
-
-                Command::new("clang-10")
-                    .args([
-                        out_file.clone(),
-                        format!("{}/libblazex.a", out_dir),
-                        format!("-o{}", out_file.replace(".o", ".out")),
-                    ])
-                    .status()
-                    .unwrap();
-                println!("Compiled executable to {}", out_file.replace(".o", ".out"));
-            }
-        }
-        Err(e) => {
-            eprintln!("{}", e.to_string());
-            return 1;
-        }
-    }
+    println!("Compiled executable to {}", out_file.replace(".o", ".out"));
 
     return 0;
 }

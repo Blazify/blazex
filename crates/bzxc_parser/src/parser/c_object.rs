@@ -59,10 +59,8 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        res.success(
-            Node::CObject {
-                object: Box::new(obj.unwrap()),
-            }
-        )
+        res.success(Node::CObject {
+            object: Box::new(obj.unwrap()),
+        })
     }
 }

@@ -100,7 +100,7 @@ printf("%i\n", ins.sum_to_a(5));
 
 ## Dependencies
 
-- inkwell (Safe LLVM Wrapper) (Forked in crates/bzxc_llvm_wrapper)
+- llvm_sys (Interacting with LLVM)
 - codespan-reporting (Errors)
 - mimalloc (Memory allocation)
 - structopt (Argument parsing)
@@ -123,7 +123,6 @@ printf("%i\n", ins.sum_to_a(5));
 |       [bzxc_parser](crates/bzxc_parser)       |    Parser for AST Tree     |
 |  [bzxc_type_system](crates/bzxc_type_system)  |        Type System         |
 |         [bzxc_llvm](crates/bzxc_llvm)         |  LLVM IR Code Generation   |
-| [bzxc_llvm_wrapper](crates/bzxc_llvm_wrapper) |      Fork of Inkwell       |
 |       [bzxc_shared](crates/bzxc_shared)       | Things Shared among crates |
 
 ## TODO

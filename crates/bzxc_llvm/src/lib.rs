@@ -11,52 +11,62 @@
 * limitations under the License.
 */
 
-use std::collections::HashMap;
-
-use bzxc_llvm_wrapper::module::Linkage;
-use bzxc_llvm_wrapper::{
-    builder::Builder,
-    context::Context,
-    module::Module,
-    passes::PassManager,
-    types::BasicType,
-    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
-    FloatPredicate, IntPredicate,
+use llvm_sys::analysis::LLVMVerifierFailureAction::LLVMPrintMessageAction;
+use llvm_sys::analysis::LLVMVerifyFunction;
+use llvm_sys::core::{
+    LLVMAddFunction, LLVMAppendBasicBlockInContext, LLVMBuildAdd, LLVMBuildAlloca, LLVMBuildAnd,
+    LLVMBuildBr, LLVMBuildCall, LLVMBuildCondBr, LLVMBuildExtractElement, LLVMBuildFAdd,
+    LLVMBuildFCmp, LLVMBuildFDiv, LLVMBuildFMul, LLVMBuildFRem, LLVMBuildFSub,
+    LLVMBuildGlobalString, LLVMBuildICmp, LLVMBuildInsertValue, LLVMBuildIntCast, LLVMBuildLoad,
+    LLVMBuildMul, LLVMBuildOr, LLVMBuildPointerCast, LLVMBuildRet, LLVMBuildStore,
+    LLVMBuildStructGEP, LLVMBuildSub, LLVMBuildUDiv, LLVMBuildURem, LLVMConstInt, LLVMConstNeg,
+    LLVMConstNot, LLVMConstNull, LLVMConstReal, LLVMCountStructElementTypes,
+    LLVMCreateBuilderInContext, LLVMDeleteFunction, LLVMFunctionType, LLVMGetElementType,
+    LLVMGetFirstBasicBlock, LLVMGetFirstInstruction, LLVMGetInsertBlock, LLVMGetNamedFunction,
+    LLVMGetParam, LLVMGetStructElementTypes, LLVMGetUndef, LLVMGetVectorSize,
+    LLVMInsertBasicBlockInContext, LLVMInt128TypeInContext, LLVMInt1TypeInContext,
+    LLVMInt32TypeInContext, LLVMPositionBuilderAtEnd, LLVMPositionBuilderBefore,
+    LLVMRunFunctionPassManager, LLVMSetLinkage, LLVMSetValueName2, LLVMStructGetTypeAtIndex,
+    LLVMStructTypeInContext, LLVMTypeOf,
 };
+use llvm_sys::prelude::{
+    LLVMBuilderRef, LLVMContextRef, LLVMModuleRef, LLVMPassManagerRef, LLVMTypeRef, LLVMValueRef,
+};
+use llvm_sys::LLVMIntPredicate::{
+    LLVMIntEQ, LLVMIntNE, LLVMIntUGE, LLVMIntUGT, LLVMIntULE, LLVMIntULT,
+};
+use llvm_sys::LLVMLinkage::LLVMExternalLinkage;
+use llvm_sys::LLVMRealPredicate::LLVMRealULT;
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::mem::forget;
 
-use bzxc_shared::{LLVMNode, Tokens};
+use bzxc_shared::{to_c_str, LLVMNode, Tokens};
 
 mod oop;
 
 #[derive(Debug, Clone)]
-pub struct Compiler<'a, 'ctx> {
-    pub context: &'ctx Context,
-    pub builder: &'a Builder<'ctx>,
-    pub module: &'a Module<'ctx>,
-    pub fpm: &'a PassManager<FunctionValue<'ctx>>,
-    pub main: LLVMNode<'ctx>,
+pub struct Compiler {
+    pub context: LLVMContextRef,
+    pub builder: LLVMBuilderRef,
+    pub module: LLVMModuleRef,
+    pub fpm: LLVMPassManagerRef,
+    pub main: LLVMNode,
 
-    fn_value_opt: Option<FunctionValue<'ctx>>,
-    variables: HashMap<String, PointerValue<'ctx>>,
+    fn_value_opt: Option<LLVMValueRef>,
+    variables: HashMap<String, LLVMValueRef>,
     objects: HashMap<(String, u32), usize>,
-    classes: HashMap<
-        u32,
-        (
-            PointerValue<'ctx>,
-            PointerValue<'ctx>,
-            HashMap<String, BasicValueEnum<'ctx>>,
-        ),
-    >,
+    classes: HashMap<u32, (LLVMValueRef, LLVMValueRef, HashMap<String, LLVMValueRef>)>,
     ret: bool,
 }
 
-impl<'a, 'ctx> Compiler<'a, 'ctx> {
+impl Compiler {
     pub fn init(
-        context: &'ctx Context,
-        builder: &'a Builder<'ctx>,
-        module: &'a Module<'ctx>,
-        fpm: &'a PassManager<FunctionValue<'ctx>>,
-        main: LLVMNode<'ctx>,
+        context: LLVMContextRef,
+        builder: LLVMBuilderRef,
+        module: LLVMModuleRef,
+        fpm: LLVMPassManagerRef,
+        main: LLVMNode,
     ) -> Self {
         Self {
             builder,
@@ -72,111 +82,100 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
     }
 
-    fn fn_value(&self) -> FunctionValue<'ctx> {
+    fn fn_value(&self) -> LLVMValueRef {
         self.fn_value_opt.unwrap()
     }
 
-    fn create_entry_block_alloca<T: BasicType<'ctx>>(
-        &self,
-        name: &str,
-        ty: T,
-    ) -> PointerValue<'ctx> {
-        let builder = self.context.create_builder();
+    unsafe fn create_entry_block_alloca(&self, name: &str, ty: LLVMTypeRef) -> LLVMValueRef {
+        let builder = LLVMCreateBuilderInContext(self.context);
 
-        let entry = self.fn_value().get_first_basic_block().unwrap();
+        let entry = LLVMGetFirstBasicBlock(self.fn_value());
+        let instr = LLVMGetFirstInstruction(entry);
 
-        match entry.get_first_instruction() {
-            Some(first_instr) => builder.position_before(&first_instr),
-            None => builder.position_at_end(entry),
+        if instr.is_null() {
+            LLVMPositionBuilderAtEnd(builder, entry);
+        } else {
+            LLVMPositionBuilderBefore(builder, instr);
         }
 
-        builder.build_alloca(ty, name)
+        LLVMBuildAlloca(builder, ty, to_c_str(name).as_ptr())
     }
 
-    fn null(&self) -> BasicValueEnum<'ctx> {
-        let null = self.context.struct_type(&[], false).get_undef();
-        let ptr = self.create_entry_block_alloca("null", null.get_type());
-        self.builder.build_store(ptr, null);
+    unsafe fn null(&self) -> LLVMValueRef {
+        let null = LLVMGetUndef(LLVMStructTypeInContext(self.context, [].as_mut_ptr(), 0, 0));
+        let ptr = self.create_entry_block_alloca("null", LLVMTypeOf(null));
+        LLVMBuildStore(self.builder, null, ptr);
 
-        ptr.into()
+        ptr
     }
 
-    pub fn compile_main(&mut self) {
-        let func =
-            self.module
-                .add_function("main", self.context.i32_type().fn_type(&[], false), None);
+    pub unsafe fn compile_main(&mut self) {
+        let func = LLVMAddFunction(
+            self.module,
+            to_c_str("main").as_ptr(),
+            LLVMFunctionType(LLVMInt32TypeInContext(self.context), [].as_mut_ptr(), 0, 0),
+        );
 
-        let entry = self.context.append_basic_block(func, "entry");
-        self.builder.position_at_end(entry);
+        let entry = LLVMAppendBasicBlockInContext(self.context, func, to_c_str("entry").as_ptr());
+        LLVMPositionBuilderAtEnd(self.builder, entry);
 
         self.fn_value_opt = Some(func);
         self.compile(self.main.clone());
-        self.builder
-            .build_return(Some(&self.context.i32_type().const_int(0, true)));
+
+        LLVMBuildRet(
+            self.builder,
+            LLVMConstInt(
+                LLVMInt32TypeInContext(self.context),
+                0.try_into().unwrap(),
+                0,
+            ),
+        );
 
         self.ret = true;
 
-        if func.verify(true) {
-            self.fpm.run_on(&func);
+        if LLVMVerifyFunction(func, LLVMPrintMessageAction) == 0 {
+            LLVMRunFunctionPassManager(self.fpm, func);
         } else {
-            eprintln!(
-                "Invalid LLVM IR:\n{}",
-                self.module.print_to_string().to_string()
-            );
-            unsafe {
-                func.delete();
-            }
+            LLVMDeleteFunction(func);
         }
     }
 
-    fn compile(&mut self, node: LLVMNode<'ctx>) -> BasicValueEnum<'ctx> {
+    unsafe fn compile(&mut self, node: LLVMNode) -> LLVMValueRef {
         match node {
             LLVMNode::Statements(stmts) => {
-                let mut ret = None;
                 for statement in stmts {
-                    if self.ret {
-                        continue;
-                    }
-                    ret = Some(self.compile(statement));
+                    self.compile(statement);
                 }
 
-                return if ret.is_none() {
-                    self.null()
-                } else {
-                    ret.unwrap()
-                };
+                self.null()
             }
-            LLVMNode::Int { ty, val } => ty.into_int_type().const_int(val, false).into(),
-            LLVMNode::Float { ty, val } => ty.into_float_type().const_float(val).into(),
-            LLVMNode::Boolean { ty, val } => {
-                ty.into_int_type().const_int(val as i128, false).into()
-            }
-            LLVMNode::Char { ty, val } => ty.into_int_type().const_int(val as i128, false).into(),
-            LLVMNode::String { ty, val } => self
-                .builder
-                .build_pointer_cast(
-                    unsafe {
-                        self.builder
-                            .build_global_string(val.as_str(), "str")
-                            .as_pointer_value()
-                    },
-                    ty.into_pointer_type(),
-                    "str_i8",
-                )
-                .into(),
+            LLVMNode::Int { ty, val } => LLVMConstInt(ty, val.try_into().unwrap(), 0),
+            LLVMNode::Float { ty, val } => LLVMConstReal(ty, val.try_into().unwrap()),
+            LLVMNode::Boolean { ty, val } => LLVMConstInt(ty, val.try_into().unwrap(), 0),
+            LLVMNode::Char { ty, val } => LLVMConstInt(ty, val.try_into().unwrap(), 0),
+            LLVMNode::String { ty, val } => LLVMBuildPointerCast(
+                self.builder,
+                LLVMBuildGlobalString(
+                    self.builder,
+                    to_c_str(val.as_str()).as_ptr(),
+                    to_c_str("glob_str").as_ptr(),
+                ),
+                ty,
+                to_c_str("str").as_ptr(),
+            ),
             LLVMNode::Unary { ty, val, op_token } => {
                 let val = self.compile(*val);
-                if ty.is_int_type() {
+                if ty == LLVMInt128TypeInContext(self.context) {
                     match op_token.value {
                         Tokens::Plus => val,
-                        Tokens::Minus => val.into_int_value().const_neg().into(),
-                        Tokens::Keyword("not") => val.into_int_value().const_not().into(),
+                        Tokens::Minus => LLVMConstNeg(val),
+                        Tokens::Keyword("not") => LLVMConstNot(val),
                         _ => unreachable!(),
                     }
                 } else {
                     match op_token.value {
                         Tokens::Plus => val,
-                        Tokens::Minus => val.into_float_value().const_neg().into(),
+                        Tokens::Minus => LLVMConstNeg(val),
                         _ => unreachable!(),
                     }
                 }
@@ -187,145 +186,200 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 right,
                 op_token,
             } => {
-                if ty.is_int_type() {
-                    let lhs = self.compile(*left).into_int_value();
-                    let rhs = self.compile(*right).into_int_value();
+                if ty == LLVMInt128TypeInContext(self.context) {
+                    let lhs = self.compile(*left);
+                    let rhs = self.compile(*right);
 
                     match op_token.value {
-                        Tokens::Plus => self.builder.build_int_add(lhs, rhs, "tmpadd"),
-                        Tokens::Minus => self.builder.build_int_sub(lhs, rhs, "tmpsub"),
-                        Tokens::Multiply => self.builder.build_int_mul(lhs, rhs, "tmpmul"),
-                        Tokens::Divide => self.builder.build_int_unsigned_div(lhs, rhs, "tmpdiv"),
-                        Tokens::Modulo => self.builder.build_int_unsigned_rem(lhs, rhs, "tmpmod"),
-                        Tokens::LessThan => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::ULT, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::Plus => {
+                            LLVMBuildAdd(self.builder, lhs, rhs, to_c_str("tmpadd").as_ptr())
+                        }
+                        Tokens::Minus => {
+                            LLVMBuildSub(self.builder, lhs, rhs, to_c_str("tmpsub").as_ptr())
+                        }
+                        Tokens::Multiply => {
+                            LLVMBuildMul(self.builder, lhs, rhs, to_c_str("tmpmul").as_ptr())
+                        }
+                        Tokens::Divide => {
+                            LLVMBuildUDiv(self.builder, lhs, rhs, to_c_str("tmpdiv").as_ptr())
+                        }
+                        Tokens::Modulo => {
+                            LLVMBuildURem(self.builder, lhs, rhs, to_c_str("tmpmod").as_ptr())
+                        }
+                        Tokens::LessThan => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULT,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
-                        Tokens::GreaterThan => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::UGT, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::GreaterThan => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntUGT,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
-                        Tokens::LessThanEquals => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::ULE, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::LessThanEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
-                        Tokens::GreaterThanEquals => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::UGE, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::GreaterThanEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntUGE,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
-                        Tokens::DoubleEquals => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::EQ, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::DoubleEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntEQ,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
-                        Tokens::NotEquals => self.builder.build_int_cast(
-                            self.builder
-                                .build_int_compare(IntPredicate::NE, lhs, rhs, "tmpcmp"),
-                            self.context.bool_type(),
-                            "bool_cast",
+                        Tokens::NotEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntNE,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
                         ),
                         _ => {
                             if op_token.value == Tokens::Keyword("and") {
-                                self.builder.build_and(lhs, rhs, "and")
+                                LLVMBuildAnd(self.builder, lhs, rhs, to_c_str("tmpand").as_ptr())
                             } else if op_token.value == Tokens::Keyword("or") {
-                                self.builder.build_or(lhs, rhs, "or")
+                                LLVMBuildOr(self.builder, lhs, rhs, to_c_str("tmpor").as_ptr())
                             } else {
                                 unreachable!();
                             }
                         }
                     }
-                    .into()
                 } else {
-                    let lhs = self.compile(*left).into_float_value();
-                    let rhs = self.compile(*right).into_float_value();
+                    let lhs = self.compile(*left);
+                    let rhs = self.compile(*right);
 
                     match op_token.value {
-                        Tokens::Plus => self.builder.build_float_add(lhs, rhs, "tmpadd").into(),
-                        Tokens::Minus => self.builder.build_float_sub(lhs, rhs, "tmpsub").into(),
-                        Tokens::Multiply => self.builder.build_float_mul(lhs, rhs, "tmpmul").into(),
-                        Tokens::Divide => self.builder.build_float_div(lhs, rhs, "tmpdiv").into(),
-                        Tokens::Modulo => self.builder.build_float_rem(lhs, rhs, "tmpmod").into(),
-                        Tokens::LessThan => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ULT,
+                        Tokens::Plus => {
+                            LLVMBuildFAdd(self.builder, lhs, rhs, to_c_str("tmpadd").as_ptr())
+                        }
+                        Tokens::Minus => {
+                            LLVMBuildFSub(self.builder, lhs, rhs, to_c_str("tmpsub").as_ptr())
+                        }
+                        Tokens::Multiply => {
+                            LLVMBuildFMul(self.builder, lhs, rhs, to_c_str("tmpmul").as_ptr())
+                        }
+                        Tokens::Divide => {
+                            LLVMBuildFDiv(self.builder, lhs, rhs, to_c_str("tmpdiv").as_ptr())
+                        }
+                        Tokens::Modulo => {
+                            LLVMBuildFRem(self.builder, lhs, rhs, to_c_str("tmpmod").as_ptr())
+                        }
+                        Tokens::LessThan => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildFCmp(
+                                self.builder,
+                                LLVMRealULT,
                                 lhs,
                                 rhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
-                        Tokens::GreaterThan => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::UGT,
-                                rhs,
-                                lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
-                        Tokens::LessThanEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ULE,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
+                        Tokens::GreaterThan => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
                                 lhs,
                                 rhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
-                        Tokens::GreaterThanEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::OGE,
-                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
+                        Tokens::LessThanEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
                                 lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
-                        Tokens::DoubleEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::OEQ,
                                 rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
+                        Tokens::GreaterThanEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
                                 lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
-                        Tokens::NotEquals => {
-                            let cmp = self.builder.build_float_compare(
-                                FloatPredicate::ONE,
                                 rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
+                        Tokens::DoubleEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
                                 lhs,
-                                "tmpcmp",
-                            );
-
-                            self.builder
-                                .build_int_cast(cmp, self.context.bool_type(), "bool_cast")
-                                .into()
-                        }
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
+                        Tokens::NotEquals => LLVMBuildIntCast(
+                            self.builder,
+                            LLVMBuildICmp(
+                                self.builder,
+                                LLVMIntULE,
+                                lhs,
+                                rhs,
+                                to_c_str("tmpcmp").as_ptr(),
+                            ),
+                            LLVMInt1TypeInContext(self.context),
+                            to_c_str("bool_cast").as_ptr(),
+                        ),
                         _ => unreachable!(),
                     }
                 }
@@ -336,31 +390,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 params,
                 body,
             } => {
-                let func = self.module.add_function(
-                    name.as_str(),
-                    ty.into_pointer_type()
-                        .get_element_type()
-                        .into_function_type(),
-                    None,
+                let func = LLVMAddFunction(
+                    self.module,
+                    to_c_str(name.as_str()).as_ptr(),
+                    LLVMGetElementType(ty),
                 );
 
                 let parent = self.fn_value_opt.clone();
 
-                let parental_block = self.builder.get_insert_block();
+                let parental_block = LLVMGetInsertBlock(self.builder);
 
-                let entry = self.context.append_basic_block(func, "entry");
-                self.builder.position_at_end(entry);
+                let entry =
+                    LLVMAppendBasicBlockInContext(self.context, func, to_c_str("entry").as_ptr());
+                LLVMPositionBuilderAtEnd(self.builder, entry);
 
                 self.fn_value_opt = Some(func);
 
                 self.variables.reserve(params.len());
 
-                for (i, arg) in func.get_param_iter().enumerate() {
+                for i in 0..params.len() {
+                    let arg = LLVMGetParam(func, i as u32);
                     let arg_name = params.get(i).unwrap().0.as_str().clone();
-                    arg.set_name(arg_name);
-                    let alloca = self.create_entry_block_alloca(arg_name, arg.get_type());
+                    LLVMSetValueName2(arg, to_c_str(arg_name).as_ptr(), arg_name.len());
+                    let alloca = self.create_entry_block_alloca(arg_name, LLVMTypeOf(arg));
 
-                    self.builder.build_store(alloca, arg);
+                    LLVMBuildStore(self.builder, arg, alloca);
                     self.variables.insert(arg_name.to_string(), alloca);
                 }
 
@@ -368,26 +422,21 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.ret = false;
                 self.compile(*body);
 
-                self.builder.position_at_end(parental_block.unwrap());
+                LLVMPositionBuilderAtEnd(self.builder, parental_block);
                 self.fn_value_opt = parent;
 
                 self.ret = ret;
 
-                if func.verify(true) {
-                    self.fpm.run_on(&func);
+                if LLVMVerifyFunction(func, LLVMPrintMessageAction) == 0 {
+                    LLVMRunFunctionPassManager(self.fpm, func);
                 } else {
-                    eprintln!("{}", self.module.print_to_string().to_string());
-                    unsafe {
-                        func.delete();
-                    }
-                    panic!("function {} failed to verify", name);
+                    LLVMDeleteFunction(func);
                 }
 
-                let ptr = func.as_global_value().as_pointer_value();
-                let alloca = self.create_entry_block_alloca(name.as_str(), ptr.get_type());
-                self.builder.build_store(alloca, ptr);
+                let alloca = self.create_entry_block_alloca(name.as_str(), LLVMTypeOf(func));
+                LLVMBuildStore(self.builder, func, alloca);
                 self.variables.insert(name, alloca);
-                ptr.into()
+                func
             }
             LLVMNode::Extern {
                 ty: _,
@@ -396,131 +445,146 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 args,
                 var_args,
             } => {
-                let ret = self.compile(*return_type).get_type();
-                let args = args
+                let ret = LLVMTypeOf(self.compile(*return_type));
+                let mut args = args
                     .iter()
-                    .map(|arg| self.compile(arg.clone()).get_type())
+                    .map(|arg| LLVMTypeOf(self.compile(arg.clone())))
                     .collect::<Vec<_>>();
 
-                self.module.add_function(
-                    name.as_str(),
-                    ret.fn_type(&args[..], var_args),
-                    Some(Linkage::External),
+                let func = LLVMAddFunction(
+                    self.module,
+                    to_c_str(name.as_str()).as_ptr(),
+                    LLVMFunctionType(ret, args.as_mut_ptr(), args.len() as u32, var_args as i32),
                 );
+
+                LLVMSetLinkage(func, LLVMExternalLinkage);
 
                 self.null()
             }
             LLVMNode::Let { ty: _, name, val } => {
                 let val = self.compile(*val);
-                let alloca = self.create_entry_block_alloca(name.as_str(), val.get_type());
-                self.builder.build_store(alloca, val);
+                let alloca = self.create_entry_block_alloca(name.as_str(), LLVMTypeOf(val));
+                LLVMBuildStore(self.builder, val, alloca);
                 self.variables.insert(name.to_string(), alloca);
                 self.null()
             }
             LLVMNode::Var { ty: _, name } => match self.variables.get(name.as_str()) {
-                Some(val) => self.builder.build_load(val.clone(), name.as_str()),
-                None => self
-                    .module
-                    .get_function(name.as_str())
-                    .unwrap()
-                    .as_global_value()
-                    .as_pointer_value()
-                    .into(),
+                Some(val) => LLVMBuildLoad(self.builder, *val, to_c_str(name.as_str()).as_ptr()),
+                None => LLVMGetNamedFunction(self.module, to_c_str(name.as_str()).as_ptr()),
             },
-            LLVMNode::Call { ty: _, fun, args } => self
-                .builder
-                .build_call(
-                    self.compile(*fun).into_pointer_value(),
-                    &args
-                        .iter()
-                        .map(|x| self.compile(x.clone()))
-                        .collect::<Vec<BasicValueEnum>>()[..],
-                    "build_call",
+            LLVMNode::Call { ty: _, fun, args } => {
+                let mut args = args
+                    .iter()
+                    .map(|arg| self.compile(arg.clone()))
+                    .collect::<Vec<_>>();
+
+                LLVMBuildCall(
+                    self.builder,
+                    self.compile(*fun),
+                    args.as_mut_ptr(),
+                    args.len() as u32,
+                    to_c_str("").as_ptr(),
                 )
-                .unwrap()
-                .try_as_basic_value()
-                .left_or(self.null()),
+            }
             LLVMNode::Return { ty: _, val } => {
                 let rett = self.compile(*val);
-                self.builder.build_return(Some(&rett));
+                LLVMBuildRet(self.builder, rett);
                 self.ret = true;
                 rett
             }
-            LLVMNode::Null { ty } => ty.into_struct_type().const_zero().into(),
+            LLVMNode::Null { ty } => LLVMGetUndef(ty),
             LLVMNode::If {
                 ty: _,
                 cases,
                 else_case,
             } => {
-                let mut blocks = vec![self.builder.get_insert_block().unwrap()];
+                let mut blocks = vec![LLVMGetInsertBlock(self.builder)];
+
                 let parent = self.fn_value();
                 for _ in 1..cases.len() {
-                    blocks.push(self.context.append_basic_block(parent, "if_start"));
+                    blocks.push(LLVMAppendBasicBlockInContext(
+                        self.context,
+                        parent,
+                        to_c_str("if_start").as_ptr(),
+                    ));
                 }
 
                 let else_block = if else_case.is_some() {
-                    let result = self.context.append_basic_block(parent, "else");
+                    let result = LLVMAppendBasicBlockInContext(
+                        self.context,
+                        parent,
+                        to_c_str("else").as_ptr(),
+                    );
                     blocks.push(result);
                     Some(result)
                 } else {
                     None
                 };
 
-                let after_block = self.context.append_basic_block(parent, "after");
+                let after_block =
+                    LLVMAppendBasicBlockInContext(self.context, parent, to_c_str("after").as_ptr());
                 blocks.push(after_block);
 
                 for (i, (cond, body)) in cases.iter().enumerate() {
                     let then_block = blocks[i];
                     let else_block = blocks[i + 1];
 
-                    self.builder.position_at_end(then_block);
+                    LLVMPositionBuilderAtEnd(self.builder, then_block);
 
                     let condition = self.compile(cond.clone());
-                    let conditional_block = self.context.prepend_basic_block(else_block, "if_body");
-
-                    self.builder.build_conditional_branch(
-                        condition.into_int_value(),
-                        conditional_block,
+                    let conditional_block = LLVMInsertBasicBlockInContext(
+                        self.context,
                         else_block,
+                        to_c_str("if_body").as_ptr(),
                     );
 
-                    self.builder.position_at_end(conditional_block);
+                    LLVMBuildCondBr(self.builder, condition, conditional_block, else_block);
+
+                    LLVMPositionBuilderAtEnd(self.builder, conditional_block);
                     self.compile(body.clone());
                     if !self.ret {
-                        self.builder.build_unconditional_branch(after_block);
+                        LLVMBuildBr(self.builder, after_block);
                     };
                 }
 
                 if let Some(else_block) = else_block {
-                    self.builder.position_at_end(else_block);
+                    LLVMPositionBuilderAtEnd(self.builder, else_block);
                     self.compile(*else_case.unwrap());
-                    self.builder.build_unconditional_branch(after_block);
+                    LLVMBuildBr(self.builder, after_block);
                 }
 
-                self.builder.position_at_end(after_block);
+                LLVMPositionBuilderAtEnd(self.builder, after_block);
                 self.ret = false;
 
                 self.null()
             }
             LLVMNode::While { ty: _, cond, body } => {
                 let parent = self.fn_value();
-                let cond_block = self.context.append_basic_block(parent, "while_cond");
-                let body_block = self.context.append_basic_block(parent, "while_body");
-                let after_block = self.context.append_basic_block(parent, "after");
-                self.builder.build_unconditional_branch(cond_block);
-                self.builder.position_at_end(cond_block);
+                let cond_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("while_cond").as_ptr(),
+                );
+                let body_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("while_body").as_ptr(),
+                );
+                let after_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("while_after").as_ptr(),
+                );
+                LLVMBuildBr(self.builder, cond_block);
+                LLVMPositionBuilderAtEnd(self.builder, cond_block);
 
                 let cond = self.compile(*cond.clone());
-                self.builder.build_conditional_branch(
-                    cond.into_int_value(),
-                    body_block,
-                    after_block,
-                );
-                self.builder.position_at_end(body_block);
+                LLVMBuildCondBr(self.builder, cond, body_block, after_block);
+                LLVMPositionBuilderAtEnd(self.builder, body_block);
                 self.compile(*body.clone());
-                self.builder.build_unconditional_branch(cond_block);
+                LLVMBuildBr(self.builder, cond_block);
 
-                self.builder.position_at_end(after_block);
+                LLVMPositionBuilderAtEnd(self.builder, after_block);
 
                 self.ret = false;
                 self.null()
@@ -536,14 +600,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let parent = self.fn_value();
 
                 let start = self.compile(*start);
-                let start_alloca = self.create_entry_block_alloca(&var, start.get_type());
+                let start_alloca = self.create_entry_block_alloca(&var, LLVMTypeOf(start));
 
-                self.builder.build_store(start_alloca, start);
+                LLVMBuildStore(self.builder, start, start_alloca);
 
-                let loop_block = self.context.append_basic_block(parent, "for_loop");
+                let loop_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("for_loop").as_ptr(),
+                );
 
-                self.builder.build_unconditional_branch(loop_block);
-                self.builder.position_at_end(loop_block);
+                LLVMBuildBr(self.builder, loop_block);
+                LLVMPositionBuilderAtEnd(self.builder, loop_block);
 
                 let old_val = self.variables.remove(&var);
 
@@ -553,27 +621,28 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let step = self.compile(*step);
                 let end_condition = self.compile(*end);
 
-                let curr_var = self.builder.build_load(start_alloca, &var);
+                let curr_var = LLVMBuildLoad(self.builder, start_alloca, to_c_str("load").as_ptr());
 
-                let next_var: BasicValueEnum = self
-                    .builder
-                    .build_int_add(curr_var.into_int_value(), step.into_int_value(), "nextvar")
-                    .into();
+                let next_var = LLVMBuildAdd(self.builder, curr_var, step, to_c_str("add").as_ptr());
 
-                self.builder.build_store(start_alloca, next_var);
+                LLVMBuildStore(self.builder, next_var, start_alloca);
 
-                let end_condition = self.builder.build_int_compare(
-                    IntPredicate::NE,
-                    next_var.into_int_value(),
-                    end_condition.into_int_value(),
-                    "loopcond",
+                let end_condition = LLVMBuildICmp(
+                    self.builder,
+                    LLVMIntNE,
+                    next_var,
+                    end_condition,
+                    to_c_str("end_condition").as_ptr(),
                 );
 
-                let after_block = self.context.append_basic_block(parent, "afterloop");
+                let after_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("for_after").as_ptr(),
+                );
 
-                self.builder
-                    .build_conditional_branch(end_condition, loop_block, after_block);
-                self.builder.position_at_end(after_block);
+                LLVMBuildCondBr(self.builder, end_condition, loop_block, after_block);
+                LLVMPositionBuilderAtEnd(self.builder, after_block);
                 self.variables.remove(&var);
 
                 if let Some(val) = old_val {
@@ -585,101 +654,119 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.null()
             }
             LLVMNode::Array { ty, elements } => {
-                let vec_ty = ty.into_vector_type().get_undef();
+                let vec_ty = LLVMGetUndef(ty);
 
                 for (i, element) in elements.iter().enumerate() {
-                    self.builder.build_insert_element(
+                    LLVMBuildInsertValue(
+                        self.builder,
                         vec_ty,
                         self.compile(element.clone()),
-                        self.context.i128_type().const_int(i as i128, true),
-                        "vec_push",
+                        i as u32,
+                        to_c_str("vec_push").as_ptr(),
                     );
                 }
 
                 vec_ty.into()
             }
             LLVMNode::Index { ty: _, array, idx } => {
-                let arr = self.compile(*array).into_vector_value();
+                let arr = self.compile(*array);
 
-                self.builder.build_extract_element(
+                LLVMBuildExtractElement(
+                    self.builder,
                     arr,
-                    self.compile(*idx).into_int_value(),
-                    "vec_extract",
+                    self.compile(*idx.clone()),
+                    to_c_str("index").as_ptr(),
                 )
             }
             LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
             LLVMNode::CObject { ty: _ty, object } => {
                 let obj = self.compile(*object);
-                let object = self.builder.build_load(obj.into_pointer_value(), "cobj").into_struct_value();
-                let mut c_obj_fields = object.get_type().get_field_types();
-                c_obj_fields.remove(0);
-                let mut struct_val = self.context.struct_type(&c_obj_fields, false).get_undef();
+                let object = LLVMBuildLoad(self.builder, obj, to_c_str("load").as_ptr());
+                let count = LLVMCountStructElementTypes(LLVMTypeOf(object));
+                let mut raw_vec: Vec<LLVMTypeRef> = Vec::with_capacity(count as usize);
+                let ptr = raw_vec.as_mut_ptr();
+                forget(raw_vec);
 
-                for i in 1..object.get_type().count_fields() {
-                    struct_val = self
-                        .builder
-                        .build_insert_value(
-                            struct_val,
-                            self.builder.build_load(self.builder
-                                .build_struct_gep(obj.into_pointer_value(), i, "struct_gep")
-                                .ok()
-                                .unwrap(), "struct_load"),
-                            i-1,
-                            "c_obj_load",
-                        )
-                        .unwrap()
-                        .into_struct_value();
+                let mut c_obj_fields = {
+                    LLVMGetStructElementTypes(LLVMTypeOf(object), ptr);
+                    Vec::from_raw_parts(ptr, count as usize, count as usize)
+                };
+                c_obj_fields.remove(0);
+                let mut struct_val = LLVMGetUndef(LLVMStructTypeInContext(
+                    self.context,
+                    c_obj_fields.as_mut_ptr(),
+                    c_obj_fields.len() as u32,
+                    0,
+                ));
+
+                for i in 1..count {
+                    struct_val = LLVMBuildInsertValue(
+                        self.builder,
+                        struct_val,
+                        LLVMBuildLoad(
+                            self.builder,
+                            LLVMBuildStructGEP(
+                                self.builder,
+                                obj,
+                                i,
+                                to_c_str("struct_gep").as_ptr(),
+                            ),
+                            to_c_str("struct_load").as_ptr(),
+                        ),
+                        i - 1,
+                        to_c_str("c_obj_load").as_ptr(),
+                    );
                 }
 
-                let alloc = self.builder.build_alloca(struct_val.get_type(), "c_obj_alloc");
-                self.builder.build_store(alloc, struct_val);
-                alloc.into()
+                let alloc = self.create_entry_block_alloca("alloc", LLVMTypeOf(struct_val));
+                LLVMBuildStore(self.builder, struct_val, alloc);
+                alloc
             }
             LLVMNode::CToBzxObject { ty, object } => {
-                let ty = ty.into_pointer_type().get_element_type().into_struct_type();
-                let mut struct_val = self
-                    .builder
-                    .build_insert_value(
-                        ty.get_undef(),
-                        ty.get_field_type_at_index(0).unwrap().const_zero(),
-                        0,
-                        "%alignment%",
-                    )
-                    .unwrap()
-                    .into_struct_value();
+                let ty = LLVMGetElementType(ty);
+                let mut struct_val = LLVMBuildInsertValue(
+                    self.builder,
+                    LLVMGetUndef(ty),
+                    LLVMConstNull(LLVMStructGetTypeAtIndex(ty, 0)),
+                    0,
+                    to_c_str("c_to_bzx_obj_load").as_ptr(),
+                );
 
                 let obj = self.compile(*object);
-                let object = self.builder.build_load(obj.into_pointer_value(), "cobj").into_struct_value();
+                let object = LLVMBuildLoad(self.builder, obj, to_c_str("load").as_ptr());
 
-                for i in 0..object.get_type().count_fields() {
-                    struct_val = self
-                        .builder
-                        .build_insert_value(
-                            struct_val,
-                            self.builder.build_load(self.builder
-                                .build_struct_gep(obj.into_pointer_value(), i, "struct_gep")
-                                .ok()
-                                .unwrap(), "struct_load"),
-                            i+1,
-                            "c_obj_load",
-                        )
-                        .unwrap()
-                        .into_struct_value();
+                for i in 0..LLVMCountStructElementTypes(LLVMTypeOf(object)) {
+                    struct_val = LLVMBuildInsertValue(
+                        self.builder,
+                        struct_val,
+                        LLVMBuildLoad(
+                            self.builder,
+                            LLVMBuildStructGEP(
+                                self.builder,
+                                obj,
+                                i,
+                                to_c_str("struct_gep").as_ptr(),
+                            ),
+                            to_c_str("struct_load").as_ptr(),
+                        ),
+                        i + 1,
+                        to_c_str("c_obj_load").as_ptr(),
+                    );
                 }
 
-                let alloc = self.builder.build_alloca(struct_val.get_type(), "c_obj_alloc");
-                self.builder.build_store(alloc, struct_val);
-                alloc.into()
+                let alloc = self.create_entry_block_alloca("alloc", LLVMTypeOf(struct_val));
+                LLVMBuildStore(self.builder, struct_val, alloc);
+                alloc
             }
             LLVMNode::ObjectAccess {
                 ty: _,
                 object,
                 property,
             } => {
-                let obj = self.compile(*object).into_pointer_value();
-                let ptr = self.obj_property(obj, property);
+                let obj = self.compile(*object);
+                let ptr = self.obj_property(obj, property.clone());
 
-                self.builder.build_load(ptr, "struct_load")
+                LLVMBuildLoad(self.builder, ptr, to_c_str(property.as_str()).as_ptr())
             }
             LLVMNode::ObjectEdit {
                 ty: _,
@@ -689,11 +776,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             } => {
                 let val = self.compile(*new_val);
 
-                let struct_ty = self.compile(*object).into_pointer_value();
+                let struct_ty = self.compile(*object);
                 let ptr = self.obj_property(struct_ty, property);
-                self.builder.build_store(ptr, val);
+                LLVMBuildStore(self.builder, val, ptr);
 
-                struct_ty.into()
+                struct_ty
             }
             LLVMNode::ObjectMethodCall {
                 ty: _,
@@ -701,28 +788,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 object,
                 args,
             } => {
-                let struct_val = self.compile(*object.clone());
-
-                let ptr = struct_val.into_pointer_value();
+                let ptr = self.compile(*object.clone());
 
                 let class = self
                     .classes
                     .get(
-                        &ptr.get_type()
-                            .get_element_type()
-                            .into_struct_type()
-                            .get_field_type_at_index(0)
-                            .unwrap()
-                            .into_vector_type()
-                            .get_size(),
+                        &(LLVMGetVectorSize(LLVMStructGetTypeAtIndex(
+                            LLVMGetElementType(LLVMTypeOf(ptr)),
+                            0,
+                        )) as usize as u32),
                     )
                     .clone();
                 let is_class = class.is_some();
 
-                let mut compiled_args: Vec<BasicValueEnum> = Vec::with_capacity(args.len());
+                let mut compiled_args = Vec::with_capacity(args.len());
 
                 if is_class {
-                    compiled_args.push(ptr.into());
+                    compiled_args.push(ptr);
                 }
                 for arg in args {
                     let compiled = self.clone().compile(arg.clone());
@@ -730,38 +812,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
 
                 if !is_class {
-                    let func = self.obj_property(ptr, property);
-                    let call = self
-                        .builder
-                        .build_call(
-                            self.builder
-                                .build_load(func, "func_load")
-                                .into_pointer_value(),
-                            &compiled_args[..],
-                            "obj_func_call",
-                        )
-                        .ok()
-                        .unwrap();
+                    let func = self.obj_property(ptr, property.clone());
+                    let call = LLVMBuildCall(
+                        self.builder,
+                        func,
+                        compiled_args.as_mut_ptr(),
+                        compiled_args.len() as u32,
+                        to_c_str(property.as_str()).as_ptr(),
+                    );
 
-                    return call.try_as_basic_value().left_or(self.null());
+                    return call;
                 }
 
-                let fun = class
-                    .clone()
-                    .unwrap()
-                    .2
-                    .get(&property)
-                    .unwrap()
-                    .clone()
-                    .into_pointer_value();
+                let func = class.clone().unwrap().2.get(&property).unwrap().clone();
 
-                let call = self
-                    .builder
-                    .build_call(fun, &compiled_args[..], "tmpcall")
-                    .ok()
-                    .unwrap();
+                let call = LLVMBuildCall(
+                    self.builder,
+                    func,
+                    compiled_args.as_mut_ptr(),
+                    compiled_args.len() as u32,
+                    to_c_str(property.as_str()).as_ptr(),
+                );
 
-                call.try_as_basic_value().left_or(self.null())
+                call
             }
             LLVMNode::Class {
                 ty,
@@ -772,33 +845,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 static_obj,
             } => {
                 let static_obj = self.compile(*static_obj);
-                let alloca = self
-                    .builder
-                    .build_alloca(static_obj.get_type(), "class_alloca");
-                self.builder.build_store(alloca, static_obj);
+                let alloca = self.create_entry_block_alloca("class", LLVMTypeOf(static_obj));
+                LLVMBuildStore(self.builder, static_obj, alloca);
                 self.variables.insert(class.clone(), alloca);
 
-                let klass = self.create_obj(ty, properties).into_pointer_value();
-                let constructor = self.class_method(class.clone(), klass.get_type(), *constructor);
+                let klass = self.create_obj(ty, properties);
+                let constructor = self.class_method(class.clone(), LLVMTypeOf(klass), *constructor);
 
                 let mut n_methods = HashMap::new();
 
                 for (name, method) in methods {
-                    n_methods.insert(
-                        name,
-                        self.class_method(class.clone(), ty.into_pointer_type(), method),
-                    );
+                    n_methods.insert(name, self.class_method(class.clone(), ty, method));
                 }
                 self.classes.insert(
-                    ty.into_pointer_type()
-                        .get_element_type()
-                        .into_struct_type()
-                        .get_field_type_at_index(0)
-                        .unwrap()
-                        .into_vector_type()
-                        .get_size(),
-                    (klass, constructor.into_pointer_value(), n_methods),
+                    LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0)) as usize
+                        as u32,
+                    (klass, constructor, n_methods),
                 );
+
                 self.null()
             }
             LLVMNode::ClassInit {
@@ -809,36 +873,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let (base, constructor, _) = self
                     .classes
                     .get(
-                        &class
-                            .into_pointer_type()
-                            .get_element_type()
-                            .into_struct_type()
-                            .get_field_type_at_index(0)
-                            .unwrap()
-                            .into_vector_type()
-                            .get_size(),
+                        &(LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(class), 0))
+                            as usize as u32),
                     )
                     .unwrap()
                     .clone();
 
-                let base = self.builder.build_load(base, "base");
+                let base = LLVMBuildLoad(self.builder, base, to_c_str("base").as_ptr());
 
-                let ptr = self.builder.build_alloca(base.get_type(), "ptr");
-                self.builder.build_store(ptr, base);
+                let ptr = self.create_entry_block_alloca("class", LLVMTypeOf(base));
+                LLVMBuildStore(self.builder, base, ptr);
 
-                let mut params: Vec<BasicValueEnum<'ctx>> = vec![ptr.into()];
+                let mut params = vec![ptr];
                 params.extend(
                     constructor_params
                         .iter()
                         .map(|x| self.compile(x.clone()))
-                        .collect::<Vec<BasicValueEnum<'ctx>>>(),
+                        .collect::<Vec<_>>(),
                 );
-                self.builder
-                    .build_call(constructor, &params[..], "klass_init")
-                    .ok()
-                    .unwrap()
-                    .try_as_basic_value()
-                    .left_or(self.null());
+                LLVMBuildCall(
+                    self.builder,
+                    constructor,
+                    params.as_mut_ptr(),
+                    params.len() as u32,
+                    to_c_str("constructor").as_ptr(),
+                );
 
                 ptr.into()
             }

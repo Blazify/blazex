@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 codespan-reporting = "0.11.1"
-bzxc_llvm_wrapper = { path = "../bzxc_llvm_wrapper" }
+llvm-sys = "100.0"

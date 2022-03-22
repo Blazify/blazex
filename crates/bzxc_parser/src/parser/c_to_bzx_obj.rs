@@ -76,11 +76,9 @@ impl Parser {
         res.register_advancement();
         self.advance();
 
-        res.success(
-            Node::CToBzxObject {
-                object: Box::new(obj.unwrap()),
-                bzx_object: Box::new(obj_type.unwrap()),
-            }
-        )
+        res.success(Node::CToBzxObject {
+            object: Box::new(obj.unwrap()),
+            bzx_object: Box::new(obj_type.unwrap()),
+        })
     }
 }

@@ -15,8 +15,8 @@ use bzxc_shared::{LLVMNode, Type, TypedNode};
 use crate::substitution::Substitution;
 use crate::TypeSystem;
 
-impl<'ctx> TypeSystem<'ctx> {
-    pub(crate) fn gen(&self, subs: Substitution, node: TypedNode) -> LLVMNode<'ctx> {
+impl TypeSystem {
+    pub(crate) fn gen(&self, subs: Substitution, node: TypedNode) -> LLVMNode {
         let llvm = |ty: Type| ty.llvm(self.context, subs.0.clone());
         match node {
             TypedNode::Statements(stmts) => LLVMNode::Statements(

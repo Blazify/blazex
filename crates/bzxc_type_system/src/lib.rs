@@ -13,7 +13,7 @@
 #![feature(box_syntax, box_patterns)]
 #![allow(unused_variables)]
 
-use bzxc_llvm_wrapper::context::Context;
+use llvm_sys::prelude::LLVMContextRef;
 use std::collections::HashMap;
 
 use bzxc_shared::{LLVMNode, Node, Type};
@@ -26,16 +26,16 @@ mod substitution;
 mod type_env;
 mod unifier;
 
-pub struct TypeSystem<'ctx> {
+pub struct TypeSystem {
     node: Node,
     methods: HashMap<Type, HashMap<String, Type>>,
     type_env: TypeEnv,
     class_env: HashMap<String, Type>,
-    pub context: &'ctx Context,
+    pub context: LLVMContextRef,
 }
 
-impl<'ctx> TypeSystem<'ctx> {
-    pub fn new(node: Node, context: &'ctx Context) -> Self {
+impl TypeSystem {
+    pub fn new(node: Node, context: LLVMContextRef) -> Self {
         TypeSystem {
             node,
             methods: HashMap::new(),
@@ -45,7 +45,7 @@ impl<'ctx> TypeSystem<'ctx> {
         }
     }
 
-    pub fn llvm_node(&mut self) -> LLVMNode<'ctx> {
+    pub fn llvm_node(&mut self) -> LLVMNode {
         let annotation = self.annotate(self.node.clone());
         let constraints = self.collect(annotation.clone());
         let substitution = self.unify(constraints.clone());

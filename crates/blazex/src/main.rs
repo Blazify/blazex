@@ -85,14 +85,16 @@ fn main() {
      */
     let compile_with_config = || {
         let cnt = std::fs::read_to_string(file_name.clone()).expect("could not read file");
-        compile(
-            file_name.clone(),
-            cnt,
-            is_quiet,
-            watch,
-            out_file.clone(),
-            spit_ll,
-        )
+        unsafe {
+            compile(
+                file_name.clone(),
+                cnt,
+                is_quiet,
+                watch,
+                out_file.clone(),
+                spit_ll,
+            )
+        }
     };
 
     let init = compile_with_config();
