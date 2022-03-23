@@ -13,7 +13,22 @@
 
 use llvm_sys::analysis::LLVMVerifierFailureAction::LLVMPrintMessageAction;
 use llvm_sys::analysis::LLVMVerifyFunction;
-use llvm_sys::core::{LLVMAddFunction, LLVMAppendBasicBlockInContext, LLVMBuildAdd, LLVMBuildAlloca, LLVMBuildAnd, LLVMBuildBr, LLVMBuildCall, LLVMBuildCondBr, LLVMBuildExtractElement, LLVMBuildFAdd, LLVMBuildFCmp, LLVMBuildFDiv, LLVMBuildFMul, LLVMBuildFRem, LLVMBuildFSub, LLVMBuildGlobalString, LLVMBuildICmp, LLVMBuildInsertValue, LLVMBuildIntCast, LLVMBuildLoad, LLVMBuildMul, LLVMBuildOr, LLVMBuildPointerCast, LLVMBuildRet, LLVMBuildStore, LLVMBuildStructGEP, LLVMBuildSub, LLVMBuildUDiv, LLVMBuildURem, LLVMConstInt, LLVMConstNeg, LLVMConstNot, LLVMConstNull, LLVMConstReal, LLVMCountStructElementTypes, LLVMCreateBuilderInContext, LLVMDeleteFunction, LLVMDumpModule, LLVMDumpValue, LLVMFunctionType, LLVMGetElementType, LLVMGetFirstBasicBlock, LLVMGetFirstInstruction, LLVMGetInsertBlock, LLVMGetNamedFunction, LLVMGetParam, LLVMGetStructElementTypes, LLVMGetUndef, LLVMGetVectorSize, LLVMInsertBasicBlockInContext, LLVMInt128TypeInContext, LLVMInt1TypeInContext, LLVMInt32TypeInContext, LLVMPositionBuilderAtEnd, LLVMPositionBuilderBefore, LLVMRunFunctionPassManager, LLVMSetLinkage, LLVMSetValueName2, LLVMStructGetTypeAtIndex, LLVMStructTypeInContext, LLVMTypeOf};
+use llvm_sys::core::{
+    LLVMAddFunction, LLVMAppendBasicBlockInContext, LLVMBuildAdd, LLVMBuildAlloca, LLVMBuildAnd,
+    LLVMBuildBr, LLVMBuildCall, LLVMBuildCondBr, LLVMBuildExtractElement, LLVMBuildFAdd,
+    LLVMBuildFCmp, LLVMBuildFDiv, LLVMBuildFMul, LLVMBuildFRem, LLVMBuildFSub,
+    LLVMBuildGlobalString, LLVMBuildICmp, LLVMBuildInsertValue, LLVMBuildIntCast, LLVMBuildLoad,
+    LLVMBuildMul, LLVMBuildOr, LLVMBuildPointerCast, LLVMBuildRet, LLVMBuildStore,
+    LLVMBuildStructGEP, LLVMBuildSub, LLVMBuildUDiv, LLVMBuildURem, LLVMConstInt, LLVMConstNeg,
+    LLVMConstNot, LLVMConstNull, LLVMConstReal, LLVMCountStructElementTypes,
+    LLVMCreateBuilderInContext, LLVMDeleteFunction, LLVMDumpModule, LLVMDumpValue,
+    LLVMFunctionType, LLVMGetElementType, LLVMGetFirstBasicBlock, LLVMGetFirstInstruction,
+    LLVMGetInsertBlock, LLVMGetNamedFunction, LLVMGetParam, LLVMGetStructElementTypes,
+    LLVMGetUndef, LLVMGetVectorSize, LLVMInsertBasicBlockInContext, LLVMInt128TypeInContext,
+    LLVMInt1TypeInContext, LLVMInt32TypeInContext, LLVMPositionBuilderAtEnd,
+    LLVMPositionBuilderBefore, LLVMRunFunctionPassManager, LLVMSetLinkage, LLVMSetValueName2,
+    LLVMStructGetTypeAtIndex, LLVMStructTypeInContext, LLVMTypeOf,
+};
 use llvm_sys::prelude::{
     LLVMBuilderRef, LLVMContextRef, LLVMModuleRef, LLVMPassManagerRef, LLVMTypeRef, LLVMValueRef,
 };
@@ -132,6 +147,9 @@ impl Compiler {
                 let mut last = None;
                 for statement in stmts {
                     last = Some(self.compile(statement));
+                    if self.ret {
+                        break;
+                    }
                 }
 
                 last.unwrap_or_else(|| self.null())
@@ -405,10 +423,13 @@ impl Compiler {
                     self.variables.insert(arg_name.to_string(), alloca);
                 }
 
-
                 let ret = self.ret.clone();
                 self.ret = false;
                 self.compile(*body);
+
+                if !self.ret {
+                    LLVMBuildRet(self.builder, self.null());
+                }
 
                 LLVMPositionBuilderAtEnd(self.builder, parental_block);
                 self.fn_value_opt = parent;
@@ -466,7 +487,6 @@ impl Compiler {
                     .iter()
                     .map(|arg| self.compile(arg.clone()))
                     .collect::<Vec<_>>();
-
 
                 LLVMBuildCall(
                     self.builder,
@@ -695,12 +715,7 @@ impl Compiler {
                 for i in 1..count {
                     let val = LLVMBuildLoad(
                         self.builder,
-                        LLVMBuildStructGEP(
-                            self.builder,
-                            obj,
-                            i,
-                            to_c_str("struct_gep").as_ptr(),
-                        ),
+                        LLVMBuildStructGEP(self.builder, obj, i, to_c_str("struct_gep").as_ptr()),
                         to_c_str("struct_load").as_ptr(),
                     );
 
@@ -714,7 +729,6 @@ impl Compiler {
                             to_c_str("struct_gep").as_ptr(),
                         ),
                     );
-
                 }
 
                 alloc
@@ -738,12 +752,7 @@ impl Compiler {
                 for i in 0..LLVMCountStructElementTypes(LLVMTypeOf(object)) {
                     let val = LLVMBuildLoad(
                         self.builder,
-                        LLVMBuildStructGEP(
-                            self.builder,
-                            obj,
-                            i,
-                            to_c_str("struct_gep").as_ptr(),
-                        ),
+                        LLVMBuildStructGEP(self.builder, obj, i, to_c_str("struct_gep").as_ptr()),
                         to_c_str("struct_load").as_ptr(),
                     );
 

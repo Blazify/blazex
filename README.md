@@ -58,7 +58,7 @@ fun sum(a, b) {
     return c;
 }
 
-printf("%i", sum(2, 2));
+println("%i", sum(2, 2));
 ```
 
 - Working around with objects
@@ -68,10 +68,10 @@ var obj = {
     prop: 5 @ properties should be Identifier or there will be Invalid Syntax Error
 }
 
-printf("%i\n", obj.prop); @ accessing object property
+println("%i", obj.prop); @ accessing object property
 
 obj.prop = 10; @ editing object property value
-printf("%i\n", obj.prop) @ 10
+println("%i", obj.prop) @ 10
 ```
 
 - Classes
@@ -83,8 +83,7 @@ class Main {
     @ this is constructor
     fun() {
         soul.a = 5; @ soul is the current object it's operating on
-	    return soul;
-    }
+     }
 
     @ this is a method
     fun sum_to_a(b) {
@@ -95,7 +94,7 @@ class Main {
 
 var ins = new Main(); @ creating/initializing a class, returns a object with the properties
 
-printf("%i\n", ins.sum_to_a(5));
+println("%i", ins.sum_to_a(5));
 ```
 
 ## Dependencies
@@ -111,7 +110,8 @@ printf("%i\n", ins.sum_to_a(5));
 - Fork the repository
 - Create a branch with the patch/feature you want
 - Make Changes to the code
-- Commit the code (Use the [Emoji Commit Style](https://github.com/BlazifyOrg/pretty-commits)) and the message should **NOT** contain the word "release"
+- Commit the code (Use the [Emoji Commit Style](https://github.com/BlazifyOrg/pretty-commits)) and the message should **
+  NOT** contain the word "release"
 - Finally, push the code and make a pull request
 
 ## Project Structure
@@ -130,10 +130,10 @@ printf("%i\n", ins.sum_to_a(5));
 - [x] Type System
 - [x] LLVM
 - [x] Errors
-  - [x] Lexer
-  - [x] Parser
-  - [ ] Type System
-  - [ ] LLVM
+    - [x] Lexer
+    - [x] Parser
+    - [ ] Type System
+    - [ ] LLVM
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser

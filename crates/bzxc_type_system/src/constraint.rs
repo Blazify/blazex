@@ -312,13 +312,6 @@ impl TypeSystem {
                 }
 
                 constr.push(Constraint(Type::Class(box ty.clone()), class));
-                constr.push(Constraint(
-                    ty.clone(),
-                    Type::Object(BTreeMap::from([(
-                        "constructor".to_string(),
-                        Type::Fun(params, box ty),
-                    )])),
-                ));
 
                 constr
             }

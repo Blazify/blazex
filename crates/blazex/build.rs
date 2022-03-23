@@ -1,7 +1,9 @@
-use std::fs;
+use std::{env, fs};
 
 fn main() {
     let files = rerunners("stdlib".to_string());
+    env::set_var("NO_OF_FILES", files.len().to_string());
+    println!("rerun-if-env-changed=NO_OF_FILES");
     cc::Build::new()
         .files(files)
         .warnings(true)

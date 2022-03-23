@@ -315,7 +315,7 @@ impl TypeSystem {
                     name: name.value.into_string(),
                     properties,
                     constructor: box TypedNode::Fun {
-                        ty: Type::Fun(params_ty, box obj_ty),
+                        ty: Type::Fun(params_ty, box Type::Null),
                         name: "%constructor%".to_string(),
                         params,
                         body: box self.annotate(*constructor.1),
