@@ -18,7 +18,7 @@ impl Compiler {
         let aligner =
             LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0)) as usize as u32;
 
-        let mut struct_val = LLVMBuildInsertValue(
+        let struct_val = LLVMBuildInsertValue(
             self.builder,
             LLVMGetUndef(LLVMGetElementType(ty)),
             LLVMConstNull(LLVMStructGetTypeAtIndex(ty, 0)),
@@ -26,20 +26,24 @@ impl Compiler {
             to_c_str("c_to_bzx_obj_load").as_ptr(),
         );
 
+        let ptr = self.create_entry_block_alloca("obj", LLVMTypeOf(struct_val));
+        LLVMBuildStore(self.builder, struct_val, ptr);
+
         for (i, (name, val)) in properties.iter().enumerate() {
             let idx = i + 1;
             self.objects.insert((name.clone(), aligner), idx);
-            struct_val = LLVMBuildInsertValue(
+            LLVMBuildStore(
                 self.builder,
-                struct_val,
                 self.compile(val.clone()),
-                idx as u32,
-                to_c_str("c_to_bzx_obj_load").as_ptr(),
+                LLVMBuildStructGEP(
+                    self.builder,
+                    ptr,
+                    idx as u32,
+                    to_c_str("struct_gep").as_ptr(),
+                ),
             );
         }
 
-        let ptr = self.create_entry_block_alloca("obj", LLVMTypeOf(struct_val));
-        LLVMBuildStore(self.builder, struct_val, ptr);
         ptr
     }
 

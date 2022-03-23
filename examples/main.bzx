@@ -1,7 +1,7 @@
 extern int println(string, ...)
 
-var obj = { a: int };
+var obj = { a: int }
 extern CObject(obj) accept_obj(CObject(obj));
 
-var a = CToBzxObject(accept_obj(CObject({ a: 50 })), obj).a
+var a = CToBzxObject(accept_obj(CObject({ a: 50 })), obj).a;
 println("%i", a)

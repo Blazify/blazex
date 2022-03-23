@@ -1,10 +1,8 @@
-#![allow(dead_code, unused_variables, unused_imports)]
 
-use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
-use std::path::Path;
+
 use std::process::Command;
-use std::{env, ptr};
+use std::{env};
 
 use llvm_sys::core::{
     LLVMContextCreate, LLVMContextDispose, LLVMCreateBuilderInContext,
@@ -16,7 +14,6 @@ use llvm_sys::error_handling::LLVMEnablePrettyStackTrace;
 use llvm_sys::target::{
     LLVMCopyStringRepOfTargetData, LLVM_InitializeAllAsmParsers, LLVM_InitializeAllAsmPrinters,
     LLVM_InitializeAllTargetInfos, LLVM_InitializeAllTargetMCs, LLVM_InitializeAllTargets,
-    LLVM_InitializeNativeTarget,
 };
 use llvm_sys::target_machine::LLVMCodeGenFileType::LLVMObjectFile;
 use llvm_sys::target_machine::LLVMCodeGenOptLevel::LLVMCodeGenLevelAggressive;
@@ -24,7 +21,7 @@ use llvm_sys::target_machine::LLVMCodeModel::LLVMCodeModelDefault;
 use llvm_sys::target_machine::LLVMRelocMode::LLVMRelocDefault;
 use llvm_sys::target_machine::{
     LLVMCreateTargetDataLayout, LLVMCreateTargetMachine, LLVMGetDefaultTargetTriple,
-    LLVMGetFirstTarget, LLVMGetHostCPUFeatures, LLVMGetHostCPUName, LLVMGetTargetFromName,
+    LLVMGetHostCPUFeatures,
     LLVMGetTargetFromTriple, LLVMTargetMachineEmitToFile, LLVMTargetRef,
 };
 use llvm_sys::transforms::scalar::{
