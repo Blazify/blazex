@@ -1,47 +1,48 @@
-export LLVM_SYS_100_PREFIX := $(HOME)/.blazex/llvm-10.0.1
-
-.PHONY: build
+.PHONY: build install
 
 PLATFORM := $(shell uname -sm)
 BLAZEX_DIR := $(HOME)/.blazex
 
-# Download/build info
-ifeq ($(shell $$OS), Windows_NT)
-	TARGET := x86_64-pc-windows-msvc
-	EXTENSION := ".exe"
-endif
-ifeq ($(PLATFORM), Darwin x86_64)
-	TARGET := x86_64-apple-darwin
-endif
-ifeq ($(PLATFORM), Linux x86_64)
-	TARGET := x86_64-unknown-linux-gnu
-endif
-
-
 build:
-ifneq ($(shell test -d "$(LLVM_SYS_100_PREFIX)" ; echo $$?), 0)
-	mkdir -p $(BLAZEX_DIR)
-	cd $(BLAZEX_DIR) && \
-	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz && \
-	tar xJf llvm-10.0.1.src.tar.xz && \
-	rm -rf llvm-10.0.1.src.tar.xz && \
-	mkdir -p llvm-10.0.1.src/build && \
-	cd llvm-10.0.1.src/build && \
-	cmake ..  && \
-	cmake --build . -j1 && \
-	cmake --build . --target install && \
-	cmake -DCMAKE_INSTALL_PREFIX=$(LLVM_SYS_100_PREFIX) -P cmake_install.cmake && \
-	rm -rf llvm-10.0.1.src
+ifeq ($(PLATFORM), Linux x86_64)
+ifeq ($(shell llvm-config-10 --version), 10.0.1)
+	@echo "------------------------------"
+	@echo "LLVM-10 already installed"
+	@echo "------------------------------"
+else
+	@sudo apt-get update
+	@sudo apt-get install -y build-essential libssl-dev libelf-dev libdwarf-dev libiberty-dev libunwind-dev libc++-dev libc++abi-dev llvm-10 zlib1g-dev
+	@echo "------------------------------"
+	@echo "LLVM-10 installed"
+	@echo "------------------------------"
 endif
-	cargo build --locked --target $(TARGET) --release
-
-ifneq ($(shell test -d "$(BLAZEX_DIR)/bin" ; echo $$?), 0)
-	mkdir -p "$(BLAZEX_DIR)/bin"
 endif
 
-ifeq ($(shell test -e $(BLAZEX_DIR)/bin/blazex$(EXTENSION) ; echo $$?), 0)
-	rm -r "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
+ifeq ($(PLATFORM), Darwin x86_64)
+ifeq ($(shell llvm-config-10 --version), 10.0.1)
+	@echo "------------------------------"
+	@echo "LLVM-10 already installed"
+	@echo "------------------------------"
+else
+	brew install llvm@10
+	@echo "------------------------------"
+	@echo "LLVM-10 installed"
+	@echo "------------------------------"
+endif
+endif
+	cargo build --locked --release
+
+ifneq ($(shell test -d "blazex/bin" ; echo $$?), 0)
+	@mkdir -p "blazex/bin"
+else
+	@rm -rf "blazex/bin"
+	@mkdir -p "blazex/bin"
 endif
 
-	cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
-	strip "$(BLAZEX_DIR)/bin/blazex$(EXTENSION)"
+	@cp "./target/$(TARGET)/release/blazex$(EXTENSION)" "blazex/bin/blazex$(EXTENSION)"
+	@strip "blazex/bin/blazex$(EXTENSION)"
+	@cp -r "./target/$(TARGET)/release/stdlib" "blazex/stdlib"
+
+install: build
+	@rm -rf "$(BLAZEX_DIR)"
+	@mv "blazex/" $(BLAZEX_DIR)

@@ -1,16 +1,28 @@
 use std::{env, fs};
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
     let files = rerunners("stdlib".to_string());
     env::set_var("NO_OF_FILES", files.len().to_string());
-    println!("rerun-if-env-changed=NO_OF_FILES");
+    let mut out_dir = env::current_exe().ok().unwrap();
+    out_dir.pop();
+    out_dir.pop();
+    out_dir.pop();
+    out_dir.push("stdlib");
+
+    if !out_dir.exists() {
+        fs::create_dir(&out_dir).unwrap();
+    }
+    println!("cargo:rerun-if-env-changed=NO_OF_FILES");
     cc::Build::new()
         .files(files)
         .warnings(true)
         .extra_warnings(true)
         .flag_if_supported("-Wno-unused-result")
-        .compile("blazex");
-    println!("cargo:rerun-if-changed=build.rs");
+        .out_dir(out_dir.as_path())
+        .opt_level(3)
+        .warnings_into_errors(true)
+        .compile("libblazex.a");
 }
 
 fn rerunners(path: String) -> Vec<String> {

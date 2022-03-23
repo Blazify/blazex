@@ -1,8 +1,7 @@
-
 use std::mem::MaybeUninit;
 
+use std::env;
 use std::process::Command;
-use std::{env};
 
 use llvm_sys::core::{
     LLVMContextCreate, LLVMContextDispose, LLVMCreateBuilderInContext,
@@ -21,8 +20,7 @@ use llvm_sys::target_machine::LLVMCodeModel::LLVMCodeModelDefault;
 use llvm_sys::target_machine::LLVMRelocMode::LLVMRelocDefault;
 use llvm_sys::target_machine::{
     LLVMCreateTargetDataLayout, LLVMCreateTargetMachine, LLVMGetDefaultTargetTriple,
-    LLVMGetHostCPUFeatures,
-    LLVMGetTargetFromTriple, LLVMTargetMachineEmitToFile, LLVMTargetRef,
+    LLVMGetHostCPUFeatures, LLVMGetTargetFromTriple, LLVMTargetMachineEmitToFile, LLVMTargetRef,
 };
 use llvm_sys::transforms::scalar::{
     LLVMAddBasicAliasAnalysisPass, LLVMAddCFGSimplificationPass, LLVMAddGVNPass,
@@ -143,11 +141,18 @@ pub unsafe fn compile(
     LLVMDisposeModule(module);
     LLVMContextDispose(context);
 
-    let out_dir = env::var("OUT_DIR").unwrap();
+    let mut dir = env::current_exe().ok().unwrap();
+    dir.pop();
+    if dir.ends_with("bin") {
+        dir.pop();
+    }
+    dir.push("stdlib");
+
+    assert!(dir.is_dir());
     Command::new("clang-10")
         .args([
             out_file.clone(),
-            format!("{}/libblazex.a", out_dir),
+            format!("{}/libblazex.a", dir.to_str().unwrap()),
             format!("-o{}", out_file.replace(".o", ".out")),
         ])
         .status()
