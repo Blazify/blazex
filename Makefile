@@ -24,7 +24,7 @@ ifeq ($(shell llvm-config-10 --version), 10.0.1)
 	@echo "LLVM-10 already installed"
 	@echo "------------------------------"
 else
-	brew install llvm@10
+	@sudo port install llvm-10
 	@echo "------------------------------"
 	@echo "LLVM-10 installed"
 	@echo "------------------------------"
