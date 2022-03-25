@@ -1,6 +1,6 @@
 use llvm_sys::core::{
     LLVMBuildInsertValue, LLVMBuildStore, LLVMBuildStructGEP, LLVMConstNull, LLVMFunctionType,
-    LLVMGetElementType, LLVMGetReturnType, LLVMGetUndef, LLVMGetVectorSize, LLVMPointerType,
+    LLVMGetArrayLength, LLVMGetElementType, LLVMGetReturnType, LLVMGetUndef, LLVMPointerType,
     LLVMStructGetTypeAtIndex, LLVMTypeOf,
 };
 use llvm_sys::prelude::{LLVMTypeRef, LLVMValueRef};
@@ -15,13 +15,18 @@ impl Compiler {
         ty: LLVMTypeRef,
         properties: Vec<(String, LLVMNode)>,
     ) -> LLVMValueRef {
-        let aligner =
-            LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0)) as usize as u32;
+        let aligner_ty = LLVMGetElementType(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0));
+
+        let aligner = LLVMGetArrayLength(aligner_ty) as usize as u32;
+
+        let aligner_val = LLVMConstNull(aligner_ty);
+        let aligner_ptr = self.create_entry_block_alloca("aligner", aligner_ty);
+        LLVMBuildStore(self.builder, aligner_val, aligner_ptr);
 
         let struct_val = LLVMBuildInsertValue(
             self.builder,
             LLVMGetUndef(LLVMGetElementType(ty)),
-            LLVMConstNull(LLVMStructGetTypeAtIndex(ty, 0)),
+            aligner_ptr,
             0,
             to_c_str("c_to_bzx_obj_load").as_ptr(),
         );
@@ -56,10 +61,10 @@ impl Compiler {
             .objects
             .get(&(
                 property,
-                LLVMGetVectorSize(LLVMStructGetTypeAtIndex(
+                LLVMGetArrayLength(LLVMGetElementType(LLVMStructGetTypeAtIndex(
                     LLVMGetElementType(LLVMTypeOf(object)),
                     0,
-                )) as usize as u32,
+                ))) as usize as u32,
             ))
             .unwrap();
 

@@ -23,8 +23,8 @@ use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use llvm_sys::core::{
-    LLVMFloatTypeInContext, LLVMFunctionType, LLVMInt128TypeInContext, LLVMInt1TypeInContext,
-    LLVMInt8TypeInContext, LLVMPointerType, LLVMStructTypeInContext, LLVMVectorType,
+    LLVMArrayType, LLVMFloatTypeInContext, LLVMFunctionType, LLVMInt128TypeInContext,
+    LLVMInt1TypeInContext, LLVMInt8TypeInContext, LLVMPointerType, LLVMStructTypeInContext,
 };
 use llvm_sys::prelude::{LLVMContextRef, LLVMTypeRef};
 
@@ -854,7 +854,7 @@ pub enum Type {
     Boolean,
     Char,
     String,
-    Array(Box<Self>, Option<u32>),
+    Array(Box<Self>, u32),
     Fun(Vec<Self>, Box<Self>),
     Object(BTreeMap<String, Self>),
     Class(Box<Self>),
@@ -876,7 +876,7 @@ impl Type {
             let mut tree = BTreeMap::new();
             tree.insert(
                 "%alignment%".to_string(),
-                Type::Array(Box::new(Type::Int), Some(OBJECT_ALIGNER as u32)),
+                Type::Array(Box::new(Type::Int), OBJECT_ALIGNER as u32),
             );
             tree.extend(props);
             Self::Object(tree)
@@ -884,9 +884,7 @@ impl Type {
     }
 
     pub fn last_aligner() -> usize {
-        unsafe {
-            return OBJECT_ALIGNER;
-        }
+        unsafe { OBJECT_ALIGNER }
     }
 
     pub fn llvm(&self, ctx: LLVMContextRef, tvars: BTreeMap<Type, Type>) -> LLVMTypeRef {
@@ -897,15 +895,7 @@ impl Type {
                 Type::Boolean => LLVMInt1TypeInContext(ctx),
                 Type::Char => LLVMInt8TypeInContext(ctx),
                 Type::String => LLVMPointerType(LLVMInt8TypeInContext(ctx), 0),
-                Type::Array(ty, i) => LLVMVectorType(
-                    ty.llvm(ctx, tvars),
-                    match i {
-                        Some(i) => *i,
-                        None => 0,
-                    }
-                    .try_into()
-                    .unwrap(),
-                ),
+                Type::Array(ty, i) => LLVMPointerType(LLVMArrayType(ty.llvm(ctx, tvars), *i), 0),
                 Type::Fun(params, ret) => LLVMPointerType(
                     LLVMFunctionType(
                         ret.llvm(ctx, tvars.clone()),

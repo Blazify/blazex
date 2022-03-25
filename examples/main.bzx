@@ -1,7 +1,19 @@
 extern int println(string, ...)
+extern string str_concat(string, string)
 
-var obj = { a: int }
-extern CObject(obj) accept_obj(CObject(obj));
+class String {
+    var value = ""
 
-var a = CToBzxObject(accept_obj(CObject({ a: 50 })), obj).a;
-println("%i", a)
+    fun(value) {
+        soul.value = value
+    }
+
+    fun push_str(str) {
+        soul.value = str_concat(soul.value, str)
+    }
+}
+
+var str = new String("Hello")
+str.push_str(" World")
+
+println(str.value)

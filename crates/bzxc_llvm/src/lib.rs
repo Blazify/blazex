@@ -15,19 +15,19 @@ use llvm_sys::analysis::LLVMVerifierFailureAction::LLVMPrintMessageAction;
 use llvm_sys::analysis::LLVMVerifyFunction;
 use llvm_sys::core::{
     LLVMAddFunction, LLVMAppendBasicBlockInContext, LLVMBuildAdd, LLVMBuildAlloca, LLVMBuildAnd,
-    LLVMBuildBr, LLVMBuildCall, LLVMBuildCondBr, LLVMBuildExtractElement, LLVMBuildFAdd,
-    LLVMBuildFCmp, LLVMBuildFDiv, LLVMBuildFMul, LLVMBuildFRem, LLVMBuildFSub,
-    LLVMBuildGlobalString, LLVMBuildICmp, LLVMBuildInsertValue, LLVMBuildIntCast, LLVMBuildLoad,
-    LLVMBuildMul, LLVMBuildOr, LLVMBuildPointerCast, LLVMBuildRet, LLVMBuildStore,
-    LLVMBuildStructGEP, LLVMBuildSub, LLVMBuildUDiv, LLVMBuildURem, LLVMConstInt, LLVMConstNeg,
-    LLVMConstNot, LLVMConstNull, LLVMConstReal, LLVMCountStructElementTypes,
-    LLVMCreateBuilderInContext, LLVMDeleteFunction, LLVMDumpModule, LLVMDumpValue,
-    LLVMFunctionType, LLVMGetElementType, LLVMGetFirstBasicBlock, LLVMGetFirstInstruction,
-    LLVMGetInsertBlock, LLVMGetNamedFunction, LLVMGetParam, LLVMGetStructElementTypes,
-    LLVMGetUndef, LLVMGetVectorSize, LLVMInsertBasicBlockInContext, LLVMInt128TypeInContext,
-    LLVMInt1TypeInContext, LLVMInt32TypeInContext, LLVMPositionBuilderAtEnd,
-    LLVMPositionBuilderBefore, LLVMRunFunctionPassManager, LLVMSetLinkage, LLVMSetValueName2,
-    LLVMStructGetTypeAtIndex, LLVMStructTypeInContext, LLVMTypeOf,
+    LLVMBuildBr, LLVMBuildCall, LLVMBuildCondBr, LLVMBuildFAdd, LLVMBuildFCmp, LLVMBuildFDiv,
+    LLVMBuildFMul, LLVMBuildFRem, LLVMBuildFSub, LLVMBuildGEP, LLVMBuildGlobalString,
+    LLVMBuildICmp, LLVMBuildInsertValue, LLVMBuildIntCast, LLVMBuildLoad, LLVMBuildMul,
+    LLVMBuildOr, LLVMBuildPointerCast, LLVMBuildRet, LLVMBuildStore, LLVMBuildStructGEP,
+    LLVMBuildSub, LLVMBuildUDiv, LLVMBuildURem, LLVMConstInt, LLVMConstNeg, LLVMConstNot,
+    LLVMConstNull, LLVMConstReal, LLVMCountStructElementTypes, LLVMCreateBuilderInContext,
+    LLVMDeleteFunction, LLVMDumpModule, LLVMDumpValue, LLVMFunctionType, LLVMGetArrayLength,
+    LLVMGetElementType, LLVMGetFirstBasicBlock, LLVMGetFirstInstruction, LLVMGetInsertBlock,
+    LLVMGetNamedFunction, LLVMGetParam, LLVMGetStructElementTypes, LLVMGetUndef,
+    LLVMInsertBasicBlockInContext, LLVMInt1TypeInContext, LLVMInt32TypeInContext,
+    LLVMIsAConstantInt, LLVMPositionBuilderAtEnd, LLVMPositionBuilderBefore,
+    LLVMRunFunctionPassManager, LLVMSetLinkage, LLVMSetValueName2, LLVMStructGetTypeAtIndex,
+    LLVMStructTypeInContext, LLVMTypeOf,
 };
 use llvm_sys::prelude::{
     LLVMBuilderRef, LLVMContextRef, LLVMModuleRef, LLVMPassManagerRef, LLVMTypeRef, LLVMValueRef,
@@ -36,7 +36,9 @@ use llvm_sys::LLVMIntPredicate::{
     LLVMIntEQ, LLVMIntNE, LLVMIntUGE, LLVMIntUGT, LLVMIntULE, LLVMIntULT,
 };
 use llvm_sys::LLVMLinkage::LLVMExternalLinkage;
-use llvm_sys::LLVMRealPredicate::LLVMRealULT;
+use llvm_sys::LLVMRealPredicate::{
+    LLVMRealOEQ, LLVMRealONE, LLVMRealUGE, LLVMRealUGT, LLVMRealULE, LLVMRealULT,
+};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::mem::forget;
@@ -168,9 +170,13 @@ impl Compiler {
                 ty,
                 to_c_str("str").as_ptr(),
             ),
-            LLVMNode::Unary { ty, val, op_token } => {
+            LLVMNode::Unary {
+                ty: _,
+                val,
+                op_token,
+            } => {
                 let val = self.compile(*val);
-                if ty == LLVMInt128TypeInContext(self.context) {
+                if !LLVMIsAConstantInt(val).is_null() {
                     match op_token.value {
                         Tokens::Plus => val,
                         Tokens::Minus => LLVMConstNeg(val),
@@ -186,15 +192,14 @@ impl Compiler {
                 }
             }
             LLVMNode::Binary {
-                ty,
+                ty: _,
                 left,
                 right,
                 op_token,
             } => {
-                if ty == LLVMInt128TypeInContext(self.context) {
-                    let lhs = self.compile(*left);
-                    let rhs = self.compile(*right);
-
+                let lhs = self.compile(*left);
+                let rhs = self.compile(*right);
+                if !LLVMIsAConstantInt(lhs).is_null() {
                     match op_token.value {
                         Tokens::Plus => {
                             LLVMBuildAdd(self.builder, lhs, rhs, to_c_str("tmpadd").as_ptr())
@@ -294,9 +299,6 @@ impl Compiler {
                         }
                     }
                 } else {
-                    let lhs = self.compile(*left);
-                    let rhs = self.compile(*right);
-
                     match op_token.value {
                         Tokens::Plus => {
                             LLVMBuildFAdd(self.builder, lhs, rhs, to_c_str("tmpadd").as_ptr())
@@ -327,9 +329,9 @@ impl Compiler {
                         ),
                         Tokens::GreaterThan => LLVMBuildIntCast(
                             self.builder,
-                            LLVMBuildICmp(
+                            LLVMBuildFCmp(
                                 self.builder,
-                                LLVMIntULE,
+                                LLVMRealUGT,
                                 lhs,
                                 rhs,
                                 to_c_str("tmpcmp").as_ptr(),
@@ -339,9 +341,9 @@ impl Compiler {
                         ),
                         Tokens::LessThanEquals => LLVMBuildIntCast(
                             self.builder,
-                            LLVMBuildICmp(
+                            LLVMBuildFCmp(
                                 self.builder,
-                                LLVMIntULE,
+                                LLVMRealULE,
                                 lhs,
                                 rhs,
                                 to_c_str("tmpcmp").as_ptr(),
@@ -351,9 +353,9 @@ impl Compiler {
                         ),
                         Tokens::GreaterThanEquals => LLVMBuildIntCast(
                             self.builder,
-                            LLVMBuildICmp(
+                            LLVMBuildFCmp(
                                 self.builder,
-                                LLVMIntULE,
+                                LLVMRealUGE,
                                 lhs,
                                 rhs,
                                 to_c_str("tmpcmp").as_ptr(),
@@ -363,9 +365,9 @@ impl Compiler {
                         ),
                         Tokens::DoubleEquals => LLVMBuildIntCast(
                             self.builder,
-                            LLVMBuildICmp(
+                            LLVMBuildFCmp(
                                 self.builder,
-                                LLVMIntULE,
+                                LLVMRealOEQ,
                                 lhs,
                                 rhs,
                                 to_c_str("tmpcmp").as_ptr(),
@@ -375,9 +377,9 @@ impl Compiler {
                         ),
                         Tokens::NotEquals => LLVMBuildIntCast(
                             self.builder,
-                            LLVMBuildICmp(
+                            LLVMBuildFCmp(
                                 self.builder,
-                                LLVMIntULE,
+                                LLVMRealONE,
                                 lhs,
                                 rhs,
                                 to_c_str("tmpcmp").as_ptr(),
@@ -493,7 +495,7 @@ impl Compiler {
                     self.compile(*fun),
                     args.as_mut_ptr(),
                     args.len() as u32,
-                    to_c_str("").as_ptr(),
+                    to_c_str("call_fun").as_ptr(),
                 )
             }
             LLVMNode::Return { ty: _, val } => {
@@ -664,29 +666,44 @@ impl Compiler {
                 self.null()
             }
             LLVMNode::Array { ty, elements } => {
-                let vec_ty = LLVMGetUndef(ty);
+                let arr = self.create_entry_block_alloca("array_alloca", LLVMGetElementType(ty));
 
                 for (i, element) in elements.iter().enumerate() {
-                    LLVMBuildInsertValue(
+                    let element = self.compile(element.clone());
+                    let element_ptr = LLVMBuildGEP(
                         self.builder,
-                        vec_ty,
-                        self.compile(element.clone()),
-                        i as u32,
-                        to_c_str("vec_push").as_ptr(),
+                        arr,
+                        [
+                            LLVMConstInt(LLVMInt32TypeInContext(self.context), 0, 0),
+                            LLVMConstInt(LLVMInt32TypeInContext(self.context), i as u64, 0),
+                        ]
+                        .as_mut_ptr(),
+                        2,
+                        to_c_str("array_element").as_ptr(),
                     );
+                    LLVMBuildStore(self.builder, element, element_ptr);
                 }
 
-                vec_ty.into()
+                arr.into()
             }
             LLVMNode::Index { ty: _, array, idx } => {
                 let arr = self.compile(*array);
 
-                LLVMBuildExtractElement(
+                let idx = self.compile(*idx);
+
+                let element_ptr = LLVMBuildGEP(
                     self.builder,
                     arr,
-                    self.compile(*idx.clone()),
-                    to_c_str("index").as_ptr(),
-                )
+                    [
+                        LLVMConstInt(LLVMInt32TypeInContext(self.context), 0, 0),
+                        idx,
+                    ]
+                    .as_mut_ptr(),
+                    2,
+                    to_c_str("array_element").as_ptr(),
+                );
+
+                LLVMBuildLoad(self.builder, element_ptr, to_c_str("load").as_ptr())
             }
             LLVMNode::Object { ty, properties } => self.create_obj(ty, properties),
             LLVMNode::CObject { ty: _ty, object } => {
@@ -805,10 +822,10 @@ impl Compiler {
                 let class = self
                     .classes
                     .get(
-                        &(LLVMGetVectorSize(LLVMStructGetTypeAtIndex(
+                        &(LLVMGetArrayLength(LLVMGetElementType(LLVMStructGetTypeAtIndex(
                             LLVMGetElementType(LLVMTypeOf(ptr)),
                             0,
-                        )) as usize as u32),
+                        ))) as usize as u32),
                     )
                     .clone();
                 let is_class = class.is_some();
@@ -870,8 +887,10 @@ impl Compiler {
                     n_methods.insert(name, self.class_method(class.clone(), ty, method));
                 }
                 self.classes.insert(
-                    LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(ty), 0)) as usize
-                        as u32,
+                    LLVMGetArrayLength(LLVMGetElementType(LLVMStructGetTypeAtIndex(
+                        LLVMGetElementType(ty),
+                        0,
+                    ))) as usize as u32,
                     (klass, constructor, n_methods),
                 );
 
@@ -885,8 +904,10 @@ impl Compiler {
                 let (base, constructor, _) = self
                     .classes
                     .get(
-                        &(LLVMGetVectorSize(LLVMStructGetTypeAtIndex(LLVMGetElementType(class), 0))
-                            as usize as u32),
+                        &(LLVMGetArrayLength(LLVMGetElementType(LLVMStructGetTypeAtIndex(
+                            LLVMGetElementType(class),
+                            0,
+                        ))) as usize as u32),
                     )
                     .unwrap()
                     .clone();

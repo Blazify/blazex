@@ -187,7 +187,7 @@ impl TypeSystem {
 
                 constr.push(Constraint(
                     ty.clone(),
-                    Type::Array(box elem_ty.clone(), None),
+                    Type::Array(box elem_ty.clone(), elements.len() as u32),
                 ));
                 constr
             }
@@ -195,7 +195,7 @@ impl TypeSystem {
                 let mut constr = self.collect(*array.clone());
                 constr.extend(self.collect(*idx.clone()));
                 constr.push(Constraint(idx.get_type(), Type::Int));
-                constr.push(Constraint(array.get_type(), Type::Array(box ty, None)));
+                constr.push(Constraint(array.get_type(), Type::Array(box ty, 0)));
                 constr
             }
             TypedNode::Object { ty, properties } => {
@@ -292,7 +292,7 @@ impl TypeSystem {
                     constr.extend(self.collect(val.clone()));
                 }
                 self.methods.insert(
-                    Type::Array(box Type::Int, Some(Type::last_aligner() as u32)),
+                    Type::Array(box Type::Int, Type::last_aligner() as u32),
                     methods_tree,
                 );
 
