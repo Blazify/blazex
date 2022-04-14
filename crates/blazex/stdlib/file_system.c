@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define _CRT_SECURE_NO_WARNING
+#define _CRT_SECURE_NO_WARNINGS
 
 
 char *read_file(const char *path) {

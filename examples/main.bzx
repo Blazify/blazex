@@ -1,19 +1,28 @@
+extern int print(string, ...)
 extern int println(string, ...)
-extern string str_concat(string, string)
+extern int input_int()
 
-class String {
-    var value = ""
+class Main {
+    var price = 0;
 
-    fun(value) {
-        soul.value = value
+    fun accept() {
+        print("Enter a price: ")
+        soul.price = input_int()
     }
 
-    fun push_str(str) {
-        soul.value = str_concat(soul.value, str)
+    fun calculate() {
+        @ apply 5% extra charge
+        soul.price = soul.price * 1.05;
+    }
+
+    fun print() {
+        println("%i", soul.price);
+    }
+
+    static fun main() {
+        var main = new Main()
+        main.accept()
+        main.calculate()
+        main.print()
     }
 }
-
-var str = new String("Hello")
-str.push_str(" World")
-
-println(str.value)

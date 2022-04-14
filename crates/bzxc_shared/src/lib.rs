@@ -508,7 +508,7 @@ pub fn to_c_str(mut s: &str) -> Cow<CStr> {
         s = "\0";
     }
 
-    if s.chars().rev().find(|&ch| ch == '\0').is_none() {
+    if !s.chars().rev().any(|ch| ch == '\0') {
         return Cow::from(CString::new(s).expect("unreachable since null bytes are checked"));
     }
 
@@ -810,7 +810,7 @@ impl TypedNode {
                         return ty.clone();
                     }
                 }
-                return Type::Null;
+                Type::Null
             }
             TypedNode::Int { ty, .. }
             | TypedNode::Float { ty, .. }

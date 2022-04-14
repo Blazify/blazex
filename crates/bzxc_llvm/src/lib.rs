@@ -603,63 +603,63 @@ impl Compiler {
             }
             LLVMNode::For {
                 ty: _,
-                var,
+                var: var_,
                 start,
                 end,
                 step,
                 body,
             } => {
                 let parent = self.fn_value();
-
                 let start = self.compile(*start);
-                let start_alloca = self.create_entry_block_alloca(&var, LLVMTypeOf(start));
+                let step = self.compile(*step);
+                let end = LLVMBuildAdd(
+                    self.builder,
+                    self.compile(*end),
+                    step,
+                    to_c_str("end").as_ptr(),
+                );
 
-                LLVMBuildStore(self.builder, start, start_alloca);
+                let var = self.create_entry_block_alloca(var_.as_str(), LLVMTypeOf(start));
+                LLVMBuildStore(self.builder, start, var);
+                self.variables.insert(var_, var);
 
-                let loop_block = LLVMAppendBasicBlockInContext(
+                let cond_block = LLVMAppendBasicBlockInContext(
                     self.context,
                     parent,
-                    to_c_str("for_loop").as_ptr(),
+                    to_c_str("for_cond").as_ptr(),
                 );
-
-                LLVMBuildBr(self.builder, loop_block);
-                LLVMPositionBuilderAtEnd(self.builder, loop_block);
-
-                let old_val = self.variables.remove(&var);
-
-                self.variables.insert(var.clone(), start_alloca);
-
-                self.compile(*body);
-                let step = self.compile(*step);
-                let end_condition = self.compile(*end);
-
-                let curr_var = LLVMBuildLoad(self.builder, start_alloca, to_c_str("load").as_ptr());
-
-                let next_var = LLVMBuildAdd(self.builder, curr_var, step, to_c_str("add").as_ptr());
-
-                LLVMBuildStore(self.builder, next_var, start_alloca);
-
-                let end_condition = LLVMBuildICmp(
-                    self.builder,
-                    LLVMIntNE,
-                    next_var,
-                    end_condition,
-                    to_c_str("end_condition").as_ptr(),
+                let body_block = LLVMAppendBasicBlockInContext(
+                    self.context,
+                    parent,
+                    to_c_str("for_body").as_ptr(),
                 );
-
                 let after_block = LLVMAppendBasicBlockInContext(
                     self.context,
                     parent,
                     to_c_str("for_after").as_ptr(),
                 );
+                LLVMBuildBr(self.builder, cond_block);
+                LLVMPositionBuilderAtEnd(self.builder, cond_block);
 
-                LLVMBuildCondBr(self.builder, end_condition, loop_block, after_block);
+                let cond = LLVMBuildICmp(
+                    self.builder,
+                    LLVMIntNE,
+                    LLVMBuildLoad(self.builder, var, to_c_str("for_cond").as_ptr()),
+                    end,
+                    to_c_str("cond").as_ptr(),
+                );
+                LLVMBuildCondBr(self.builder, cond, body_block, after_block);
+                LLVMPositionBuilderAtEnd(self.builder, body_block);
+
+                self.compile(*body.clone());
+
+                let curr = LLVMBuildLoad(self.builder, var, to_c_str("curr_val").as_ptr());
+                let new = LLVMBuildAdd(self.builder, curr, step, to_c_str("new_val").as_ptr());
+                LLVMBuildStore(self.builder, new, var);
+
+                LLVMBuildBr(self.builder, cond_block);
+
                 LLVMPositionBuilderAtEnd(self.builder, after_block);
-                self.variables.remove(&var);
-
-                if let Some(val) = old_val {
-                    self.variables.insert(var, val);
-                }
 
                 self.ret = false;
 
