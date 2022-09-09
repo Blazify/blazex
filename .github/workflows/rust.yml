@@ -27,7 +27,7 @@ jobs:
       - name: Build project
         run: make install
       - name: Run Tests
-        run: cargo test --release -- --test-threads=1
+        run: cargo test -- --test-threads=1
       - name: Archive into tar.xz
         if: contains(github.event.head_commit.message, 'release')
         run: tar cf - ~/.blazex/ | xz -z - > blazex-{{ matrix.os }}.tar.xz

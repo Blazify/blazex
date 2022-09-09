@@ -55,6 +55,12 @@ struct CmdParams {
      */
     #[structopt(long, short = "l")]
     pub llvm: bool,
+
+    /*
+     * Whether it should not link to stdlib or not
+     */
+    #[structopt(long, short = "no-std")]
+    pub no_std: bool,
 }
 
 /*
@@ -79,6 +85,7 @@ fn main() {
     };
     let watch = cmd_params.watch;
     let spit_ll = cmd_params.llvm;
+    let no_std = cmd_params.no_std;
 
     /*
      * Compiling to Object File
@@ -91,6 +98,7 @@ fn main() {
                 cnt,
                 is_quiet,
                 watch,
+                no_std,
                 out_file.clone(),
                 spit_ll,
             )

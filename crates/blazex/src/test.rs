@@ -34,7 +34,8 @@ mod tests {
                 let out_file = file_path.replace(".bzx", ".o");
                 let cnt = std::fs::read_to_string(file_path).unwrap();
                 unsafe {
-                    let res = super::super::compile(file_name, cnt, false, false, out_file, false);
+                    let res =
+                        super::super::compile(file_name, cnt, false, false, false, out_file, false);
                     assert_eq!(res, 0);
                 }
             }

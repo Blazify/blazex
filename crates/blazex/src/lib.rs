@@ -41,6 +41,7 @@ pub unsafe fn compile(
     cnt: String,
     is_quiet: bool,
     watch: bool,
+    no_std: bool,
     out_file: String,
     llvm: bool,
 ) -> i32 {
@@ -156,15 +157,16 @@ pub unsafe fn compile(
     dir.push("stdlib");
     println!("{:#?}", dir);
 
-    assert!(dir.is_dir());
-    Command::new("clang-10")
-        .args([
-            out_file.clone(),
-            format!("{}/libblazex.a", dir.to_str().unwrap()),
-            format!("-o{}", out_file.replace(".o", ".out")),
-        ])
-        .status()
-        .unwrap();
+    let mut args = vec![
+        out_file.clone(),
+        format!("-o{}", out_file.replace(".o", ".out")),
+    ];
+
+    if !no_std {
+        assert!(dir.is_dir());
+        args.push(format!("{}/libblazex.a", dir.to_str().unwrap()));
+    }
+    Command::new("clang-10").args(&args[..]).status().unwrap();
     std::fs::remove_file(out_file.clone()).unwrap();
     println!("Compiled executable to {}", out_file.replace(".o", ".out"));
 
