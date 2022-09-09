@@ -1,0 +1,16 @@
+extern int print(string, ...)
+extern int println(string, ...)
+extern float input_float()
+
+class A {
+    var x = 0.0
+    fun() { soul.x = 0.0 }
+    fun a() { soul.x = input_float() }
+    fun b() { soul.x = soul.x * 6.0 }
+    fun c() { println("%f", soul.x) }
+}
+
+var a = new A();
+a.a()
+a.b()
+a.c()

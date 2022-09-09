@@ -28,6 +28,8 @@ use llvm_sys::transforms::scalar::{
 };
 use llvm_sys::transforms::util::LLVMAddPromoteMemoryToRegisterPass;
 
+pub mod test;
+
 use bzxc_lexer::Lexer;
 use bzxc_llvm::Compiler;
 use bzxc_parser::parser::Parser;
@@ -145,8 +147,14 @@ pub unsafe fn compile(
     dir.pop();
     if dir.ends_with("bin") {
         dir.pop();
+    } else {
+        dir.pop();
+        dir.pop();
+        dir.pop();
+        dir.push("blazex");
     }
     dir.push("stdlib");
+    println!("{:#?}", dir);
 
     assert!(dir.is_dir());
     Command::new("clang-10")
@@ -157,6 +165,7 @@ pub unsafe fn compile(
         ])
         .status()
         .unwrap();
+    std::fs::remove_file(out_file.clone()).unwrap();
     println!("Compiled executable to {}", out_file.replace(".o", ".out"));
 
     return 0;
