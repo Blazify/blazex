@@ -132,8 +132,8 @@ println("%i", ins.sum_to_a(5));
 - [x] Errors
     - [x] Lexer
     - [x] Parser
-    - [ ] Type System
-    - [ ] LLVM
+    - [x] Type System
+    - [x] LLVM
 - [x] Reading from file
 - [x] Lexer
 - [x] Parser
